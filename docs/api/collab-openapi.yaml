@@ -1,0 +1,523 @@
+openapi: 3.1.0
+info:
+  title: Boardly API
+  description: Realtime collaborative kanban board.
+  version: 0.1.0
+  license:
+    name: MIT
+servers:
+  - url: https://boardly.app
+    description: Production (planned)
+  - url: http://localhost:3000
+    description: Local dev
+
+tags:
+  - name: Auth
+  - name: Workspaces
+  - name: Members
+  - name: Invitations
+  - name: Boards
+  - name: Lists
+  - name: Cards
+  - name: Labels
+  - name: Comments
+  - name: Attachments
+  - name: Activity
+  - name: Search
+  - name: Notifications
+  - name: Health
+
+security:
+  - sessionCookie: []
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok] }
+                  service: { type: string }
+                  uptime: { type: number }
+                  timestamp: { type: string, format: date-time }
+
+  /api/me:
+    get:
+      tags: [Auth]
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/workspaces:
+    get:
+      tags: [Workspaces]
+      responses:
+        "200":
+          description: My workspaces
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Workspace" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      tags: [Workspaces]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, slug]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 80 }
+                slug: { type: string, pattern: "^[a-z0-9-]{3,32}$" }
+                color: { type: string, pattern: "^#[0-9A-Fa-f]{6}$" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Workspace" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409":
+          description: Slug already taken
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/workspaces/{slug}:
+    parameters: [{ $ref: "#/components/parameters/Slug" }]
+    get:
+      tags: [Workspaces]
+      responses:
+        "200":
+          description: Workspace detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [Workspaces]
+      x-required-roles: [OWNER, ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, maxLength: 80 }
+                color: { type: string }
+                iconUrl: { type: string, format: uri, nullable: true }
+      responses:
+        "200": { description: Updated }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: [Workspaces]
+      x-required-roles: [OWNER]
+      responses:
+        "204": { description: Soft-deleted }
+
+  /api/workspaces/{slug}/members:
+    parameters: [{ $ref: "#/components/parameters/Slug" }]
+    get:
+      tags: [Members]
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Member" }
+
+  /api/workspaces/{slug}/members/{userId}:
+    parameters:
+      - { $ref: "#/components/parameters/Slug" }
+      - in: path
+        name: userId
+        required: true
+        schema: { type: string }
+    patch:
+      tags: [Members]
+      x-required-roles: [OWNER, ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { $ref: "#/components/schemas/Role" }
+      responses:
+        "200": { description: Role updated }
+    delete:
+      tags: [Members]
+      x-required-roles: [OWNER, ADMIN]
+      responses:
+        "204": { description: Removed }
+
+  /api/workspaces/{slug}/invitations:
+    parameters: [{ $ref: "#/components/parameters/Slug" }]
+    post:
+      tags: [Invitations]
+      x-required-roles: [OWNER, ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email: { type: string, format: email }
+                role: { $ref: "#/components/schemas/Role" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invitation" }
+
+  /api/invitations/{token}/accept:
+    parameters:
+      - in: path
+        name: token
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Invitations]
+      responses:
+        "200": { description: Accepted }
+        "410": { description: Expired }
+
+  /api/workspaces/{slug}/boards:
+    parameters: [{ $ref: "#/components/parameters/Slug" }]
+    get:
+      tags: [Boards]
+      responses:
+        "200":
+          description: Boards
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Board" }
+    post:
+      tags: [Boards]
+      x-required-roles: [OWNER, ADMIN, EDITOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, minLength: 1, maxLength: 120 }
+                color: { type: string }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Board" }
+
+  /api/boards/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Boards]
+      responses:
+        "200":
+          description: Board with lists
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BoardWithLists" }
+    patch:
+      tags: [Boards]
+      x-required-roles: [OWNER, ADMIN, EDITOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                color: { type: string }
+                position: { type: string }
+                archived: { type: boolean }
+      responses:
+        "200": { description: Updated }
+    delete:
+      tags: [Boards]
+      x-required-roles: [OWNER, ADMIN]
+      responses:
+        "204": { description: Deleted }
+
+  /api/boards/{id}/lists:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: [Lists]
+      x-required-roles: [OWNER, ADMIN, EDITOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, position]
+              properties:
+                title: { type: string }
+                position: { type: string, description: LexoRank }
+                wipLimit: { type: integer, minimum: 0 }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/List" }
+
+  /api/lists/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    patch:
+      tags: [Lists]
+      x-required-roles: [OWNER, ADMIN, EDITOR]
+      responses: { "200": { description: Updated } }
+    delete:
+      tags: [Lists]
+      x-required-roles: [OWNER, ADMIN, EDITOR]
+      responses: { "204": { description: Deleted } }
+
+  /api/lists/{id}/cards:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: [Cards]
+      x-required-roles: [OWNER, ADMIN, EDITOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, position]
+              properties:
+                title: { type: string }
+                description: { type: string }
+                position: { type: string }
+                dueDate: { type: string, format: date-time, nullable: true }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Card" }
+
+  /api/cards/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Cards]
+      responses:
+        "200":
+          description: Card detail
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CardDetail" }
+    patch:
+      tags: [Cards]
+      x-required-roles: [OWNER, ADMIN, EDITOR]
+      description: Optimistic lock. `version` must match the current row.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version: { type: integer }
+                title: { type: string }
+                description: { type: string }
+                dueDate: { type: string, format: date-time, nullable: true }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Card" }
+        "409":
+          description: Version conflict
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    delete:
+      tags: [Cards]
+      x-required-roles: [OWNER, ADMIN, EDITOR]
+      responses: { "204": { description: Deleted } }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Secure-authjs.session-token
+
+  parameters:
+    Slug:
+      in: path
+      name: slug
+      required: true
+      schema: { type: string, pattern: "^[a-z0-9-]{3,32}$" }
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: { type: string }
+
+  responses:
+    BadRequest:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: No active session
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Forbidden:
+      description: Role insufficient
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Resource missing or you do not have access
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details:
+          type: object
+          additionalProperties: true
+
+    Role:
+      type: string
+      enum: [OWNER, ADMIN, EDITOR, VIEWER]
+
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string, format: email }
+        name: { type: string, nullable: true }
+        avatarUrl: { type: string, nullable: true }
+
+    Workspace:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        color: { type: string }
+        iconUrl: { type: string, nullable: true }
+        role: { $ref: "#/components/schemas/Role" }
+
+    WorkspaceDetail:
+      allOf:
+        - { $ref: "#/components/schemas/Workspace" }
+        - type: object
+          properties:
+            boards:
+              type: array
+              items: { $ref: "#/components/schemas/Board" }
+            members:
+              type: array
+              items: { $ref: "#/components/schemas/Member" }
+
+    Member:
+      type: object
+      properties:
+        userId: { type: string }
+        email: { type: string }
+        name: { type: string, nullable: true }
+        avatarUrl: { type: string, nullable: true }
+        role: { $ref: "#/components/schemas/Role" }
+
+    Invitation:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        expiresAt: { type: string, format: date-time }
+
+    Board:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        color: { type: string }
+        archived: { type: boolean }
+        position: { type: string }
+
+    BoardWithLists:
+      allOf:
+        - { $ref: "#/components/schemas/Board" }
+        - type: object
+          properties:
+            lists:
+              type: array
+              items: { $ref: "#/components/schemas/List" }
+
+    List:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        position: { type: string }
+        wipLimit: { type: integer, nullable: true }
+        cards:
+          type: array
+          items: { $ref: "#/components/schemas/Card" }
+
+    Card:
+      type: object
+      properties:
+        id: { type: string }
+        listId: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        position: { type: string }
+        version: { type: integer }
+        dueDate: { type: string, format: date-time, nullable: true }
+
+    CardDetail:
+      allOf:
+        - { $ref: "#/components/schemas/Card" }
+        - type: object
+          properties:
+            assignees:
+              type: array
+              items: { $ref: "#/components/schemas/User" }

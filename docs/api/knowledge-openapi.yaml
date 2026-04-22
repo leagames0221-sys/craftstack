@@ -1,0 +1,453 @@
+openapi: 3.1.0
+info:
+  title: Knowlex API
+  description: Multi-tenant AI knowledge retrieval SaaS with hybrid search + RAG.
+  version: 0.1.0
+  license:
+    name: MIT
+servers:
+  - url: https://knowlex.app
+    description: Production (planned)
+  - url: http://localhost:3001
+    description: Local dev
+
+tags:
+  - name: Auth
+  - name: Tenants
+  - name: Members
+  - name: Folders
+  - name: Documents
+  - name: Search
+  - name: Conversations
+  - name: Feedback
+  - name: ApiKeys
+  - name: Webhooks
+  - name: Usage
+  - name: Audit
+  - name: Export
+  - name: Health
+
+security:
+  - sessionCookie: []
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      security: []
+      responses: { "200": { description: Healthy } }
+
+  /api/me:
+    get:
+      tags: [Auth]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+          description: Current user
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /api/tenants:
+    get:
+      tags: [Tenants]
+      responses:
+        "200":
+          description: My tenants
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Tenant" }
+    post:
+      tags: [Tenants]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, slug]
+              properties:
+                name: { type: string }
+                slug: { type: string, pattern: "^[a-z0-9-]{3,32}$" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tenant" }
+
+  /api/tenants/{slug}/documents/upload-presign:
+    parameters: [{ $ref: "#/components/parameters/Slug" }]
+    post:
+      tags: [Documents]
+      x-required-roles: [OWNER, ADMIN, EDITOR]
+      x-rate-limit: { perUser: "30/hour", perTenant: "500/day" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fileName, mimeType, sizeBytes]
+              properties:
+                fileName: { type: string }
+                mimeType: { type: string }
+                sizeBytes: { type: integer, maximum: 52428800 }
+                folderId: { type: string, nullable: true }
+      responses:
+        "200":
+          description: Presigned URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploadUrl: { type: string }
+                  r2Key: { type: string }
+                  expiresIn: { type: integer }
+
+  /api/tenants/{slug}/documents/upload-confirm:
+    parameters: [{ $ref: "#/components/parameters/Slug" }]
+    post:
+      tags: [Documents]
+      x-required-roles: [OWNER, ADMIN, EDITOR]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [r2Key, fileName, mimeType, sizeBytes, title]
+              properties:
+                r2Key: { type: string }
+                fileName: { type: string }
+                mimeType: { type: string }
+                sizeBytes: { type: integer }
+                title: { type: string }
+                folderId: { type: string, nullable: true }
+      responses:
+        "202":
+          description: Ingestion enqueued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documentId: { type: string }
+                  jobId: { type: string }
+
+  /api/documents/{id}/progress:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: [Documents]
+      description: Server-Sent Events stream of ingestion progress.
+      responses:
+        "200":
+          description: SSE
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: "Events: queued | extracting | chunking | embedding | persisting | ready | failed"
+
+  /api/tenants/{slug}/search:
+    parameters: [{ $ref: "#/components/parameters/Slug" }]
+    get:
+      tags: [Search]
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+        - in: query
+          name: mode
+          schema:
+            { type: string, enum: [hybrid, vector, keyword], default: hybrid }
+        - in: query
+          name: topK
+          schema: { type: integer, default: 10, maximum: 50 }
+      responses:
+        "200":
+          description: Hits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hits:
+                    type: array
+                    items: { $ref: "#/components/schemas/SearchHit" }
+
+  /api/conversations/{id}/messages:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: [Conversations]
+      description: Submits a user message and returns a Server-Sent Events stream.
+      x-rate-limit: { perUser: "10/min", perTenant: "500/day" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string }
+                folderIds:
+                  type: array
+                  items: { type: string }
+                documentIds:
+                  type: array
+                  items: { type: string }
+      responses:
+        "200":
+          description: SSE stream with `token`, `citation`, `usage`, `done`, `error` events
+          content:
+            text/event-stream:
+              schema: { type: string }
+
+  /api/messages/{id}/feedback:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: [Feedback]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating: { type: string, enum: [UP, DOWN] }
+                reason: { type: string }
+      responses:
+        "201": { description: Recorded }
+
+  /api/tenants/{slug}/api-keys:
+    parameters: [{ $ref: "#/components/parameters/Slug" }]
+    x-required-roles: [OWNER, ADMIN]
+    get:
+      tags: [ApiKeys]
+      responses:
+        "200":
+          description: Keys (hashed suffix only)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ApiKey" }
+    post:
+      tags: [ApiKeys]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [label, scopes]
+              properties:
+                label: { type: string }
+                scopes:
+                  type: array
+                  items: { type: string, enum: [read, search, chat, ingest] }
+                expiresAt: { type: string, format: date-time, nullable: true }
+      responses:
+        "201":
+          description: Issued (plaintext key shown once)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  key:
+                    {
+                      type: string,
+                      description: Retain immediately. Never returned again.,
+                    }
+
+  /api/tenants/{slug}/webhooks:
+    parameters: [{ $ref: "#/components/parameters/Slug" }]
+    x-required-roles: [OWNER, ADMIN]
+    get:
+      tags: [Webhooks]
+      responses:
+        "200":
+          description: Webhook endpoints
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Webhook" }
+    post:
+      tags: [Webhooks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, events]
+              properties:
+                url: { type: string, format: uri }
+                events:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - document.ready
+                      - document.failed
+                      - feedback.submitted
+                      - api_key.issued
+      responses: { "201": { description: Created } }
+
+  /api/tenants/{slug}/usage:
+    parameters: [{ $ref: "#/components/parameters/Slug" }]
+    x-required-roles: [OWNER, ADMIN]
+    get:
+      tags: [Usage]
+      parameters:
+        - in: query
+          name: from
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Daily usage rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Usage" }
+
+  /api/tenants/{slug}/audit:
+    parameters: [{ $ref: "#/components/parameters/Slug" }]
+    x-required-roles: [OWNER, ADMIN]
+    get:
+      tags: [Audit]
+      responses:
+        "200":
+          description: Audit log pages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/AuditLog" }
+                  nextCursor: { type: string, nullable: true }
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Secure-authjs.session-token
+    bearerApiKey:
+      type: http
+      scheme: bearer
+      description: Tenant API key. Prefix `klx_`.
+
+  parameters:
+    Slug:
+      in: path
+      name: slug
+      required: true
+      schema: { type: string }
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: { type: string }
+
+  responses:
+    Unauthorized:
+      description: No active session
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+
+    Role:
+      type: string
+      enum: [OWNER, ADMIN, EDITOR, VIEWER]
+
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+
+    Tenant:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        plan: { type: string, enum: [FREE, PRO, ENTERPRISE] }
+        role: { $ref: "#/components/schemas/Role" }
+
+    SearchHit:
+      type: object
+      properties:
+        chunkId: { type: string }
+        documentId: { type: string }
+        documentTitle: { type: string }
+        content: { type: string }
+        score: { type: number }
+        vectorScore: { type: number, nullable: true }
+        bm25Score: { type: number, nullable: true }
+
+    ApiKey:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        prefix: { type: string }
+        scopes:
+          type: array
+          items: { type: string }
+        expiresAt: { type: string, format: date-time, nullable: true }
+        lastUsedAt: { type: string, format: date-time, nullable: true }
+
+    Webhook:
+      type: object
+      properties:
+        id: { type: string }
+        url: { type: string }
+        events:
+          type: array
+          items: { type: string }
+        active: { type: boolean }
+
+    Usage:
+      type: object
+      properties:
+        day: { type: string, format: date }
+        searchCount: { type: integer }
+        messageCount: { type: integer }
+        tokensIn: { type: integer }
+        tokensOut: { type: integer }
+        costUsd: { type: number }
+
+    AuditLog:
+      type: object
+      properties:
+        id: { type: string }
+        actor: { $ref: "#/components/schemas/User" }
+        action: { type: string }
+        entityType: { type: string, nullable: true }
+        entityId: { type: string, nullable: true }
+        payload: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }

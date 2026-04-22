@@ -84,7 +84,22 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 
 ## Documentation map
 
-Start here: [docs/design/README.md](docs/design/README.md) — 13-part design bible covering requirements, ER, API, Prisma schemas, RLS migrations, Week 3 daily task breakdown, ADR 0001–0022, STRIDE threat model, RAG prompt registry and eval pipeline, interview Q&A, and critical-fix changelog.
+| Area                    | Entry point                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| Architecture overview   | [docs/architecture/system-overview.md](docs/architecture/system-overview.md)          |
+| Decision records (22)   | [docs/adr/](docs/adr/README.md)                                                       |
+| API specs (OpenAPI)     | [collab](docs/api/collab-openapi.yaml) · [knowledge](docs/api/knowledge-openapi.yaml) |
+| Rate limits             | [docs/api/rate-limits.md](docs/api/rate-limits.md)                                    |
+| STRIDE threat model     | [docs/security/threat-model.md](docs/security/threat-model.md)                        |
+| Incident runbook        | [docs/ops/runbook.md](docs/ops/runbook.md)                                            |
+| Data retention policy   | [docs/compliance/data-retention.md](docs/compliance/data-retention.md)                |
+| RAG prompt registry     | [apps/knowledge/src/server/ai/prompts/](apps/knowledge/src/server/ai/prompts/)        |
+| RAG evaluation          | [docs/eval/](docs/eval/README.md)                                                     |
+| Interview Q&A (30)      | [docs/hiring/interview-qa.md](docs/hiring/interview-qa.md)                            |
+| Portfolio landing copy  | [docs/hiring/portfolio-lp.md](docs/hiring/portfolio-lp.md)                            |
+| Demo storyboard         | [docs/hiring/demo-storyboard.md](docs/hiring/demo-storyboard.md)                      |
+| Design bible (13 parts) | [docs/design/README.md](docs/design/README.md)                                        |
+| Contribution guide      | [CONTRIBUTING.md](CONTRIBUTING.md)                                                    |
 
 ## Roadmap
 
