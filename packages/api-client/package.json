@@ -10,6 +10,6 @@
     "generate": "pnpm generate:collab && pnpm generate:knowledge"
   },
   "devDependencies": {
-    "typescript": "^5"
+    "typescript": "^6"
   }
 }
