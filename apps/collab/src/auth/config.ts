@@ -5,19 +5,20 @@ import Google from "next-auth/providers/google";
 import { prisma } from "@/lib/db";
 
 /**
- * Auth.js v5 configuration (ADR-0003).
+ * Auth.js v5 configuration.
  *
- * - Strategy: `database` sessions so server-side revocation is immediate
- *   (important for invitation/RBAC flows)
- * - Adapter: Prisma (User / Account / Session / VerificationToken)
- * - Providers: Google + GitHub OAuth
- *
- * For E2E tests the `credentials` provider is added conditionally in
- * `auth.test.ts` (ADR-0022) so OAuth redirects do not have to be mocked.
+ * - Strategy: `jwt` because the proxy in src/proxy.ts runs on Vercel Edge
+ *   Runtime, which cannot reach the Prisma pg adapter needed by the
+ *   database strategy. JWT sessions validate on the edge without a DB
+ *   round trip. Revocation semantics are softer (expiry only); acceptable
+ *   for this portfolio. Supersedes ADR-0003.
+ * - Adapter: Prisma (User / Account / VerificationToken) — still used
+ *   by the OAuth account linking flow even under JWT sessions.
+ * - Providers: Google + GitHub OAuth.
  */
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
-  session: { strategy: "database" },
+  session: { strategy: "jwt" },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -35,9 +36,13 @@ export const authConfig = {
   },
   callbacks: {
     authorized: async ({ auth }) => !!auth?.user,
-    session: async ({ session, user }) => {
-      // expose internal user id to the app surface
-      session.user.id = user.id;
+    jwt: async ({ token, user }) => {
+      // `user` is populated only on sign-in; persist its id into the token.
+      if (user) token.sub = user.id;
+      return token;
+    },
+    session: async ({ session, token }) => {
+      if (token.sub) session.user.id = token.sub;
       return session;
     },
   },
