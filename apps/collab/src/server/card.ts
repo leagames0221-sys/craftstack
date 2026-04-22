@@ -4,6 +4,7 @@ import { roleAtLeast } from "@/auth/rbac";
 import { ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
 import { between, first } from "@/lib/lexorank";
 import { broadcastBoard } from "@/lib/pusher";
+import { logActivity } from "./activity";
 
 /**
  * Create a card at the end of the given list.
@@ -62,6 +63,14 @@ export async function createCard(
     { kind: "card.created", listId, cardId: card.id },
     userId,
   );
+  await logActivity({
+    workspaceId: list.board.workspaceId,
+    actorId: userId,
+    action: "CARD_CREATED",
+    entityType: "Card",
+    entityId: card.id,
+    payload: { title: card.title, listId, listTitle: list.title },
+  });
   return card;
 }
 
@@ -106,13 +115,28 @@ export async function updateCard(
 
   const updated = await prisma.card.findUniqueOrThrow({
     where: { id: cardId },
-    include: { list: { select: { boardId: true } } },
+    include: {
+      list: {
+        select: { boardId: true, board: { select: { workspaceId: true } } },
+      },
+    },
   });
   await broadcastBoard(
     updated.list.boardId,
     { kind: "card.updated", listId: updated.listId, cardId: updated.id },
     userId,
   );
+  await logActivity({
+    workspaceId: updated.list.board.workspaceId,
+    actorId: userId,
+    action: "CARD_UPDATED",
+    entityType: "Card",
+    entityId: updated.id,
+    payload: {
+      title: updated.title,
+      fields: Object.keys(input).filter((k) => k !== "version"),
+    },
+  });
   const { list: _list, ...rest } = updated;
   void _list;
   return rest;
@@ -190,7 +214,15 @@ export async function moveCard(
 
   const fresh = await prisma.card.findUniqueOrThrow({
     where: { id: cardId },
-    include: { list: { select: { boardId: true } } },
+    include: {
+      list: {
+        select: {
+          boardId: true,
+          title: true,
+          board: { select: { workspaceId: true } },
+        },
+      },
+    },
   });
   await broadcastBoard(
     fresh.list.boardId,
@@ -202,6 +234,19 @@ export async function moveCard(
     },
     userId,
   );
+  await logActivity({
+    workspaceId: fresh.list.board.workspaceId,
+    actorId: userId,
+    action: "CARD_MOVED",
+    entityType: "Card",
+    entityId: cardId,
+    payload: {
+      title: fresh.title,
+      fromListId: current.listId,
+      toListId: fresh.listId,
+      toListTitle: fresh.list.title,
+    },
+  });
   const { list: _list, ...rest } = fresh;
   void _list;
   return rest;
@@ -218,6 +263,14 @@ export async function deleteCard(userId: string, cardId: string) {
     { kind: "card.deleted", cardId },
     userId,
   );
+  await logActivity({
+    workspaceId: card.list.board.workspaceId,
+    actorId: userId,
+    action: "CARD_DELETED",
+    entityType: "Card",
+    entityId: cardId,
+    payload: { title: card.title },
+  });
 }
 
 async function assertCardRole(

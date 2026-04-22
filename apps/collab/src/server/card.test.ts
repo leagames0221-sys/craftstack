@@ -73,7 +73,8 @@ describe("updateCard optimistic lock", () => {
       id: "c1",
       version: 2,
       listId: "l1",
-      list: { boardId: "b1" },
+      title: "title",
+      list: { boardId: "b1", board: { workspaceId: "w1" } },
     });
 
     const out = await updateCard("u1", "c1", {
@@ -110,7 +111,8 @@ describe("updateCard optimistic lock", () => {
       id: "c1",
       version: 2,
       listId: "l1",
-      list: { boardId: "b1" },
+      title: "title",
+      list: { boardId: "b1", board: { workspaceId: "w1" } },
     });
 
     await expect(

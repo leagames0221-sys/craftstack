@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { loadWorkspaceForMember } from "@/server/workspace-detail";
 import { MembersSection } from "./MembersSection";
+import { ActivityFeed } from "./ActivityFeed";
 
 export async function generateMetadata({
   params,
@@ -121,6 +122,8 @@ export default async function WorkspacePage({
           invitations={ws.pendingInvitations}
           myRole={ws.role}
         />
+
+        <ActivityFeed workspaceId={ws.id} />
       </div>
     </main>
   );

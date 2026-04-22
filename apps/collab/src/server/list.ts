@@ -3,6 +3,7 @@ import { roleAtLeast } from "@/auth/rbac";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { between, first, last } from "@/lib/lexorank";
 import { broadcastBoard } from "@/lib/pusher";
+import { logActivity } from "./activity";
 
 /**
  * Create a list at the bottom of the given board.
@@ -54,6 +55,14 @@ export async function createList(
     { kind: "list.created", listId: list.id },
     userId,
   );
+  await logActivity({
+    workspaceId: board.workspace.id,
+    actorId: userId,
+    action: "LIST_CREATED",
+    entityType: "List",
+    entityId: list.id,
+    payload: { title: list.title, boardId },
+  });
   return list;
 }
 
@@ -72,6 +81,14 @@ export async function renameList(
     select: { id: true, title: true },
   });
   await broadcastBoard(list.board.id, { kind: "list.updated", listId }, userId);
+  await logActivity({
+    workspaceId: list.board.workspaceId,
+    actorId: userId,
+    action: "LIST_UPDATED",
+    entityType: "List",
+    entityId: listId,
+    payload: { title: result.title },
+  });
   return result;
 }
 
@@ -82,6 +99,14 @@ export async function deleteList(userId: string, listId: string) {
   const list = await assertListRole(userId, listId, "ADMIN");
   await prisma.list.delete({ where: { id: listId } });
   await broadcastBoard(list.board.id, { kind: "list.deleted", listId }, userId);
+  await logActivity({
+    workspaceId: list.board.workspaceId,
+    actorId: userId,
+    action: "LIST_DELETED",
+    entityType: "List",
+    entityId: listId,
+    payload: { title: list.title },
+  });
 }
 
 async function assertListEditor(userId: string, listId: string) {

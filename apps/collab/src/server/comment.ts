@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { roleAtLeast } from "@/auth/rbac";
 import { BadRequestError, ForbiddenError, NotFoundError } from "@/lib/errors";
 import { broadcastBoard } from "@/lib/pusher";
+import { logActivity } from "./activity";
 
 const MAX_BODY_LEN = 4000;
 
@@ -73,6 +74,14 @@ export async function createComment(
     { kind: "card.updated", listId: card.listId, cardId },
     userId,
   );
+  await logActivity({
+    workspaceId: card.list.board.workspaceId,
+    actorId: userId,
+    action: "COMMENT_CREATED",
+    entityType: "Comment",
+    entityId: comment.id,
+    payload: { cardId, excerpt: body.slice(0, 120) },
+  });
 
   return comment;
 }
@@ -94,6 +103,7 @@ export async function deleteComment(userId: string, commentId: string) {
               boardId: true,
               board: {
                 select: {
+                  workspaceId: true,
                   workspace: {
                     select: {
                       memberships: {
@@ -135,6 +145,14 @@ export async function deleteComment(userId: string, commentId: string) {
     },
     userId,
   );
+  await logActivity({
+    workspaceId: comment.card.list.board.workspaceId,
+    actorId: userId,
+    action: "COMMENT_DELETED",
+    entityType: "Comment",
+    entityId: commentId,
+    payload: { cardId: comment.card.id },
+  });
 }
 
 async function assertCardReader(userId: string, cardId: string) {
@@ -146,6 +164,7 @@ async function assertCardReader(userId: string, cardId: string) {
           boardId: true,
           board: {
             select: {
+              workspaceId: true,
               workspace: {
                 select: {
                   memberships: {
