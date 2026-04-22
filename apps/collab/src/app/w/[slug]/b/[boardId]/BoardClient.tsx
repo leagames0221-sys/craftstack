@@ -424,11 +424,33 @@ function SortableCard({
           </div>
         ) : null}
         <div className="font-medium">{card.title}</div>
-        {card.dueDate ? (
-          <div className="mt-1 text-[10px] text-neutral-500">
-            due {card.dueDate.slice(0, 10)}
-          </div>
-        ) : null}
+        <div className="mt-1 flex items-center justify-between gap-2">
+          {card.dueDate ? (
+            <span className="text-[10px] text-neutral-500">
+              due {card.dueDate.slice(0, 10)}
+            </span>
+          ) : (
+            <span />
+          )}
+          {card.assignees.length > 0 ? (
+            <div className="flex -space-x-1.5">
+              {card.assignees.slice(0, 3).map((a) => (
+                <span
+                  key={a.userId}
+                  title={a.name ?? a.email}
+                  className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-neutral-900 bg-neutral-700 text-[9px] font-medium text-neutral-100"
+                >
+                  {(a.name ?? a.email).charAt(0).toUpperCase()}
+                </span>
+              ))}
+              {card.assignees.length > 3 ? (
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-neutral-900 bg-neutral-800 px-1 text-[9px] text-neutral-300">
+                  +{card.assignees.length - 3}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </Link>
     </li>
   );

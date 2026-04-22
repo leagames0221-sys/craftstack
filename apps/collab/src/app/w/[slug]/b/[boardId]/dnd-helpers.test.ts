@@ -8,16 +8,46 @@ function makeLists(): ClientList[] {
       title: "Todo",
       wipLimit: null,
       cards: [
-        { id: "A", title: "A", dueDate: null, version: 0, labels: [] },
-        { id: "B", title: "B", dueDate: null, version: 0, labels: [] },
-        { id: "C", title: "C", dueDate: null, version: 0, labels: [] },
+        {
+          id: "A",
+          title: "A",
+          dueDate: null,
+          version: 0,
+          labels: [],
+          assignees: [],
+        },
+        {
+          id: "B",
+          title: "B",
+          dueDate: null,
+          version: 0,
+          labels: [],
+          assignees: [],
+        },
+        {
+          id: "C",
+          title: "C",
+          dueDate: null,
+          version: 0,
+          labels: [],
+          assignees: [],
+        },
       ],
     },
     {
       id: "L2",
       title: "Doing",
       wipLimit: null,
-      cards: [{ id: "D", title: "D", dueDate: null, version: 0, labels: [] }],
+      cards: [
+        {
+          id: "D",
+          title: "D",
+          dueDate: null,
+          version: 0,
+          labels: [],
+          assignees: [],
+        },
+      ],
     },
   ];
 }

@@ -6,6 +6,7 @@ import { removeCard, saveCard } from "./actions";
 import { BoardClient, type ClientList } from "./BoardClient";
 import { CommentsPanel } from "./CommentsPanel";
 import { LabelsPicker } from "./LabelsPicker";
+import { AssigneesPicker } from "./AssigneesPicker";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
 export async function generateMetadata({
@@ -71,6 +72,18 @@ export default async function BoardPage({
                   },
                 },
               },
+              assignees: {
+                select: {
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                      image: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -96,6 +109,12 @@ export default async function BoardPage({
         id: cl.label.id,
         name: cl.label.name,
         color: cl.label.color,
+      })),
+      assignees: c.assignees.map((a) => ({
+        userId: a.user.id,
+        name: a.user.name,
+        email: a.user.email,
+        image: a.user.image,
       })),
     })),
   }));
@@ -199,6 +218,13 @@ async function CardModal({
       cardLabels: {
         select: {
           label: { select: { id: true, name: true, color: true } },
+        },
+      },
+      assignees: {
+        select: {
+          user: {
+            select: { id: true, name: true, email: true, image: true },
+          },
         },
       },
     },
@@ -327,6 +353,18 @@ async function CardModal({
         initialSelected={card.cardLabels.map((cl) => cl.label)}
         canEdit={canWrite}
         canCurate={canModerate}
+      />
+
+      <AssigneesPicker
+        cardId={cardId}
+        workspaceId={card.list.board.workspaceId}
+        initialSelected={card.assignees.map((a) => ({
+          userId: a.user.id,
+          name: a.user.name,
+          email: a.user.email,
+          image: a.user.image,
+        }))}
+        canEdit={canWrite}
       />
 
       <CommentsPanel

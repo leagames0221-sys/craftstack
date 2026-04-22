@@ -4,12 +4,20 @@ export type ClientLabel = {
   color: string;
 };
 
+export type ClientAssignee = {
+  userId: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+};
+
 export type ClientCard = {
   id: string;
   title: string;
   dueDate: string | null;
   version: number;
   labels: ClientLabel[];
+  assignees: ClientAssignee[];
 };
 
 export type ClientList = {

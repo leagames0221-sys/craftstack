@@ -76,6 +76,7 @@ craftstack/
 - **Activity log**: audit feed per workspace (card/list/comment create/update/move/delete) with cursor pagination, human-readable summaries, best-effort logging (log insert failure never aborts the business mutation)
 - **Labels**: workspace-scoped color-coded labels (ADMIN-curated palette), full-replace attach API with cross-workspace guard, dots on board cards + inline picker on the card modal
 - **@mentions + Notifications bell**: comment body is scanned for `@handle` tokens (email-local-part or display-name match against workspace members), Mention rows + per-user Notification rows are written, header bell polls `/api/notifications` every 30s and shows an unread badge with a deep-link dropdown
+- **Card assignees**: full-replace PUT with membership guard (cross-workspace assigns rejected), avatar stack on board cards with +N overflow, modal picker listing workspace members, newly-added assignees get an ASSIGNED notification (self-assigns silent)
 
 ### Planned (see [Roadmap](#roadmap))
 
