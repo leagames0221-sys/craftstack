@@ -45,10 +45,17 @@ type Props = {
   slug: string;
   boardId: string;
   canWrite: boolean;
+  canCurate: boolean;
   initialLists: ClientList[];
 };
 
-export function BoardClient({ slug, boardId, canWrite, initialLists }: Props) {
+export function BoardClient({
+  slug,
+  boardId,
+  canWrite,
+  canCurate,
+  initialLists,
+}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -321,6 +328,7 @@ export function BoardClient({ slug, boardId, canWrite, initialLists }: Props) {
                 slug={slug}
                 boardId={boardId}
                 canWrite={canWrite}
+                canCurate={canCurate}
               />
             ))}
             {canWrite ? <AddListColumn slug={slug} boardId={boardId} /> : null}
@@ -358,6 +366,85 @@ export function BoardClient({ slug, boardId, canWrite, initialLists }: Props) {
         </div>
       ) : null}
     </>
+  );
+}
+
+function WipLimitEditor({
+  listId,
+  current,
+}: {
+  listId: string;
+  current: number | null;
+}) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(current?.toString() ?? "");
+  const [busy, setBusy] = useState(false);
+
+  const save = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const trimmed = value.trim();
+    const parsed = trimmed === "" ? null : Number(trimmed);
+    if (parsed !== null && (!Number.isInteger(parsed) || parsed < 1)) return;
+    setBusy(true);
+    try {
+      const res = await fetch(`/api/lists/${listId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ wipLimit: parsed }),
+      });
+      if (res.ok) {
+        setEditing(false);
+        router.refresh();
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setValue(current?.toString() ?? "");
+          setEditing(true);
+        }}
+        className="text-[10px] text-neutral-500 hover:text-neutral-300"
+        title="Set WIP limit"
+        aria-label="Set WIP limit"
+      >
+        ⚙
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={save} className="flex items-center gap-1">
+      <input
+        type="number"
+        min={1}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="∞"
+        className="h-5 w-12 rounded border border-neutral-700 bg-neutral-900 px-1 text-[10px] text-neutral-100 focus:border-indigo-400 focus:outline-none"
+        autoFocus
+      />
+      <button
+        type="submit"
+        disabled={busy}
+        className="text-[10px] text-indigo-300 hover:text-indigo-200 disabled:text-neutral-600"
+      >
+        save
+      </button>
+      <button
+        type="button"
+        onClick={() => setEditing(false)}
+        className="text-[10px] text-neutral-500 hover:text-neutral-300"
+      >
+        ✕
+      </button>
+    </form>
   );
 }
 
@@ -482,21 +569,51 @@ function ListColumn({
   slug,
   boardId,
   canWrite,
+  canCurate,
 }: {
   list: ClientList;
   slug: string;
   boardId: string;
   canWrite: boolean;
+  canCurate: boolean;
 }) {
   const cardIds = list.cards.map((c) => c.id);
+  const overLimit = list.wipLimit !== null && list.cards.length > list.wipLimit;
+  const atLimit = list.wipLimit !== null && list.cards.length === list.wipLimit;
   return (
-    <li className="min-w-[300px] max-w-[300px] rounded-2xl bg-neutral-900 border border-neutral-800 p-3 flex flex-col">
+    <li
+      className={`min-w-[300px] max-w-[300px] rounded-2xl bg-neutral-900 border p-3 flex flex-col transition ${
+        overLimit
+          ? "border-red-500/50 ring-1 ring-red-500/30"
+          : atLimit
+            ? "border-amber-500/40"
+            : "border-neutral-800"
+      }`}
+    >
       <div className="mb-2 flex items-center justify-between px-1">
         <h3 className="text-sm font-semibold">{list.title}</h3>
-        <span className="text-[10px] text-neutral-500">
-          {list.cards.length}
-          {list.wipLimit ? `/${list.wipLimit}` : ""}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={`text-[10px] ${
+              overLimit
+                ? "text-red-300 font-medium"
+                : atLimit
+                  ? "text-amber-300"
+                  : "text-neutral-500"
+            }`}
+            title={
+              overLimit
+                ? `Over WIP limit (${list.cards.length} of ${list.wipLimit})`
+                : undefined
+            }
+          >
+            {list.cards.length}
+            {list.wipLimit ? `/${list.wipLimit}` : ""}
+          </span>
+          {canCurate ? (
+            <WipLimitEditor listId={list.id} current={list.wipLimit} />
+          ) : null}
+        </div>
       </div>
 
       <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>

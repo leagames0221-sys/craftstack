@@ -155,6 +155,7 @@ export default async function BoardPage({
         slug={slug}
         boardId={boardId}
         canWrite={canWrite}
+        canCurate={role === "OWNER" || role === "ADMIN"}
         initialLists={initialLists}
       />
 

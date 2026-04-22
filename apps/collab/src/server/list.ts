@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { roleAtLeast } from "@/auth/rbac";
-import { ForbiddenError, NotFoundError } from "@/lib/errors";
+import { BadRequestError, ForbiddenError, NotFoundError } from "@/lib/errors";
 import { between, first, last } from "@/lib/lexorank";
 import { broadcastBoard } from "@/lib/pusher";
 import { logActivity } from "./activity";
@@ -67,18 +67,63 @@ export async function createList(
 }
 
 /**
- * Rename a list (EDITOR+).
+ * Rename a list (EDITOR+). Retained for callers that only change the title.
  */
 export async function renameList(
   userId: string,
   listId: string,
   title: string,
 ) {
-  const list = await assertListEditor(userId, listId);
+  return updateList(userId, listId, { title });
+}
+
+/**
+ * Update a list's title and/or WIP limit.
+ *   - title: EDITOR+ may change
+ *   - wipLimit: ADMIN+ only (workflow policy, not a routine edit)
+ *
+ * A single atomic update plus one activity log entry summarizing whichever
+ * fields changed. Passing no fields is a 400 — silent no-ops hide bugs.
+ */
+export async function updateList(
+  userId: string,
+  listId: string,
+  input: { title?: string; wipLimit?: number | null },
+): Promise<{ id: string; title: string; wipLimit: number | null }> {
+  const data: { title?: string; wipLimit?: number | null } = {};
+  if (input.title !== undefined) {
+    const title = input.title.trim();
+    if (!title || title.length > 120) {
+      throw new BadRequestError("Invalid title", {
+        fieldErrors: { title: "must be 1-120 characters" },
+      });
+    }
+    data.title = title;
+  }
+  if (input.wipLimit !== undefined) {
+    if (input.wipLimit !== null) {
+      if (!Number.isInteger(input.wipLimit) || input.wipLimit < 1) {
+        throw new BadRequestError("Invalid wipLimit", {
+          fieldErrors: { wipLimit: "must be a positive integer or null" },
+        });
+      }
+    }
+    data.wipLimit = input.wipLimit;
+  }
+  if (Object.keys(data).length === 0) {
+    throw new BadRequestError("Nothing to update");
+  }
+
+  // wipLimit changes are a workflow policy decision, not a routine edit;
+  // gate them at ADMIN. Title-only edits stay at EDITOR+.
+  const required: "EDITOR" | "ADMIN" =
+    input.wipLimit !== undefined ? "ADMIN" : "EDITOR";
+  const list = await assertListRole(userId, listId, required);
+
   const result = await prisma.list.update({
     where: { id: listId },
-    data: { title },
-    select: { id: true, title: true },
+    data,
+    select: { id: true, title: true, wipLimit: true },
   });
   await broadcastBoard(list.board.id, { kind: "list.updated", listId }, userId);
   await logActivity({
@@ -87,9 +132,17 @@ export async function renameList(
     action: "LIST_UPDATED",
     entityType: "List",
     entityId: listId,
-    payload: { title: result.title },
+    payload: {
+      title: result.title,
+      fields: Object.keys(data),
+      ...(data.wipLimit !== undefined ? { wipLimit: data.wipLimit } : {}),
+    },
   });
-  return result;
+  return {
+    id: result.id,
+    title: result.title,
+    wipLimit: result.wipLimit ?? null,
+  };
 }
 
 /**
@@ -113,7 +166,7 @@ async function assertListEditor(userId: string, listId: string) {
   return assertListRole(userId, listId, "EDITOR");
 }
 
-async function assertListRole(
+export async function assertListRole(
   userId: string,
   listId: string,
   required: "EDITOR" | "ADMIN" | "OWNER",
