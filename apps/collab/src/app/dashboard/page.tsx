@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { listWorkspacesForUser } from "@/server/workspace";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 export const metadata = {
   title: "Dashboard · Boardly",
@@ -22,6 +23,7 @@ export default async function DashboardPage() {
             <h1 className="text-lg font-semibold tracking-tight">Boardly</h1>
           </div>
           <div className="flex items-center gap-3 text-sm">
+            <NotificationsBell />
             <span className="text-neutral-400">{session.user.email}</span>
             <form
               action={async () => {

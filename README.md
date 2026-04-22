@@ -75,6 +75,7 @@ craftstack/
 - **Card comments**: thread per card with author + ADMIN-moderator deletion, soft-delete, 4000-char cap, Pusher fanout on create/delete
 - **Activity log**: audit feed per workspace (card/list/comment create/update/move/delete) with cursor pagination, human-readable summaries, best-effort logging (log insert failure never aborts the business mutation)
 - **Labels**: workspace-scoped color-coded labels (ADMIN-curated palette), full-replace attach API with cross-workspace guard, dots on board cards + inline picker on the card modal
+- **@mentions + Notifications bell**: comment body is scanned for `@handle` tokens (email-local-part or display-name match against workspace members), Mention rows + per-user Notification rows are written, header bell polls `/api/notifications` every 30s and shows an unread badge with a deep-link dropdown
 
 ### Planned (see [Roadmap](#roadmap))
 

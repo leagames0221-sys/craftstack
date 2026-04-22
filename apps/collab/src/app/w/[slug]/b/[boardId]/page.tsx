@@ -6,6 +6,7 @@ import { removeCard, saveCard } from "./actions";
 import { BoardClient, type ClientList } from "./BoardClient";
 import { CommentsPanel } from "./CommentsPanel";
 import { LabelsPicker } from "./LabelsPicker";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 export async function generateMetadata({
   params,
@@ -120,9 +121,12 @@ export default async function BoardPage({
               {board.title}
             </h1>
           </div>
-          <div className="flex items-center gap-2 text-xs text-neutral-500">
-            {board.lists.length} list{board.lists.length === 1 ? "" : "s"} ·
-            role {role}
+          <div className="flex items-center gap-3 text-xs text-neutral-500">
+            <span>
+              {board.lists.length} list{board.lists.length === 1 ? "" : "s"} ·
+              role {role}
+            </span>
+            <NotificationsBell />
           </div>
         </div>
       </header>

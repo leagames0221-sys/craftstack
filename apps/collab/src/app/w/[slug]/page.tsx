@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { loadWorkspaceForMember } from "@/server/workspace-detail";
 import { MembersSection } from "./MembersSection";
 import { ActivityFeed } from "./ActivityFeed";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 export async function generateMetadata({
   params,
@@ -47,6 +48,7 @@ export default async function WorkspacePage({
             </div>
           </div>
           <div className="flex items-center gap-3 text-sm">
+            <NotificationsBell />
             <Link
               href="/dashboard"
               className="text-neutral-400 hover:text-neutral-200"
