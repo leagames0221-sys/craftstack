@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { addCard, addList, removeCard, saveCard } from "./actions";
+import { removeCard, saveCard } from "./actions";
+import { BoardClient, type ClientList } from "./BoardClient";
 
 export async function generateMetadata({
   params,
@@ -67,6 +68,18 @@ export default async function BoardPage({
   const role = board.workspace.memberships[0]?.role ?? "VIEWER";
   const canWrite = role === "OWNER" || role === "ADMIN" || role === "EDITOR";
 
+  const initialLists: ClientList[] = board.lists.map((l) => ({
+    id: l.id,
+    title: l.title,
+    wipLimit: l.wipLimit ?? null,
+    cards: l.cards.map((c) => ({
+      id: c.id,
+      title: c.title,
+      dueDate: c.dueDate ? c.dueDate.toISOString() : null,
+      version: c.version,
+    })),
+  }));
+
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
       <header
@@ -95,112 +108,12 @@ export default async function BoardPage({
         </div>
       </header>
 
-      <div className="mx-auto max-w-full px-6 py-6 overflow-x-auto">
-        <ol className="flex gap-4 items-start min-h-[70vh]">
-          {board.lists.map((l) => (
-            <li
-              key={l.id}
-              className="min-w-[300px] max-w-[300px] rounded-2xl bg-neutral-900 border border-neutral-800 p-3 flex flex-col"
-            >
-              <div className="mb-2 flex items-center justify-between px-1">
-                <h3 className="text-sm font-semibold">{l.title}</h3>
-                <span className="text-[10px] text-neutral-500">
-                  {l.cards.length}
-                  {l.wipLimit ? `/${l.wipLimit}` : ""}
-                </span>
-              </div>
-
-              <ul className="space-y-2 flex-1">
-                {l.cards.map((c) => (
-                  <li key={c.id}>
-                    <Link
-                      href={`/w/${slug}/b/${boardId}?card=${c.id}`}
-                      className="block rounded-lg bg-neutral-800/60 border border-neutral-700/70 px-3 py-2 text-sm hover:bg-neutral-800 hover:border-neutral-600 transition"
-                    >
-                      <div className="font-medium">{c.title}</div>
-                      {c.dueDate && (
-                        <div className="mt-1 text-[10px] text-neutral-500">
-                          due {new Date(c.dueDate).toISOString().slice(0, 10)}
-                        </div>
-                      )}
-                    </Link>
-                  </li>
-                ))}
-                {l.cards.length === 0 && (
-                  <li className="px-3 py-2 text-xs text-neutral-500">
-                    No cards yet.
-                  </li>
-                )}
-              </ul>
-
-              {canWrite && (
-                <form
-                  action={async (fd) => {
-                    "use server";
-                    await addCard(slug, boardId, l.id, fd);
-                  }}
-                  className="mt-3 flex items-center gap-2"
-                >
-                  <input
-                    type="text"
-                    name="title"
-                    required
-                    maxLength={200}
-                    placeholder="+ Add card"
-                    className="flex-1 rounded-md border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-xs text-neutral-100 placeholder-neutral-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-md bg-indigo-500 px-2.5 py-1.5 text-xs font-medium text-white hover:bg-indigo-400 transition"
-                  >
-                    Add
-                  </button>
-                </form>
-              )}
-            </li>
-          ))}
-
-          {canWrite && (
-            <li className="min-w-[300px] max-w-[300px] rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/40 p-3">
-              <form
-                action={async (fd) => {
-                  "use server";
-                  await addList(slug, boardId, fd);
-                }}
-                className="flex flex-col gap-2"
-              >
-                <label
-                  htmlFor="new-list-title"
-                  className="text-xs font-medium text-neutral-400"
-                >
-                  Add a list
-                </label>
-                <input
-                  id="new-list-title"
-                  type="text"
-                  name="title"
-                  required
-                  maxLength={120}
-                  placeholder="List title"
-                  className="rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 placeholder-neutral-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                />
-                <button
-                  type="submit"
-                  className="rounded-md bg-indigo-500 px-3 py-2 text-xs font-medium text-white hover:bg-indigo-400 transition"
-                >
-                  Create list
-                </button>
-              </form>
-            </li>
-          )}
-
-          {board.lists.length === 0 && !canWrite && (
-            <li className="rounded-2xl border border-dashed border-neutral-800 bg-neutral-900/40 px-6 py-16 text-center text-neutral-300">
-              No lists yet — ask an Editor to create one.
-            </li>
-          )}
-        </ol>
-      </div>
+      <BoardClient
+        slug={slug}
+        boardId={boardId}
+        canWrite={canWrite}
+        initialLists={initialLists}
+      />
 
       {cardParam ? (
         <CardModal

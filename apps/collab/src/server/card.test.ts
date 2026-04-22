@@ -69,7 +69,12 @@ describe("updateCard optimistic lock", () => {
   it("bumps version when supplied version matches", async () => {
     cardFindUnique.mockResolvedValueOnce(baseCard("EDITOR"));
     cardUpdateMany.mockResolvedValueOnce({ count: 1 });
-    cardFindUniqueOrThrow.mockResolvedValueOnce({ id: "c1", version: 2 });
+    cardFindUniqueOrThrow.mockResolvedValueOnce({
+      id: "c1",
+      version: 2,
+      listId: "l1",
+      list: { boardId: "b1" },
+    });
 
     const out = await updateCard("u1", "c1", {
       version: 1,
@@ -101,7 +106,12 @@ describe("updateCard optimistic lock", () => {
   it("OWNER can also update", async () => {
     cardFindUnique.mockResolvedValueOnce(baseCard("OWNER"));
     cardUpdateMany.mockResolvedValueOnce({ count: 1 });
-    cardFindUniqueOrThrow.mockResolvedValueOnce({ id: "c1", version: 2 });
+    cardFindUniqueOrThrow.mockResolvedValueOnce({
+      id: "c1",
+      version: 2,
+      listId: "l1",
+      list: { boardId: "b1" },
+    });
 
     await expect(
       updateCard("u1", "c1", { version: 1, title: "owner edit" }),

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { roleAtLeast } from "@/auth/rbac";
 import { ForbiddenError, NotFoundError } from "@/lib/errors";
 import { between, first, last } from "@/lib/lexorank";
+import { broadcastBoard } from "@/lib/pusher";
 
 /**
  * Create a list at the bottom of the given board.
@@ -40,7 +41,7 @@ export async function createList(
   const prevTail = board.lists[0]?.position;
   const position = prevTail ? between(prevTail, null) : first();
 
-  return prisma.list.create({
+  const list = await prisma.list.create({
     data: {
       boardId,
       title: input.title,
@@ -48,6 +49,12 @@ export async function createList(
     },
     select: { id: true, boardId: true, title: true, position: true },
   });
+  await broadcastBoard(
+    boardId,
+    { kind: "list.created", listId: list.id },
+    userId,
+  );
+  return list;
 }
 
 /**
@@ -58,24 +65,27 @@ export async function renameList(
   listId: string,
   title: string,
 ) {
-  await assertListEditor(userId, listId);
-  return prisma.list.update({
+  const list = await assertListEditor(userId, listId);
+  const result = await prisma.list.update({
     where: { id: listId },
     data: { title },
     select: { id: true, title: true },
   });
+  await broadcastBoard(list.board.id, { kind: "list.updated", listId }, userId);
+  return result;
 }
 
 /**
  * Delete a list (ADMIN+ for safety: losing all cards in that list).
  */
 export async function deleteList(userId: string, listId: string) {
-  await assertListRole(userId, listId, "ADMIN");
+  const list = await assertListRole(userId, listId, "ADMIN");
   await prisma.list.delete({ where: { id: listId } });
+  await broadcastBoard(list.board.id, { kind: "list.deleted", listId }, userId);
 }
 
 async function assertListEditor(userId: string, listId: string) {
-  await assertListRole(userId, listId, "EDITOR");
+  return assertListRole(userId, listId, "EDITOR");
 }
 
 async function assertListRole(

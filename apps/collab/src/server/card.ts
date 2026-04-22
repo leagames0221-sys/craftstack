@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { roleAtLeast } from "@/auth/rbac";
 import { ConflictError, ForbiddenError, NotFoundError } from "@/lib/errors";
 import { between, first } from "@/lib/lexorank";
+import { broadcastBoard } from "@/lib/pusher";
 
 /**
  * Create a card at the end of the given list.
@@ -40,7 +41,7 @@ export async function createCard(
   const prevTail = list.cards[0]?.position;
   const position = prevTail ? between(prevTail, null) : first();
 
-  return prisma.card.create({
+  const card = await prisma.card.create({
     data: {
       listId,
       title: input.title,
@@ -56,6 +57,12 @@ export async function createCard(
       version: true,
     },
   });
+  await broadcastBoard(
+    list.board.id,
+    { kind: "card.created", listId, cardId: card.id },
+    userId,
+  );
+  return card;
 }
 
 /**
@@ -97,7 +104,18 @@ export async function updateCard(
     });
   }
 
-  return await prisma.card.findUniqueOrThrow({ where: { id: cardId } });
+  const updated = await prisma.card.findUniqueOrThrow({
+    where: { id: cardId },
+    include: { list: { select: { boardId: true } } },
+  });
+  await broadcastBoard(
+    updated.list.boardId,
+    { kind: "card.updated", listId: updated.listId, cardId: updated.id },
+    userId,
+  );
+  const { list: _list, ...rest } = updated;
+  void _list;
+  return rest;
 }
 
 /**
@@ -170,15 +188,36 @@ export async function moveCard(
     });
   }
 
-  return await prisma.card.findUniqueOrThrow({ where: { id: cardId } });
+  const fresh = await prisma.card.findUniqueOrThrow({
+    where: { id: cardId },
+    include: { list: { select: { boardId: true } } },
+  });
+  await broadcastBoard(
+    fresh.list.boardId,
+    {
+      kind: "card.moved",
+      fromListId: current.listId,
+      toListId: fresh.listId,
+      cardId,
+    },
+    userId,
+  );
+  const { list: _list, ...rest } = fresh;
+  void _list;
+  return rest;
 }
 
 /**
  * Delete a card (EDITOR+).
  */
 export async function deleteCard(userId: string, cardId: string) {
-  await assertCardRole(userId, cardId, "EDITOR");
+  const card = await assertCardRole(userId, cardId, "EDITOR");
   await prisma.card.delete({ where: { id: cardId } });
+  await broadcastBoard(
+    card.list.board.id,
+    { kind: "card.deleted", cardId },
+    userId,
+  );
 }
 
 async function assertCardRole(
@@ -212,4 +251,5 @@ async function assertCardRole(
   if (!role || !roleAtLeast(role, required)) {
     throw new ForbiddenError("CARD_OP_DENIED");
   }
+  return card;
 }

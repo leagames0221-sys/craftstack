@@ -7,7 +7,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)](https://www.typescriptlang.org)
 
-> Full-stack portfolio monorepo — **Boardly** (realtime collaborative kanban) + **Knowlex** (multi-tenant AI knowledge SaaS).
+> Full-stack portfolio monorepo — **Boardly** (realtime collaborative kanban with drag-and-drop) + **Knowlex** (multi-tenant AI knowledge SaaS).
 
 Two production-grade SaaS applications designed and built from schema to deploy, as a solo developer, to demonstrate full-stack × from-scratch engineering capability.
 
@@ -19,14 +19,14 @@ Sign in to reach the authenticated dashboard. Workspace + board creation flows a
 
 > **Reviewers**: **Continue with GitHub** is the recommended button — it works for any GitHub account out of the box. The Google OAuth app is still in Google's "Testing" status, so Google sign-in will only succeed for email addresses already registered as test users inside the Google Cloud consent screen. Publishing the Google app requires verification review and is deferred until the app is feature-complete.
 
-Realtime editing (Socket.IO), invitations, attachments, and the Knowlex RAG experience land in later milestones — see the roadmap below.
+Invitations, attachments, and the Knowlex RAG experience land in later milestones — see the roadmap below.
 
 ## Apps
 
-| App                           | Description                               | Tech highlights                                                                                                        | Status               |
-| ----------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------- |
-| [**Boardly**](apps/collab)    | Collaborative kanban (realtime in v0.2.0) | Next.js 16 · Auth.js v5 · Prisma 7 · PostgreSQL · LexoRank (planned) · Optimistic lock (planned) · Socket.IO (planned) | v0.1.0 — live deploy |
-| [**Knowlex**](apps/knowledge) | Multi-tenant AI knowledge retrieval SaaS  | Next.js 16 · pgvector · BullMQ · Gemini API · Cohere Rerank · RLS · HyDE · Faithfulness check (all planned)            | Schema ready         |
+| App                           | Description                                                 | Tech highlights                                                                                             | Status               |
+| ----------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------- |
+| [**Boardly**](apps/collab)    | Collaborative kanban with drag-and-drop and realtime fanout | Next.js 16 · Auth.js v5 · Prisma 7 · PostgreSQL · LexoRank · Optimistic lock · `@dnd-kit` · Pusher Channels | v0.1.0 — live deploy |
+| [**Knowlex**](apps/knowledge) | Multi-tenant AI knowledge retrieval SaaS                    | Next.js 16 · pgvector · BullMQ · Gemini API · Cohere Rerank · RLS · HyDE · Faithfulness check (all planned) | Schema ready         |
 
 ## Monorepo layout
 
@@ -67,12 +67,13 @@ craftstack/
 - **Auth**: Auth.js v5 with JWT session strategy · Google + GitHub OAuth · PrismaAdapter
 - **Deploy**: Vercel Hobby · GitHub Actions CI (lint / typecheck / test / build)
 - **Security headers**: HSTS 2y · X-Frame-Options DENY · Referrer-Policy · Permissions-Policy
-- **Testing**: Vitest (40 cases) · Playwright scaffold · k6 scenario
+- **Testing**: Vitest (57 cases) · Playwright scaffold · k6 scenario
+- **Drag & drop**: `@dnd-kit` sortable cards with LexoRank positions + optimistic UI + `VERSION_MISMATCH` rollback
+- **Realtime**: Pusher Channels (free tier) — `board-<id>` fanout for card/list mutations; no-op locally when unconfigured
 
 ### Planned (see [Roadmap](#roadmap))
 
-- Realtime: Socket.IO + Redis Pub/Sub via Upstash (Tokyo)
-- Storage: Cloudflare R2 (S3-compatible, free tier)
+- Storage: Vercel Blob (free tier)
 - Observability: Sentry · Better Stack · UptimeRobot · pino · Web Vitals
 - AI (Knowlex): Gemini Flash · Cohere Rerank · HyDE · Faithfulness check · pgvector + BM25 hybrid
 - E2E + a11y + load: Playwright (10 scenarios) · axe-core · k6 (200 VU)
@@ -123,9 +124,10 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 - ✅ **Week 1–2** — Monorepo scaffolding, CI, Docker Compose
 - ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, Vitest (40 cases)
 - ✅ **Boardly v0.1.0** — Deployed to Vercel + Neon + Upstash; authenticated dashboard, workspace & board CRUD working
-- 🚧 **Week 4–5** — Invitation email flow, Card PATCH optimistic lock, DnD
-- 🚧 **Week 6** — Socket.IO realtime collaboration, presence, cursor sharing
-- ⏳ **Week 7–9** — Attachments (R2), search, notifications, multi-language, k6 load test
+- ✅ **Week 5** — Card/List CRUD with optimistic lock, editor modal, `@dnd-kit` drag-and-drop
+- ✅ **Week 6** — Pusher Channels realtime fanout (card/list mutations broadcast to peers on the same board)
+- 🚧 **Week 4 (follow-up)** — Resend invitation email flow, presence indicator
+- ⏳ **Week 7–9** — Attachments (Vercel Blob), search, notifications, multi-language, k6 load test
 - ⏳ **Week 9–16** — Knowlex: ingestion pipeline, hybrid search, RAG with Faithfulness gate
 - ⏳ **Week 17–18** — Demo videos, portfolio LP polish
 
