@@ -29,6 +29,42 @@ enum Theme {
   DARK
 }
 
+enum ActivityAction {
+  WORKSPACE_CREATED
+  WORKSPACE_UPDATED
+  WORKSPACE_DELETED
+  MEMBER_INVITED
+  MEMBER_JOINED
+  MEMBER_REMOVED
+  MEMBER_ROLE_CHANGED
+  BOARD_CREATED
+  BOARD_UPDATED
+  BOARD_ARCHIVED
+  BOARD_DELETED
+  LIST_CREATED
+  LIST_UPDATED
+  LIST_DELETED
+  CARD_CREATED
+  CARD_UPDATED
+  CARD_MOVED
+  CARD_DELETED
+  COMMENT_CREATED
+  COMMENT_DELETED
+  ATTACHMENT_ADDED
+  ATTACHMENT_DELETED
+  LABEL_CREATED
+  LABEL_UPDATED
+  LABEL_DELETED
+}
+
+enum NotificationType {
+  MENTION
+  ASSIGNED
+  DUE_SOON
+  INVITED
+  COMMENT_ON_CARD
+}
+
 // ============================================================
 //  Auth.js v5 adapter tables
 // ============================================================
@@ -86,11 +122,18 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts        Account[]
-  sessions        Session[]
-  memberships     Membership[]
-  ownedWorkspaces Workspace[]  @relation("WorkspaceOwner")
-  sentInvitations Invitation[] @relation("InvitationSender")
+  accounts                  Account[]
+  sessions                  Session[]
+  memberships               Membership[]
+  ownedWorkspaces           Workspace[]                @relation("WorkspaceOwner")
+  sentInvitations           Invitation[]               @relation("InvitationSender")
+  comments                  Comment[]
+  mentions                  Mention[]
+  activityLogs              ActivityLog[]
+  notifications             Notification[]
+  notificationSubscriptions NotificationSubscription[]
+  uploadedAttachments       Attachment[]
+  cardAssignees             CardAssignee[]
 
   @@index([email])
 }
@@ -106,9 +149,12 @@ model Workspace {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  owner       User         @relation("WorkspaceOwner", fields: [ownerId], references: [id])
-  memberships Membership[]
-  invitations Invitation[]
+  owner        User          @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  memberships  Membership[]
+  invitations  Invitation[]
+  boards       Board[]
+  labels       Label[]
+  activityLogs ActivityLog[]
 
   @@index([ownerId])
   @@index([deletedAt])
@@ -146,4 +192,206 @@ model Invitation {
   @@index([workspaceId, email])
   @@index([tokenHash])
   @@index([expiresAt])
+}
+
+// ============================================================
+//  Kanban: Board / List / Card
+// ============================================================
+
+model Board {
+  id          String    @id @default(cuid())
+  workspaceId String
+  title       String
+  color       String    @default("#6366F1")
+  icon        String?
+  archived    Boolean   @default(false)
+  position    String // LexoRank
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  lists     List[]
+
+  @@index([workspaceId, archived, position])
+}
+
+model List {
+  id        String   @id @default(cuid())
+  boardId   String
+  title     String
+  position  String // LexoRank
+  wipLimit  Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  cards Card[]
+
+  @@index([boardId, position])
+}
+
+model Card {
+  id          String    @id @default(cuid())
+  listId      String
+  title       String
+  description String?
+  dueDate     DateTime?
+  position    String // LexoRank
+  version     Int       @default(1) // optimistic lock
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  list        List           @relation(fields: [listId], references: [id], onDelete: Cascade)
+  comments    Comment[]
+  attachments Attachment[]
+  cardLabels  CardLabel[]
+  assignees   CardAssignee[]
+
+  @@index([listId, position])
+  @@index([dueDate])
+}
+
+// ============================================================
+//  Labels & Assignees (many-to-many)
+// ============================================================
+
+model Label {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String
+  color       String
+  createdAt   DateTime @default(now())
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  cardLabels CardLabel[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+model CardLabel {
+  cardId  String
+  labelId String
+
+  card  Card  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  label Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([cardId, labelId])
+  @@index([labelId])
+}
+
+model CardAssignee {
+  cardId     String
+  userId     String
+  assignedAt DateTime @default(now())
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([cardId, userId])
+  @@index([userId])
+}
+
+// ============================================================
+//  Comments / Mentions / Attachments
+// ============================================================
+
+model Comment {
+  id        String    @id @default(cuid())
+  cardId    String
+  authorId  String
+  parentId  String?
+  body      String
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  card     Card      @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  author   User      @relation(fields: [authorId], references: [id])
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies  Comment[] @relation("CommentReplies")
+  mentions Mention[]
+
+  @@index([cardId, createdAt])
+  @@index([authorId])
+}
+
+model Mention {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([userId])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  cardId     String
+  uploaderId String
+  fileName   String
+  r2Key      String   @unique
+  sizeBytes  Int
+  mimeType   String
+  createdAt  DateTime @default(now())
+
+  card     Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  uploader User @relation(fields: [uploaderId], references: [id])
+
+  @@index([cardId])
+  @@index([uploaderId])
+}
+
+// ============================================================
+//  ActivityLog / Notifications
+// ============================================================
+
+model ActivityLog {
+  id          String         @id @default(cuid())
+  workspaceId String
+  actorId     String?
+  action      ActivityAction
+  entityType  String
+  entityId    String
+  payload     Json
+  createdAt   DateTime       @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor     User?     @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt(sort: Desc)])
+  @@index([actorId])
+  @@index([entityType, entityId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  payload   Json
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt(sort: Desc)])
+}
+
+model NotificationSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
