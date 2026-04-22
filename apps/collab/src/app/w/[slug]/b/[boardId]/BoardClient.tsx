@@ -31,6 +31,7 @@ import { addCard, addList } from "./actions";
 import {
   applyLabelFilter,
   applyMove,
+  applyTitleSearch,
   dueStatus,
   findCardLocation,
   type ClientCard,
@@ -124,9 +125,22 @@ export function BoardClient({ slug, boardId, canWrite, initialLists }: Props) {
     return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
   }, [lists]);
 
+  const query = searchParams.get("q") ?? "";
+
   const visibleLists = useMemo(
-    () => applyLabelFilter(lists, activeLabelIds),
-    [lists, activeLabelIds],
+    () => applyTitleSearch(applyLabelFilter(lists, activeLabelIds), query),
+    [lists, activeLabelIds, query],
+  );
+
+  const setQuery = useCallback(
+    (next: string) => {
+      const qs = new URLSearchParams(searchParams.toString());
+      if (next.trim()) qs.set("q", next);
+      else qs.delete("q");
+      const s = qs.toString();
+      router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
   );
 
   const toggleLabelFilter = useCallback(
@@ -291,6 +305,7 @@ export function BoardClient({ slug, boardId, canWrite, initialLists }: Props) {
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
+        <SearchBar query={query} onChange={setQuery} />
         <FilterBar
           available={availableLabels}
           active={activeLabelIds}
@@ -343,6 +358,47 @@ export function BoardClient({ slug, boardId, canWrite, initialLists }: Props) {
         </div>
       ) : null}
     </>
+  );
+}
+
+function SearchBar({
+  query,
+  onChange,
+}: {
+  query: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="mx-auto max-w-full px-6 pt-4">
+      <div className="relative max-w-md">
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Search cards by title…"
+          className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 pl-8 text-sm text-neutral-100 placeholder-neutral-500 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          aria-label="Search cards"
+        />
+        <span
+          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500"
+          aria-hidden
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+        </span>
+      </div>
+    </div>
   );
 }
 

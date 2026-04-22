@@ -83,6 +83,24 @@ export function dueStatus(
   return "later";
 }
 
+/**
+ * Narrow every list's cards to those whose title contains `query` (case-
+ * insensitive substring match). Empty / whitespace-only query = passthrough.
+ * List structure is preserved so the board shape stays stable while the
+ * user types.
+ */
+export function applyTitleSearch(
+  lists: ClientList[],
+  query: string,
+): ClientList[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return lists;
+  return lists.map((l) => ({
+    ...l,
+    cards: l.cards.filter((c) => c.title.toLowerCase().includes(needle)),
+  }));
+}
+
 /** Locate `cardId` in a set of lists. Returns `null` if not found. */
 export function findCardLocation(
   lists: ClientList[],
