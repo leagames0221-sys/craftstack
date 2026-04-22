@@ -411,6 +411,18 @@ function SortableCard({
           if (isDragging) e.preventDefault();
         }}
       >
+        {card.labels.length > 0 ? (
+          <div className="mb-1.5 flex flex-wrap gap-1">
+            {card.labels.map((l) => (
+              <span
+                key={l.id}
+                title={l.name}
+                className="inline-block h-1.5 w-8 rounded-full"
+                style={{ backgroundColor: l.color }}
+              />
+            ))}
+          </div>
+        ) : null}
         <div className="font-medium">{card.title}</div>
         {card.dueDate ? (
           <div className="mt-1 text-[10px] text-neutral-500">

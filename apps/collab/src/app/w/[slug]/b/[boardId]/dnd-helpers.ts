@@ -1,8 +1,15 @@
+export type ClientLabel = {
+  id: string;
+  name: string;
+  color: string;
+};
+
 export type ClientCard = {
   id: string;
   title: string;
   dueDate: string | null;
   version: number;
+  labels: ClientLabel[];
 };
 
 export type ClientList = {

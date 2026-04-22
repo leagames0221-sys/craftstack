@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { removeCard, saveCard } from "./actions";
 import { BoardClient, type ClientList } from "./BoardClient";
 import { CommentsPanel } from "./CommentsPanel";
+import { LabelsPicker } from "./LabelsPicker";
 
 export async function generateMetadata({
   params,
@@ -57,7 +58,19 @@ export default async function BoardPage({
         include: {
           cards: {
             orderBy: { position: "asc" },
-            select: { id: true, title: true, dueDate: true, version: true },
+            select: {
+              id: true,
+              title: true,
+              dueDate: true,
+              version: true,
+              cardLabels: {
+                select: {
+                  label: {
+                    select: { id: true, name: true, color: true },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -78,6 +91,11 @@ export default async function BoardPage({
       title: c.title,
       dueDate: c.dueDate ? c.dueDate.toISOString() : null,
       version: c.version,
+      labels: c.cardLabels.map((cl) => ({
+        id: cl.label.id,
+        name: cl.label.name,
+        color: cl.label.color,
+      })),
     })),
   }));
 
@@ -168,7 +186,17 @@ async function CardModal({
       description: true,
       dueDate: true,
       version: true,
-      list: { select: { title: true } },
+      list: {
+        select: {
+          title: true,
+          board: { select: { workspaceId: true } },
+        },
+      },
+      cardLabels: {
+        select: {
+          label: { select: { id: true, name: true, color: true } },
+        },
+      },
     },
   });
 
@@ -288,6 +316,14 @@ async function CardModal({
           </div>
         </div>
       </form>
+
+      <LabelsPicker
+        cardId={cardId}
+        workspaceId={card.list.board.workspaceId}
+        initialSelected={card.cardLabels.map((cl) => cl.label)}
+        canEdit={canWrite}
+        canCurate={canModerate}
+      />
 
       <CommentsPanel
         cardId={cardId}

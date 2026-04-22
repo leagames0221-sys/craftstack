@@ -74,6 +74,7 @@ craftstack/
 - **Abuse defence**: Three-layer rate limits on invitation creation (global 1000/mo, per-workspace 50/day, per-user 20/day) — all env-override-able, 429 with specific error code on trip
 - **Card comments**: thread per card with author + ADMIN-moderator deletion, soft-delete, 4000-char cap, Pusher fanout on create/delete
 - **Activity log**: audit feed per workspace (card/list/comment create/update/move/delete) with cursor pagination, human-readable summaries, best-effort logging (log insert failure never aborts the business mutation)
+- **Labels**: workspace-scoped color-coded labels (ADMIN-curated palette), full-replace attach API with cross-workspace guard, dots on board cards + inline picker on the card modal
 
 ### Planned (see [Roadmap](#roadmap))
 
