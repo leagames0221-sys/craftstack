@@ -27,6 +27,26 @@ export type ClientList = {
   cards: ClientCard[];
 };
 
+/**
+ * Return a lists array with every card's `labels` optionally filtered to
+ * only those cards that match at least one of the supplied label ids
+ * (union semantics — closer to the mental model of "narrow to these
+ * topics"). Empty filter = passthrough. Card order within each list is
+ * preserved; list structure is preserved even when a list becomes empty,
+ * so the board shape stays stable while the user toggles filters.
+ */
+export function applyLabelFilter(
+  lists: ClientList[],
+  activeLabelIds: string[],
+): ClientList[] {
+  if (activeLabelIds.length === 0) return lists;
+  const active = new Set(activeLabelIds);
+  return lists.map((l) => ({
+    ...l,
+    cards: l.cards.filter((c) => c.labels.some((lb) => active.has(lb.id))),
+  }));
+}
+
 /** Locate `cardId` in a set of lists. Returns `null` if not found. */
 export function findCardLocation(
   lists: ClientList[],

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -29,9 +29,11 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { addCard, addList } from "./actions";
 import {
+  applyLabelFilter,
   applyMove,
   findCardLocation,
   type ClientCard,
+  type ClientLabel,
   type ClientList,
 } from "./dnd-helpers";
 
@@ -46,6 +48,8 @@ type Props = {
 
 export function BoardClient({ slug, boardId, canWrite, initialLists }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [lists, setLists] = useState<ClientList[]>(initialLists);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -101,6 +105,49 @@ export function BoardClient({ slug, boardId, canWrite, initialLists }: Props) {
     }
     return null;
   }, [activeCardId, lists]);
+
+  // URL-driven label filter: `?labels=id1,id2`. Using the URL as the source
+  // of truth makes filters shareable and survives refreshes.
+  const activeLabelIds = useMemo(() => {
+    const raw = searchParams.get("labels") ?? "";
+    return raw ? raw.split(",").filter(Boolean) : [];
+  }, [searchParams]);
+
+  const availableLabels = useMemo(() => {
+    const byId = new Map<string, ClientLabel>();
+    for (const l of lists) {
+      for (const c of l.cards) {
+        for (const lb of c.labels) if (!byId.has(lb.id)) byId.set(lb.id, lb);
+      }
+    }
+    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [lists]);
+
+  const visibleLists = useMemo(
+    () => applyLabelFilter(lists, activeLabelIds),
+    [lists, activeLabelIds],
+  );
+
+  const toggleLabelFilter = useCallback(
+    (labelId: string) => {
+      const next = new Set(activeLabelIds);
+      if (next.has(labelId)) next.delete(labelId);
+      else next.add(labelId);
+      const qs = new URLSearchParams(searchParams.toString());
+      if (next.size === 0) qs.delete("labels");
+      else qs.set("labels", [...next].join(","));
+      const s = qs.toString();
+      router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
+    },
+    [activeLabelIds, pathname, router, searchParams],
+  );
+
+  const clearLabelFilter = useCallback(() => {
+    const qs = new URLSearchParams(searchParams.toString());
+    qs.delete("labels");
+    const s = qs.toString();
+    router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
 
   const onDragStart = useCallback(
     (e: DragStartEvent) => {
@@ -243,9 +290,15 @@ export function BoardClient({ slug, boardId, canWrite, initialLists }: Props) {
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
       >
-        <div className="mx-auto max-w-full px-6 py-6 overflow-x-auto">
+        <FilterBar
+          available={availableLabels}
+          active={activeLabelIds}
+          onToggle={toggleLabelFilter}
+          onClear={clearLabelFilter}
+        />
+        <div className="mx-auto max-w-full px-6 pb-6 overflow-x-auto">
           <ol className="flex gap-4 items-start min-h-[70vh]">
-            {lists.map((l) => (
+            {visibleLists.map((l) => (
               <ListColumn
                 key={l.id}
                 list={l}
@@ -289,6 +342,59 @@ export function BoardClient({ slug, boardId, canWrite, initialLists }: Props) {
         </div>
       ) : null}
     </>
+  );
+}
+
+function FilterBar({
+  available,
+  active,
+  onToggle,
+  onClear,
+}: {
+  available: ClientLabel[];
+  active: string[];
+  onToggle: (id: string) => void;
+  onClear: () => void;
+}) {
+  if (available.length === 0) return null;
+  const activeSet = new Set(active);
+  return (
+    <div className="mx-auto max-w-full px-6 pt-4 pb-2 flex flex-wrap items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-wider text-neutral-500 mr-1">
+        Filter by label
+      </span>
+      {available.map((l) => {
+        const on = activeSet.has(l.id);
+        return (
+          <button
+            key={l.id}
+            type="button"
+            onClick={() => onToggle(l.id)}
+            aria-pressed={on}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] transition ${
+              on
+                ? "border-indigo-400 bg-indigo-500/20 text-indigo-100"
+                : "border-neutral-700 bg-neutral-900 text-neutral-300 hover:bg-neutral-800"
+            }`}
+          >
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: l.color }}
+            />
+            {l.name}
+          </button>
+        );
+      })}
+      {active.length > 0 ? (
+        <button
+          type="button"
+          onClick={onClear}
+          className="ml-1 text-[11px] text-neutral-400 hover:text-neutral-200"
+        >
+          Clear
+        </button>
+      ) : null}
+    </div>
   );
 }
 
