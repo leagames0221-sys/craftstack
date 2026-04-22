@@ -1,5 +1,12 @@
 # craftstack
 
+[![CI](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml/badge.svg)](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Node](https://img.shields.io/badge/node-20-brightgreen)](./.nvmrc)
+[![pnpm](https://img.shields.io/badge/pnpm-9.15-F69220)](./package.json)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)](https://www.typescriptlang.org)
+
 > Full-stack portfolio monorepo — **Boardly** (realtime collaborative kanban) + **Knowlex** (multi-tenant AI knowledge SaaS).
 
 Two production-grade SaaS applications designed and built from schema to deploy, as a solo developer, to demonstrate full-stack × from-scratch engineering capability.
@@ -66,7 +73,7 @@ All production services are run within free-tier quotas (target: **$0/month**).
 ### Boot
 
 ```bash
-git clone https://github.com/<owner>/craftstack.git
+git clone https://github.com/leagames0221-sys/craftstack.git
 cd craftstack
 cp .env.example .env
 docker compose up -d          # Postgres + Redis
