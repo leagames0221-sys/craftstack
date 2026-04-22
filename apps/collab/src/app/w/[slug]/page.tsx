@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { loadWorkspaceForMember } from "@/server/workspace-detail";
+import { MembersSection } from "./MembersSection";
 
 export async function generateMetadata({
   params,
@@ -108,53 +109,19 @@ export default async function WorkspacePage({
           </ul>
         )}
 
-        <section className="mt-12">
-          <h2 className="text-2xl font-bold tracking-tight">Members</h2>
-          <p className="mt-1 text-sm text-neutral-400">
-            {ws.members.length} member{ws.members.length === 1 ? "" : "s"} ·
-            your role: <RoleBadge role={ws.role} />
-          </p>
-          <ul className="mt-4 divide-y divide-neutral-800 rounded-2xl border border-neutral-800 bg-neutral-900">
-            {ws.members.map((m) => (
-              <li
-                key={m.userId}
-                className="flex items-center justify-between px-5 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-neutral-800 flex items-center justify-center text-xs text-neutral-400">
-                    {(m.name ?? m.email).charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">
-                      {m.name ?? m.email}
-                    </div>
-                    <div className="text-xs text-neutral-500">{m.email}</div>
-                  </div>
-                </div>
-                <RoleBadge role={m.role} />
-              </li>
-            ))}
-          </ul>
-        </section>
+        <MembersSection
+          workspaceId={ws.id}
+          canInvite={ws.role === "OWNER" || ws.role === "ADMIN"}
+          members={ws.members.map((m) => ({
+            userId: m.userId,
+            email: m.email,
+            name: m.name,
+            role: m.role,
+          }))}
+          invitations={ws.pendingInvitations}
+          myRole={ws.role}
+        />
       </div>
     </main>
-  );
-}
-
-function RoleBadge({ role }: { role: string }) {
-  const styles: Record<string, string> = {
-    OWNER: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    ADMIN: "bg-violet-500/10 text-violet-300 border-violet-500/30",
-    EDITOR: "bg-sky-500/10 text-sky-300 border-sky-500/30",
-    VIEWER: "bg-neutral-500/10 text-neutral-300 border-neutral-500/30",
-  };
-  return (
-    <span
-      className={`rounded-md border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
-        styles[role] ?? styles.VIEWER
-      }`}
-    >
-      {role}
-    </span>
   );
 }

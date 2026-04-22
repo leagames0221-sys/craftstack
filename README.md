@@ -70,6 +70,7 @@ craftstack/
 - **Testing**: Vitest (57 cases) · Playwright scaffold · k6 scenario
 - **Drag & drop**: `@dnd-kit` sortable cards with LexoRank positions + optimistic UI + `VERSION_MISMATCH` rollback
 - **Realtime**: Pusher Channels (free tier) — `board-<id>` fanout for card/list mutations; no-op locally when unconfigured
+- **Invitations**: Token-hashed invitation flow (ADMIN+ creates, accept page binds membership). Resend-backed email delivery with graceful fallback to console log when `RESEND_API_KEY` is unset
 
 ### Planned (see [Roadmap](#roadmap))
 
@@ -126,7 +127,8 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 - ✅ **Boardly v0.1.0** — Deployed to Vercel + Neon + Upstash; authenticated dashboard, workspace & board CRUD working
 - ✅ **Week 5** — Card/List CRUD with optimistic lock, editor modal, `@dnd-kit` drag-and-drop
 - ✅ **Week 6** — Pusher Channels realtime fanout (card/list mutations broadcast to peers on the same board)
-- 🚧 **Week 4 (follow-up)** — Resend invitation email flow, presence indicator
+- ✅ **Week 4** — Resend-backed workspace invitations with token-hashed accept flow (7-day expiry, revocable, email-matching enforcement)
+- 🚧 **Week 6 (follow-up)** — presence indicators, cursor sharing
 - ⏳ **Week 7–9** — Attachments (Vercel Blob), search, notifications, multi-language, k6 load test
 - ⏳ **Week 9–16** — Knowlex: ingestion pipeline, hybrid search, RAG with Faithfulness gate
 - ⏳ **Week 17–18** — Demo videos, portfolio LP polish

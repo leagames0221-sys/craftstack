@@ -21,6 +21,12 @@ export type WorkspaceDetail = {
     image: string | null;
     role: Role;
   }>;
+  pendingInvitations: Array<{
+    id: string;
+    email: string;
+    role: Role;
+    expiresAt: string;
+  }>;
 };
 
 /**
@@ -57,6 +63,20 @@ export async function loadWorkspaceForMember(
   if (!row) return null;
 
   const self = row.memberships.find((m) => m.userId === userId)!;
+  const canSeeInvitations = self.role === "OWNER" || self.role === "ADMIN";
+  const pendingInvitations = canSeeInvitations
+    ? await prisma.invitation.findMany({
+        where: {
+          workspaceId: row.id,
+          acceptedAt: null,
+          revokedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, email: true, role: true, expiresAt: true },
+      })
+    : [];
+
   return {
     id: row.id,
     name: row.name,
@@ -71,6 +91,12 @@ export async function loadWorkspaceForMember(
       name: m.user.name,
       image: m.user.image,
       role: m.role,
+    })),
+    pendingInvitations: pendingInvitations.map((i) => ({
+      id: i.id,
+      email: i.email,
+      role: i.role,
+      expiresAt: i.expiresAt.toISOString(),
     })),
   };
 }
