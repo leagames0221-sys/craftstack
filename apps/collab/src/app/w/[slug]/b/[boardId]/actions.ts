@@ -1,9 +1,10 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { ApiError } from "@/lib/errors";
-import { createCard, updateCard } from "@/server/card";
+import { createCard, deleteCard, updateCard } from "@/server/card";
 import { createList } from "@/server/list";
 
 /**
@@ -126,6 +127,83 @@ export async function renameCard(
         fieldErrors:
           (err.details?.fieldErrors as Record<string, string>) ?? undefined,
       };
+    }
+    throw err;
+  }
+}
+
+/**
+ * Save edits from the card modal (title + description).
+ * Redirects back to the board on success; re-renders the modal with an
+ * inline error on conflict so the user can reload and merge.
+ */
+export async function saveCard(
+  slug: string,
+  boardId: string,
+  cardId: string,
+  formData: FormData,
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user) redirect(`/signin?callbackUrl=/w/${slug}/b/${boardId}`);
+
+  const title = String(formData.get("title") ?? "").trim();
+  const descriptionRaw = String(formData.get("description") ?? "");
+  const description = descriptionRaw.length > 0 ? descriptionRaw : null;
+  const version = Number(formData.get("version"));
+
+  if (!title || !Number.isInteger(version)) {
+    const qs = new URLSearchParams({
+      card: cardId,
+      error: !title ? "Title is required" : "Missing version",
+    });
+    redirect(`/w/${slug}/b/${boardId}?${qs.toString()}`);
+  }
+
+  try {
+    await updateCard(session.user.id, cardId, {
+      version,
+      title,
+      description,
+    });
+    revalidatePath(`/w/${slug}/b/${boardId}`);
+    redirect(`/w/${slug}/b/${boardId}`);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      if (err.code === "VERSION_MISMATCH") {
+        const qs = new URLSearchParams({
+          card: cardId,
+          error:
+            "Someone else edited this card. Reload to see the latest version before saving.",
+        });
+        redirect(`/w/${slug}/b/${boardId}?${qs.toString()}`);
+      }
+      const qs = new URLSearchParams({
+        card: cardId,
+        error: err.message,
+      });
+      redirect(`/w/${slug}/b/${boardId}?${qs.toString()}`);
+    }
+    throw err;
+  }
+}
+
+/** Remove the card from the modal. */
+export async function removeCard(
+  slug: string,
+  boardId: string,
+  cardId: string,
+): Promise<void> {
+  const session = await auth();
+  if (!session?.user) redirect(`/signin?callbackUrl=/w/${slug}/b/${boardId}`);
+
+  try {
+    await deleteCard(session.user.id, cardId);
+    revalidatePath(`/w/${slug}/b/${boardId}`);
+    redirect(`/w/${slug}/b/${boardId}`);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      const qs = new URLSearchParams({ card: cardId, error: err.message });
+      redirect(`/w/${slug}/b/${boardId}?${qs.toString()}`);
     }
     throw err;
   }

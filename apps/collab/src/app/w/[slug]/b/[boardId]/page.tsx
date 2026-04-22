@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
-import { addCard, addList } from "./actions";
+import { addCard, addList, removeCard, saveCard } from "./actions";
 
 export async function generateMetadata({
   params,
@@ -19,11 +19,14 @@ export async function generateMetadata({
 
 export default async function BoardPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string; boardId: string }>;
+  searchParams: Promise<{ card?: string; error?: string }>;
 }) {
   const session = await auth();
   const { slug, boardId } = await params;
+  const { card: cardParam, error: errorParam } = await searchParams;
   if (!session?.user) {
     redirect(`/signin?callbackUrl=/w/${slug}/b/${boardId}`);
   }
@@ -109,16 +112,18 @@ export default async function BoardPage({
 
               <ul className="space-y-2 flex-1">
                 {l.cards.map((c) => (
-                  <li
-                    key={c.id}
-                    className="rounded-lg bg-neutral-800/60 border border-neutral-700/70 px-3 py-2 text-sm hover:bg-neutral-800 transition"
-                  >
-                    <div className="font-medium">{c.title}</div>
-                    {c.dueDate && (
-                      <div className="mt-1 text-[10px] text-neutral-500">
-                        due {new Date(c.dueDate).toISOString().slice(0, 10)}
-                      </div>
-                    )}
+                  <li key={c.id}>
+                    <Link
+                      href={`/w/${slug}/b/${boardId}?card=${c.id}`}
+                      className="block rounded-lg bg-neutral-800/60 border border-neutral-700/70 px-3 py-2 text-sm hover:bg-neutral-800 hover:border-neutral-600 transition"
+                    >
+                      <div className="font-medium">{c.title}</div>
+                      {c.dueDate && (
+                        <div className="mt-1 text-[10px] text-neutral-500">
+                          due {new Date(c.dueDate).toISOString().slice(0, 10)}
+                        </div>
+                      )}
+                    </Link>
                   </li>
                 ))}
                 {l.cards.length === 0 && (
@@ -196,6 +201,217 @@ export default async function BoardPage({
           )}
         </ol>
       </div>
+
+      {cardParam ? (
+        <CardModal
+          slug={slug}
+          boardId={boardId}
+          cardId={cardParam}
+          error={errorParam ?? null}
+          canWrite={canWrite}
+        />
+      ) : null}
     </main>
+  );
+}
+
+async function CardModal({
+  slug,
+  boardId,
+  cardId,
+  error,
+  canWrite,
+}: {
+  slug: string;
+  boardId: string;
+  cardId: string;
+  error: string | null;
+  canWrite: boolean;
+}) {
+  const card = await prisma.card.findFirst({
+    where: {
+      id: cardId,
+      list: {
+        board: {
+          id: boardId,
+          deletedAt: null,
+          workspace: {
+            slug,
+            deletedAt: null,
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      dueDate: true,
+      version: true,
+      list: { select: { title: true } },
+    },
+  });
+
+  if (!card) {
+    return (
+      <Overlay backHref={`/w/${slug}/b/${boardId}`}>
+        <div className="px-6 py-8 text-center text-sm text-neutral-400">
+          Card not found (it may have been deleted).{" "}
+          <Link
+            href={`/w/${slug}/b/${boardId}`}
+            className="underline text-neutral-200"
+          >
+            Close
+          </Link>
+        </div>
+      </Overlay>
+    );
+  }
+
+  return (
+    <Overlay backHref={`/w/${slug}/b/${boardId}`}>
+      <div className="px-6 py-5 border-b border-neutral-800 flex items-center justify-between">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-neutral-500">
+            in {card.list.title}
+          </p>
+          <h2 className="mt-1 text-lg font-semibold text-neutral-100">
+            Card detail
+          </h2>
+        </div>
+        <Link
+          href={`/w/${slug}/b/${boardId}`}
+          aria-label="Close card"
+          className="rounded-md border border-neutral-700 px-2 py-1 text-xs text-neutral-300 hover:bg-neutral-800 transition"
+        >
+          Close
+        </Link>
+      </div>
+
+      {error ? (
+        <div
+          role="alert"
+          className="mx-6 mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        >
+          {error}
+        </div>
+      ) : null}
+
+      <form
+        action={async (fd) => {
+          "use server";
+          await saveCard(slug, boardId, cardId, fd);
+        }}
+        className="px-6 py-5 space-y-4"
+      >
+        <input type="hidden" name="version" value={card.version} />
+
+        <div>
+          <label
+            htmlFor="card-title"
+            className="block text-xs font-medium text-neutral-400"
+          >
+            Title
+          </label>
+          <input
+            id="card-title"
+            type="text"
+            name="title"
+            required
+            maxLength={200}
+            defaultValue={card.title}
+            disabled={!canWrite}
+            className="mt-1 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-100 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:opacity-60"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="card-description"
+            className="block text-xs font-medium text-neutral-400"
+          >
+            Description
+          </label>
+          <textarea
+            id="card-description"
+            name="description"
+            rows={6}
+            defaultValue={card.description ?? ""}
+            disabled={!canWrite}
+            className="mt-1 w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:opacity-60"
+          />
+        </div>
+
+        <div className="flex items-center justify-between gap-2 pt-2">
+          <span className="text-[10px] text-neutral-600">
+            version {card.version}
+          </span>
+          <div className="flex items-center gap-2">
+            {canWrite ? (
+              <>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-indigo-500 px-4 py-2 text-xs font-medium text-white hover:bg-indigo-400 transition"
+                >
+                  Save
+                </button>
+              </>
+            ) : (
+              <span className="text-xs text-neutral-500">Read only</span>
+            )}
+            <Link
+              href={`/w/${slug}/b/${boardId}`}
+              className="rounded-lg border border-neutral-700 px-4 py-2 text-xs text-neutral-300 hover:bg-neutral-800 transition"
+            >
+              Cancel
+            </Link>
+          </div>
+        </div>
+      </form>
+
+      {canWrite ? (
+        <form
+          action={async () => {
+            "use server";
+            await removeCard(slug, boardId, cardId);
+          }}
+          className="px-6 pb-5 border-t border-neutral-800 pt-4"
+        >
+          <button
+            type="submit"
+            className="text-xs text-red-400 hover:text-red-300 transition"
+          >
+            Delete card
+          </button>
+        </form>
+      ) : null}
+    </Overlay>
+  );
+}
+
+function Overlay({
+  backHref,
+  children,
+}: {
+  backHref: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+      <Link
+        href={backHref}
+        aria-label="Dismiss modal"
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+      >
+        <div className="w-full max-w-xl rounded-2xl border border-neutral-800 bg-neutral-900 shadow-2xl pointer-events-auto max-h-[90vh] overflow-y-auto">
+          {children}
+        </div>
+      </div>
+    </>
   );
 }
