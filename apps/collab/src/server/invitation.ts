@@ -6,10 +6,59 @@ import {
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  RateLimitError,
 } from "@/lib/errors";
 import { hashToken, issueToken } from "@/lib/tokens";
+import { inviteLimits } from "@/lib/rate-limit";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const DAY_MS = 24 * 60 * 60 * 1000;
+const MONTH_MS = 30 * DAY_MS;
+
+/**
+ * Fan out three `createdAt` count queries (global / workspace / user) in
+ * parallel and raise the first `RateLimitError` whose quota is blown. We
+ * count the full `Invitation` table — including accepted and revoked rows —
+ * because an attacker could otherwise spam revokes to reset their quota.
+ */
+async function enforceInviteRateLimits(inviterId: string, workspaceId: string) {
+  const limits = inviteLimits();
+  const now = Date.now();
+  const monthAgo = new Date(now - MONTH_MS);
+  const dayAgo = new Date(now - DAY_MS);
+
+  const [globalCount, workspaceCount, userCount] = await Promise.all([
+    prisma.invitation.count({ where: { createdAt: { gte: monthAgo } } }),
+    prisma.invitation.count({
+      where: { workspaceId, createdAt: { gte: dayAgo } },
+    }),
+    prisma.invitation.count({
+      where: { inviterId, createdAt: { gte: dayAgo } },
+    }),
+  ]);
+
+  if (globalCount >= limits.globalPerMonth) {
+    throw new RateLimitError(
+      "RATE_LIMIT_GLOBAL",
+      "Monthly invitation cap reached for this instance. Try again later.",
+      { limit: limits.globalPerMonth, windowHours: 24 * 30 },
+    );
+  }
+  if (workspaceCount >= limits.perWorkspacePerDay) {
+    throw new RateLimitError(
+      "RATE_LIMIT_WORKSPACE",
+      "Daily invitation cap reached for this workspace.",
+      { limit: limits.perWorkspacePerDay, windowHours: 24 },
+    );
+  }
+  if (userCount >= limits.perUserPerDay) {
+    throw new RateLimitError(
+      "RATE_LIMIT_USER",
+      "You have sent too many invitations today. Try again tomorrow.",
+      { limit: limits.perUserPerDay, windowHours: 24 },
+    );
+  }
+}
 
 /**
  * Create an invitation. Returns the plaintext token exactly once so the caller
@@ -64,6 +113,8 @@ export async function createInvitation(
       "This user is already a member of the workspace.",
     );
   }
+
+  await enforceInviteRateLimits(inviterId, workspaceId);
 
   const activeInvite = await prisma.invitation.findFirst({
     where: {

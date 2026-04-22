@@ -58,3 +58,13 @@ export class BadRequestError extends ApiError {
     super(400, "BAD_REQUEST", message, details);
   }
 }
+
+export class RateLimitError extends ApiError {
+  constructor(
+    code: string,
+    message: string,
+    details?: Record<string, unknown>,
+  ) {
+    super(429, code, message, details);
+  }
+}
