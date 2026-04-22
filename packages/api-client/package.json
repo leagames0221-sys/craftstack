@@ -1,0 +1,17 @@
+{
+  "name": "@craftstack/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "generate:collab": "openapi-typescript ../../docs/api/collab-openapi.yaml -o ./src/collab.d.ts || echo 'no spec yet'",
+    "generate:knowledge": "openapi-typescript ../../docs/api/knowledge-openapi.yaml -o ./src/knowledge.d.ts || echo 'no spec yet'",
+    "generate": "pnpm generate:collab && pnpm generate:knowledge",
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}
