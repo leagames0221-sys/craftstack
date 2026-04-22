@@ -11,12 +11,18 @@
 
 Two production-grade SaaS applications designed and built from schema to deploy, as a solo developer, to demonstrate full-stack × from-scratch engineering capability.
 
+## 🌐 Live demo
+
+**Boardly**: <https://craftstack-collab.vercel.app>
+
+Sign in with Google or GitHub to reach the authenticated dashboard. The workspace and board creation flows are wired end-to-end against Neon Postgres (Singapore) and Upstash Redis (Tokyo). Realtime editing (Socket.IO) and Knowlex RAG land in later milestones — see the roadmap below.
+
 ## Apps
 
-| App                           | Description                              | Tech highlights                                                                               |
-| ----------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [**Boardly**](apps/collab)    | Realtime collaborative kanban board      | Next.js 15 · Socket.IO · Redis Pub/Sub · Prisma · PostgreSQL · LexoRank · Optimistic locking  |
-| [**Knowlex**](apps/knowledge) | Multi-tenant AI knowledge retrieval SaaS | Next.js 15 · pgvector · BullMQ · Gemini API · Cohere Rerank · RLS · HyDE · Faithfulness check |
+| App                           | Description                              | Tech highlights                                                                               | Status               |
+| ----------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------- |
+| [**Boardly**](apps/collab)    | Realtime collaborative kanban board      | Next.js 16 · Auth.js v5 · Prisma 7 · PostgreSQL · LexoRank · Optimistic locking · Socket.IO   | v0.1.0 — live deploy |
+| [**Knowlex**](apps/knowledge) | Multi-tenant AI knowledge retrieval SaaS | Next.js 16 · pgvector · BullMQ · Gemini API · Cohere Rerank · RLS · HyDE · Faithfulness check | Schema ready         |
 
 ## Monorepo layout
 
@@ -103,10 +109,14 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 
 ## Roadmap
 
-- **Week 1–2** — Monorepo scaffolding, CI, Docker Compose (**in progress**)
-- **Week 3–10** — Boardly implementation, deploy, first public release
-- **Week 9–16** — Knowlex implementation (shared foundation reused from Week 9), deploy
-- **Week 17–18** — README polishing, portfolio LP, demo videos, interview prep
+- ✅ **Week 1–2** — Monorepo scaffolding, CI, Docker Compose
+- ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, Vitest (40 cases)
+- ✅ **Boardly v0.1.0** — Deployed to Vercel + Neon + Upstash; authenticated dashboard, workspace & board CRUD working
+- 🚧 **Week 4–5** — Invitation email flow, Card PATCH optimistic lock, DnD
+- 🚧 **Week 6** — Socket.IO realtime collaboration, presence, cursor sharing
+- ⏳ **Week 7–9** — Attachments (R2), search, notifications, multi-language, k6 load test
+- ⏳ **Week 9–16** — Knowlex: ingestion pipeline, hybrid search, RAG with Faithfulness gate
+- ⏳ **Week 17–18** — Demo videos, portfolio LP polish
 
 ## License
 
