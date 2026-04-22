@@ -136,7 +136,7 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   name          String?
-  avatarUrl     String?
+  image         String?
   locale        String    @default("ja")
   theme         Theme     @default(SYSTEM)
   createdAt     DateTime  @default(now())

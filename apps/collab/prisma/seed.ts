@@ -26,7 +26,7 @@ async function main() {
     create: {
       email: "dev+owner@example.com",
       name: "Demo Owner",
-      avatarUrl: null,
+      image: null,
     },
   });
   const editor = await prisma.user.upsert({
@@ -35,7 +35,7 @@ async function main() {
     create: {
       email: "dev+editor@example.com",
       name: "Demo Editor",
-      avatarUrl: null,
+      image: null,
     },
   });
 

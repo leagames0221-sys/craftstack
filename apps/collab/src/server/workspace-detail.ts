@@ -18,7 +18,7 @@ export type WorkspaceDetail = {
     userId: string;
     email: string;
     name: string | null;
-    avatarUrl: string | null;
+    image: string | null;
     role: Role;
   }>;
 };
@@ -42,7 +42,7 @@ export async function loadWorkspaceForMember(
       memberships: {
         include: {
           user: {
-            select: { id: true, email: true, name: true, avatarUrl: true },
+            select: { id: true, email: true, name: true, image: true },
           },
         },
       },
@@ -69,7 +69,7 @@ export async function loadWorkspaceForMember(
       userId: m.user.id,
       email: m.user.email,
       name: m.user.name,
-      avatarUrl: m.user.avatarUrl,
+      image: m.user.image,
       role: m.role,
     })),
   };
