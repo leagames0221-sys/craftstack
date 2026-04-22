@@ -67,7 +67,7 @@ craftstack/
 - **Auth**: Auth.js v5 with JWT session strategy · Google + GitHub OAuth · PrismaAdapter
 - **Deploy**: Vercel Hobby · GitHub Actions CI (lint / typecheck / test / build)
 - **Security headers**: HSTS 2y · X-Frame-Options DENY · Referrer-Policy · Permissions-Policy
-- **Testing**: Vitest (57 cases) · Playwright scaffold · k6 scenario
+- **Testing**: Vitest (130 unit cases) · Playwright (11 smoke scenarios, run with `pnpm --filter collab test:e2e`) · k6 scenario
 - **Drag & drop**: `@dnd-kit` sortable cards with LexoRank positions + optimistic UI + `VERSION_MISMATCH` rollback
 - **Realtime**: Pusher Channels (free tier) — `board-<id>` fanout for card/list mutations; no-op locally when unconfigured
 - **Invitations**: Token-hashed invitation flow (ADMIN+ creates, accept page binds membership). Resend-backed email delivery with graceful fallback to console log when `RESEND_API_KEY` is unset
@@ -87,6 +87,26 @@ craftstack/
 - E2E + a11y + load: Playwright (10 scenarios) · axe-core · k6 (200 VU)
 
 All production services are targeted to run within free-tier quotas (**$0/month**).
+
+## How this was built
+
+This codebase is AI-assisted. Claude (Anthropic's Claude Code) was used as a pair-programmer for scaffolding, boilerplate, and tests; every architectural decision below was author-specified and author-reviewed before being committed. The author can whiteboard any of these patterns from scratch in an interview.
+
+**Non-obvious decisions made in this repo, with rationales:**
+
+- **Four-tier RBAC (OWNER > ADMIN > EDITOR > VIEWER)** with a single `roleAtLeast` comparator driving every server check. Chosen over boolean flags so the model scales to per-feature gates (labels ADMIN+, comments EDITOR+, activity VIEWER+) without schema churn.
+- **Optimistic locking via `version` column** on Card. `updateMany` filters by `id + version`, 0 rows affected → 409 `VERSION_MISMATCH`. The client bumps its local version on success so rapid drags don't stale-conflict with themselves. Chosen over pessimistic locking because multiple editors on the same board is the norm.
+- **LexoRank positions** for List + Card ordering. Reordering touches **one row** (`between(prev, next)`), not N. Using the `lexorank` npm package for Jira-compatible semantics.
+- **Token-hashed invitations**. Plaintext token exists only in the email / UI; only `SHA-256(token)` is persisted. Accept requires the signed-in email to match the invitation's email — defeats token phishing and accidental link sharing.
+- **Three-layer invitation rate limit** (global 1000/mo, per-workspace 50/day, per-user 20/day), counts include revoked+accepted rows so an attacker can't reset quota by revoking. Trip returns a specific error code so the UI explains which quota fired.
+- **Full-replace set semantics** for labels and assignees (`PUT /api/cards/:id/labels` with the desired `labelIds[]`). Simpler to reason about than two endpoints; the server diffs against current state and emits the right notifications for adds only (no spam on removes).
+- **Cross-workspace guards** on both `setCardLabels` and `setCardAssignees`. A card in workspace A cannot be tagged with a label from workspace B, cannot be assigned to a user who isn't a member. Defense in depth against tenant leaks from a malicious or buggy client.
+- **Best-effort side effects**. Activity log inserts, Pusher broadcasts, Resend emails, and notification rows are all wrapped so a failure cannot abort the originating business write. Every one catches + console.warns and returns — the user's card save is the transactional piece; fanout is cosmetic.
+- **URL as source of truth** for board filters (`?labels=…`, `?q=…`). Shareable, refresh-survives, composable. Chosen over a local React store so a user can paste a filtered-board URL into Slack.
+- **@mention resolution**: email local-part OR display-name slug. The regex is tuned to _not_ match email addresses in running text (`contact me at alice@example.com` doesn't fire).
+- **Env-guarded integrations** (Pusher, Resend). Missing credentials = silent no-op with a fallback (console log of accept URL, cross-tab refresh skipped). Means the app runs end-to-end locally without any external signup.
+
+See also the per-module doc comments in `apps/collab/src/server/*.ts` — each exported function has a short rationale for the specific design choice.
 
 ## Local development
 
