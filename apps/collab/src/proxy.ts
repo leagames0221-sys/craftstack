@@ -6,9 +6,9 @@
  * are redirected to `/signin`.
  */
 import NextAuth from "next-auth";
-import { authConfig } from "@/auth/config";
+import { authEdgeConfig } from "@/auth/config.edge";
 
-const { auth } = NextAuth(authConfig);
+const { auth } = NextAuth(authEdgeConfig);
 
 export default auth;
 
