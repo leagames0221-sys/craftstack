@@ -1,0 +1,149 @@
+// Boardly - Realtime collaborative kanban
+// Design bible: docs/design/03_boardly_design.md
+// Schema detail:  docs/design/05_prisma_schemas.md
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [pg_trgm]
+}
+
+// ============================================================
+//  Enums
+// ============================================================
+
+enum Role {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum Theme {
+  SYSTEM
+  LIGHT
+  DARK
+}
+
+// ============================================================
+//  Auth.js v5 adapter tables
+// ============================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+//  Core: User / Workspace / Membership / Invitation
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  avatarUrl     String?
+  locale        String    @default("ja")
+  theme         Theme     @default(SYSTEM)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  memberships     Membership[]
+  ownedWorkspaces Workspace[]  @relation("WorkspaceOwner")
+  sentInvitations Invitation[] @relation("InvitationSender")
+
+  @@index([email])
+}
+
+model Workspace {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  iconUrl   String?
+  color     String    @default("#4F46E5")
+  ownerId   String
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  owner       User         @relation("WorkspaceOwner", fields: [ownerId], references: [id])
+  memberships Membership[]
+  invitations Invitation[]
+
+  @@index([ownerId])
+  @@index([deletedAt])
+}
+
+model Membership {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        Role     @default(EDITOR)
+  joinedAt    DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId, role])
+}
+
+model Invitation {
+  id          String    @id @default(cuid())
+  workspaceId String
+  inviterId   String?
+  email       String
+  tokenHash   String    @unique
+  role        Role      @default(EDITOR)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  inviter   User?     @relation("InvitationSender", fields: [inviterId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, email])
+  @@index([tokenHash])
+  @@index([expiresAt])
+}
