@@ -2,6 +2,8 @@
 
 Two production-grade SaaS apps, designed and shipped from schema to deploy by a single developer.
 
+> **Status (as of v0.1.0)**: Boardly is **live with authentication + CRUD** at <https://craftstack-collab.vercel.app>. Socket.IO realtime, attachments, search, notifications, and the Knowlex RAG stack are in the roadmap and are not yet measurable. Numbers quoted below are targets set in the ADRs, not current measurements.
+
 ## 🟣 Boardly — Realtime collaborative kanban
 
 Trello's simultaneous-edit experience rebuilt with first-class permissions, audit, and accessibility.

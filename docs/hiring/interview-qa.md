@@ -2,6 +2,8 @@
 
 30 anticipated questions with concise, credible answers grounded in the actual code and ADRs. Each answer references real artifacts in the repo.
 
+> **Disclosure**: Numbers quoted in these answers (context precision, p95 latency, load-test success rate, etc.) are the **design targets** set in the relevant ADRs. They become measured values once the corresponding subsystem ships and is exercised on the golden / k6 harness. When discussing them in an interview, frame them as targets and point to the ADR where the threshold is established.
+
 ## Architecture (5)
 
 **Q1. Why a monorepo?**

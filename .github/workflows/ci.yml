@@ -49,3 +49,7 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Audit dependencies (advisory)
+        run: pnpm audit --prod --audit-level moderate || true
+        continue-on-error: true

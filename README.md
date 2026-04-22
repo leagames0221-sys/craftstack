@@ -15,14 +15,18 @@ Two production-grade SaaS applications designed and built from schema to deploy,
 
 **Boardly**: <https://craftstack-collab.vercel.app>
 
-Sign in with Google or GitHub to reach the authenticated dashboard. The workspace and board creation flows are wired end-to-end against Neon Postgres (Singapore) and Upstash Redis (Tokyo). Realtime editing (Socket.IO) and Knowlex RAG land in later milestones — see the roadmap below.
+Sign in to reach the authenticated dashboard. Workspace + board creation flows are wired end-to-end against Neon Postgres (Singapore) and Upstash Redis (Tokyo).
+
+> **Reviewers**: **Continue with GitHub** is the recommended button — it works for any GitHub account out of the box. The Google OAuth app is still in Google's "Testing" status, so Google sign-in will only succeed for email addresses already registered as test users inside the Google Cloud consent screen. Publishing the Google app requires verification review and is deferred until the app is feature-complete.
+
+Realtime editing (Socket.IO), invitations, attachments, and the Knowlex RAG experience land in later milestones — see the roadmap below.
 
 ## Apps
 
-| App                           | Description                              | Tech highlights                                                                               | Status               |
-| ----------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------- |
-| [**Boardly**](apps/collab)    | Realtime collaborative kanban board      | Next.js 16 · Auth.js v5 · Prisma 7 · PostgreSQL · LexoRank · Optimistic locking · Socket.IO   | v0.1.0 — live deploy |
-| [**Knowlex**](apps/knowledge) | Multi-tenant AI knowledge retrieval SaaS | Next.js 16 · pgvector · BullMQ · Gemini API · Cohere Rerank · RLS · HyDE · Faithfulness check | Schema ready         |
+| App                           | Description                               | Tech highlights                                                                                                        | Status               |
+| ----------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| [**Boardly**](apps/collab)    | Collaborative kanban (realtime in v0.2.0) | Next.js 16 · Auth.js v5 · Prisma 7 · PostgreSQL · LexoRank (planned) · Optimistic lock (planned) · Socket.IO (planned) | v0.1.0 — live deploy |
+| [**Knowlex**](apps/knowledge) | Multi-tenant AI knowledge retrieval SaaS  | Next.js 16 · pgvector · BullMQ · Gemini API · Cohere Rerank · RLS · HyDE · Faithfulness check (all planned)            | Schema ready         |
 
 ## Monorepo layout
 
@@ -55,18 +59,25 @@ craftstack/
 
 ## Tech stack
 
-**Frontend:** Next.js 15 (App Router) · TypeScript · TailwindCSS · shadcn/ui · Zustand
-**Backend:** Next.js Route Handlers · Hono · Socket.IO (Boardly) · BullMQ (Knowlex)
-**Database:** PostgreSQL 16 · pgvector · Prisma · Row-Level Security (Knowlex)
-**Cache / Queue:** Redis (Upstash in prod, compose locally)
-**Auth:** Auth.js v5 · Google + GitHub OAuth
-**AI:** Google Gemini Flash · Cohere Rerank · HyDE · Faithfulness check
-**Storage:** Cloudflare R2 (S3-compatible)
-**Deploy:** Vercel (SSR) + Fly.io (WebSocket / worker)
-**Testing:** Vitest · Playwright · k6 · axe-core · custom RAG eval pipeline
-**Observability:** Sentry · Better Stack · UptimeRobot · pino · Web Vitals
+### Shipped in v0.1.0
 
-All production services are run within free-tier quotas (target: **$0/month**).
+- **Frontend**: Next.js 16 (App Router, Turbopack) · TypeScript 5 · TailwindCSS 4
+- **Backend**: Next.js Route Handlers on Node runtime · Edge Runtime proxy
+- **Database**: PostgreSQL 16 on Neon (Singapore) · Prisma 7 with `@prisma/adapter-pg`
+- **Auth**: Auth.js v5 with JWT session strategy · Google + GitHub OAuth · PrismaAdapter
+- **Deploy**: Vercel Hobby · GitHub Actions CI (lint / typecheck / test / build)
+- **Security headers**: HSTS 2y · X-Frame-Options DENY · Referrer-Policy · Permissions-Policy
+- **Testing**: Vitest (40 cases) · Playwright scaffold · k6 scenario
+
+### Planned (see [Roadmap](#roadmap))
+
+- Realtime: Socket.IO + Redis Pub/Sub via Upstash (Tokyo)
+- Storage: Cloudflare R2 (S3-compatible, free tier)
+- Observability: Sentry · Better Stack · UptimeRobot · pino · Web Vitals
+- AI (Knowlex): Gemini Flash · Cohere Rerank · HyDE · Faithfulness check · pgvector + BM25 hybrid
+- E2E + a11y + load: Playwright (10 scenarios) · axe-core · k6 (200 VU)
+
+All production services are targeted to run within free-tier quotas (**$0/month**).
 
 ## Local development
 

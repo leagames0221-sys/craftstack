@@ -3,6 +3,10 @@
 Each ADR captures a single, consequential design decision in MADR format.
 Once Accepted, an ADR is immutable — later decisions supersede, they do not rewrite.
 
+> **Note on numbers**: Benchmark figures embedded in individual ADRs (e.g. "Context Precision 0.89", "p95 < 300ms", "+8 pt improvement") are **design targets**, not current measurements. They become measured once the corresponding subsystem ships. The first authenticated deploy (v0.1.0) has not yet exercised realtime, RAG, or load paths. Measurements will replace target text here as each milestone lands.
+
+> **Supersession notice**: [ADR-0003](0003-auth-js-database-session.md) specified a database session strategy. It was superseded in practice by the JWT strategy to unblock the Vercel Edge Runtime proxy; see the `fix(auth)` commit in git history for the rationale. A formal ADR-0023 will replace it when the next batch lands.
+
 | #                                           | Title                                          | Status   |
 | ------------------------------------------- | ---------------------------------------------- | -------- |
 | [0001](0001-monorepo.md)                    | Monorepo (Turborepo + pnpm workspaces)         | Accepted |

@@ -29,23 +29,6 @@ export default async function SignInPage({
           <form
             action={async () => {
               "use server";
-              await signIn("google", {
-                redirectTo: callbackUrl ?? "/dashboard",
-              });
-            }}
-          >
-            <button
-              type="submit"
-              className="w-full inline-flex items-center justify-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-100 transition"
-            >
-              <GoogleIcon />
-              Continue with Google
-            </button>
-          </form>
-
-          <form
-            action={async () => {
-              "use server";
               await signIn("github", {
                 redirectTo: callbackUrl ?? "/dashboard",
               });
@@ -59,9 +42,30 @@ export default async function SignInPage({
               Continue with GitHub
             </button>
           </form>
+
+          <form
+            action={async () => {
+              "use server";
+              await signIn("google", {
+                redirectTo: callbackUrl ?? "/dashboard",
+              });
+            }}
+          >
+            <button
+              type="submit"
+              className="w-full inline-flex items-center justify-center gap-3 rounded-xl bg-white px-4 py-3 text-sm font-medium text-neutral-900 hover:bg-neutral-100 transition"
+            >
+              <GoogleIcon />
+              Continue with Google
+            </button>
+          </form>
         </div>
 
         <p className="mt-6 text-center text-xs text-neutral-500">
+          Reviewers: GitHub works for any account. Google is still in Testing
+          and accepts only registered test users.
+        </p>
+        <p className="mt-2 text-center text-[11px] text-neutral-600">
           By signing in you agree to our Terms and Privacy Policy.
         </p>
       </div>

@@ -1,6 +1,8 @@
 # Knowlex RAG evaluation
 
-Eval is the last line of defense against silent retrieval regressions. Every PR touching Knowlex AI code runs the suite; any threshold breach blocks merge.
+Eval is the last line of defense against silent retrieval regressions. Every PR touching Knowlex AI code will run the suite; any threshold breach blocks merge.
+
+> **Status**: Knowlex itself is pre-implementation in v0.1.0. The golden QA set and threshold manifest are checked in, but the CI job and first measured report land when the ingestion pipeline ships (Week 12). Numbers referenced in ADRs are targets, not measurements.
 
 ## What is measured
 
