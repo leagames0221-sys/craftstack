@@ -34,7 +34,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma clients
-        run: pnpm --filter collab exec prisma generate
+        run: |
+          pnpm --filter collab exec prisma generate
+          pnpm --filter knowledge exec prisma generate
 
       - name: Lint
         run: pnpm lint
