@@ -7,6 +7,7 @@ import { BoardClient, type ClientList } from "./BoardClient";
 import { CommentsPanel } from "./CommentsPanel";
 import { LabelsPicker } from "./LabelsPicker";
 import { AssigneesPicker } from "./AssigneesPicker";
+import { CardActivity } from "./CardActivity";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
 export async function generateMetadata({
@@ -395,6 +396,8 @@ async function CardModal({
         canComment={canWrite}
         canModerate={canModerate}
       />
+
+      <CardActivity cardId={cardId} />
 
       {canWrite ? (
         <form

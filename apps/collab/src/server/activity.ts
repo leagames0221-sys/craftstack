@@ -102,3 +102,85 @@ export async function listActivity(
       : null,
   }));
 }
+
+/**
+ * Return activity scoped to a single card — both direct Card events and
+ * Comment events whose payload.cardId points at this card. Any workspace
+ * member (VIEWER+) who can reach the card may read. Newest first, clamped
+ * to a small cap (no cursor pagination — card histories stay short).
+ */
+export async function listCardActivity(
+  userId: string,
+  cardId: string,
+  options: { limit?: number } = {},
+): Promise<ActivityFeedEntry[]> {
+  const card = await prisma.card.findUnique({
+    where: { id: cardId },
+    include: {
+      list: {
+        select: {
+          board: {
+            select: {
+              workspaceId: true,
+              workspace: {
+                select: {
+                  memberships: {
+                    where: { userId },
+                    select: { role: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!card) throw new NotFoundError("Card");
+  const role = card.list.board.workspace.memberships[0]?.role;
+  if (!role || !roleAtLeast(role, "VIEWER")) {
+    throw new ForbiddenError("CARD_ACTIVITY_READ_DENIED");
+  }
+
+  const limit = Math.max(1, Math.min(options.limit ?? 20, 100));
+  const workspaceId = card.list.board.workspaceId;
+
+  const rows = await prisma.activityLog.findMany({
+    where: {
+      workspaceId,
+      OR: [
+        { entityType: "Card", entityId: cardId },
+        {
+          entityType: "Comment",
+          // Comment activity rows carry the owning cardId in payload so we
+          // can surface them here without a join.
+          payload: { path: ["cardId"], equals: cardId },
+        },
+      ],
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+    include: {
+      actor: {
+        select: { id: true, name: true, email: true, image: true },
+      },
+    },
+  });
+
+  return rows.map((r) => ({
+    id: r.id,
+    action: r.action,
+    entityType: r.entityType,
+    entityId: r.entityId,
+    payload: (r.payload ?? {}) as Record<string, unknown>,
+    createdAt: r.createdAt.toISOString(),
+    actor: r.actor
+      ? {
+          id: r.actor.id,
+          name: r.actor.name,
+          email: r.actor.email,
+          image: r.actor.image,
+        }
+      : null,
+  }));
+}
