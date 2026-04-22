@@ -151,6 +151,31 @@ export async function saveCard(
   const description = descriptionRaw.length > 0 ? descriptionRaw : null;
   const version = Number(formData.get("version"));
 
+  // Due date is optional. Empty string means "clear it". We accept the
+  // HTML date input's `YYYY-MM-DD` format and store the start-of-day UTC
+  // instant so the same card reads as the same date in every timezone.
+  const dueRaw = String(formData.get("dueDate") ?? "").trim();
+  let dueDate: Date | null | undefined;
+  if (dueRaw === "") {
+    dueDate = null;
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(dueRaw)) {
+    const parsed = new Date(`${dueRaw}T00:00:00.000Z`);
+    if (Number.isNaN(parsed.getTime())) {
+      const qs = new URLSearchParams({
+        card: cardId,
+        error: "Invalid due date",
+      });
+      redirect(`/w/${slug}/b/${boardId}?${qs.toString()}`);
+    }
+    dueDate = parsed;
+  } else {
+    const qs = new URLSearchParams({
+      card: cardId,
+      error: "Due date must be YYYY-MM-DD",
+    });
+    redirect(`/w/${slug}/b/${boardId}?${qs.toString()}`);
+  }
+
   if (!title || !Number.isInteger(version)) {
     const qs = new URLSearchParams({
       card: cardId,
@@ -164,6 +189,7 @@ export async function saveCard(
       version,
       title,
       description,
+      dueDate,
     });
     revalidatePath(`/w/${slug}/b/${boardId}`);
     redirect(`/w/${slug}/b/${boardId}`);

@@ -320,6 +320,28 @@ async function CardModal({
           />
         </div>
 
+        <div>
+          <label
+            htmlFor="card-due-date"
+            className="block text-xs font-medium text-neutral-400"
+          >
+            Due date
+          </label>
+          <input
+            id="card-due-date"
+            type="date"
+            name="dueDate"
+            defaultValue={
+              card.dueDate ? card.dueDate.toISOString().slice(0, 10) : ""
+            }
+            disabled={!canWrite}
+            className="mt-1 rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:opacity-60"
+          />
+          <p className="mt-1 text-[10px] text-neutral-500">
+            Leave empty to clear.
+          </p>
+        </div>
+
         <div className="flex items-center justify-between gap-2 pt-2">
           <span className="text-[10px] text-neutral-600">
             version {card.version}

@@ -31,6 +31,7 @@ import { addCard, addList } from "./actions";
 import {
   applyLabelFilter,
   applyMove,
+  dueStatus,
   findCardLocation,
   type ClientCard,
   type ClientLabel,
@@ -345,6 +346,28 @@ export function BoardClient({ slug, boardId, canWrite, initialLists }: Props) {
   );
 }
 
+function DueBadge({ dueIso }: { dueIso: string | null }) {
+  if (!dueIso) return <span />;
+  const status = dueStatus(dueIso);
+  const styles: Record<string, string> = {
+    overdue: "border-red-500/40 bg-red-500/15 text-red-200",
+    today: "border-amber-500/40 bg-amber-500/15 text-amber-200",
+    soon: "border-amber-500/20 bg-amber-500/5 text-amber-200",
+    later: "border-neutral-700 bg-neutral-800/60 text-neutral-400",
+    none: "",
+  };
+  const label =
+    status === "overdue" ? "overdue" : status === "today" ? "today" : "due";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] ${styles[status]}`}
+      title={`Due ${dueIso.slice(0, 10)}`}
+    >
+      {label} {dueIso.slice(5, 10)}
+    </span>
+  );
+}
+
 function FilterBar({
   available,
   active,
@@ -531,13 +554,7 @@ function SortableCard({
         ) : null}
         <div className="font-medium">{card.title}</div>
         <div className="mt-1 flex items-center justify-between gap-2">
-          {card.dueDate ? (
-            <span className="text-[10px] text-neutral-500">
-              due {card.dueDate.slice(0, 10)}
-            </span>
-          ) : (
-            <span />
-          )}
+          <DueBadge dueIso={card.dueDate} />
           {card.assignees.length > 0 ? (
             <div className="flex -space-x-1.5">
               {card.assignees.slice(0, 3).map((a) => (

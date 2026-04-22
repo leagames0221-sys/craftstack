@@ -47,6 +47,42 @@ export function applyLabelFilter(
   }));
 }
 
+export type DueStatus = "overdue" | "today" | "soon" | "later" | "none";
+
+/**
+ * Classify a due date against `now` in whole calendar days (UTC-anchored
+ * so server + client agree regardless of viewer timezone).
+ *  - overdue: strictly before today
+ *  - today: same calendar day
+ *  - soon: within the next 2 days (i.e. tomorrow or day after)
+ *  - later: anything further out
+ *  - none: no due date at all
+ */
+export function dueStatus(
+  dueIso: string | null,
+  now: Date = new Date(),
+): DueStatus {
+  if (!dueIso) return "none";
+  const due = new Date(dueIso);
+  if (Number.isNaN(due.getTime())) return "none";
+  const dayMs = 24 * 60 * 60 * 1000;
+  const today = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  );
+  const dueDay = Date.UTC(
+    due.getUTCFullYear(),
+    due.getUTCMonth(),
+    due.getUTCDate(),
+  );
+  const diffDays = Math.round((dueDay - today) / dayMs);
+  if (diffDays < 0) return "overdue";
+  if (diffDays === 0) return "today";
+  if (diffDays <= 2) return "soon";
+  return "later";
+}
+
 /** Locate `cardId` in a set of lists. Returns `null` if not found. */
 export function findCardLocation(
   lists: ClientList[],
