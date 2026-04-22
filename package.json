@@ -1,0 +1,29 @@
+{
+  "name": "craftstack",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Full-stack portfolio monorepo: Boardly (realtime kanban) + Knowlex (multi-tenant AI knowledge SaaS)",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:collab": "turbo run dev --filter=collab",
+    "dev:knowledge": "turbo run dev --filter=knowledge",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "db:migrate": "turbo run db:migrate",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json,yaml,yml}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.4.0",
+    "turbo": "^2.3.0",
+    "typescript": "^5.7.0"
+  }
+}
