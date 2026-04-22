@@ -1,3 +1,3 @@
-import { handlers } from './index'
+import { handlers } from "./index";
 
-export const { GET, POST } = handlers
+export const { GET, POST } = handlers;

@@ -1,14 +1,14 @@
-import type { Role } from '@prisma/client'
-import { prisma } from '@/lib/db'
+import type { Role } from "@prisma/client";
+import { prisma } from "@/lib/db";
 
 export type WorkspaceListItem = {
-  id: string
-  name: string
-  slug: string
-  color: string
-  iconUrl: string | null
-  role: Role
-}
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+  iconUrl: string | null;
+  role: Role;
+};
 
 /**
  * List every active workspace the given user belongs to, along with their role.
@@ -34,11 +34,11 @@ export async function listWorkspacesForUser(
         },
       },
     },
-    orderBy: { joinedAt: 'desc' },
-  })
+    orderBy: { joinedAt: "desc" },
+  });
 
   return memberships.map((m) => ({
     ...m.workspace,
     role: m.role,
-  }))
+  }));
 }

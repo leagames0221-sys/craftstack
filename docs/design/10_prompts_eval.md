@@ -22,7 +22,7 @@ prompts/
 
 ### 例: system-rag.md
 
-```markdown
+````markdown
 ---
 id: system-rag
 version: 3
@@ -33,6 +33,7 @@ created: 2026-04-22
 あなたは社内ナレッジベースに基づいて回答する専門アシスタントです。
 
 ## 行動規範
+
 1. 与えられた <document> タグ内の情報のみを根拠にしてください
 2. 情報が不足している場合「提供された文書には該当する情報がありません」と明記してください
 3. 回答の各文の末尾に `<|cite:CHUNK_ID|>` 形式で引用を付けてください
@@ -40,25 +41,27 @@ created: 2026-04-22
 5. 医療・法律・税務など専門判断を要する質問では専門家相談を促してください
 
 ## 出力形式
+
 - 日本語で Markdown
 - 箇条書きは `-` で統一
 - コード片は ``` で囲む
 
 ## 引用記法例
+
 「業務委託契約の解除には 30 日前の通知が必要です<|cite:ck_abc123|>。」
-```
+````
 
 ### registry.json
 
 ```json
 {
   "prompts": [
-    { "id": "system-rag",      "version": 3, "hash": "sha256:..." },
-    { "id": "query-rewrite",   "version": 2, "hash": "sha256:..." },
-    { "id": "hyde",            "version": 1, "hash": "sha256:..." },
-    { "id": "faithfulness",    "version": 1, "hash": "sha256:..." },
-    { "id": "title-generation","version": 1, "hash": "sha256:..." },
-    { "id": "safety-filter",   "version": 1, "hash": "sha256:..." }
+    { "id": "system-rag", "version": 3, "hash": "sha256:..." },
+    { "id": "query-rewrite", "version": 2, "hash": "sha256:..." },
+    { "id": "hyde", "version": 1, "hash": "sha256:..." },
+    { "id": "faithfulness", "version": 1, "hash": "sha256:..." },
+    { "id": "title-generation", "version": 1, "hash": "sha256:..." },
+    { "id": "safety-filter", "version": 1, "hash": "sha256:..." }
   ],
   "lastValidated": "2026-04-22"
 }
@@ -67,27 +70,35 @@ created: 2026-04-22
 ### ハッシュ計算スクリプト
 
 `scripts/compute-prompt-hash.ts`:
-```typescript
-import { createHash } from 'crypto'
-import { readFile, readdir, writeFile } from 'fs/promises'
-import path from 'path'
 
-const PROMPTS_DIR = 'apps/knowledge/src/server/ai/prompts'
-const registryPath = path.join(PROMPTS_DIR, 'registry.json')
+```typescript
+import { createHash } from "crypto";
+import { readFile, readdir, writeFile } from "fs/promises";
+import path from "path";
+
+const PROMPTS_DIR = "apps/knowledge/src/server/ai/prompts";
+const registryPath = path.join(PROMPTS_DIR, "registry.json");
 
 async function main() {
-  const files = (await readdir(PROMPTS_DIR)).filter(f => f.endsWith('.md'))
-  const registry = { prompts: [] as any[], lastValidated: new Date().toISOString().slice(0,10) }
+  const files = (await readdir(PROMPTS_DIR)).filter((f) => f.endsWith(".md"));
+  const registry = {
+    prompts: [] as any[],
+    lastValidated: new Date().toISOString().slice(0, 10),
+  };
   for (const f of files) {
-    const body = await readFile(path.join(PROMPTS_DIR, f), 'utf8')
-    const hash = 'sha256:' + createHash('sha256').update(body).digest('hex')
-    const id = f.replace('.md','')
-    const versionMatch = body.match(/^version:\s*(\d+)/m)
-    registry.prompts.push({ id, version: Number(versionMatch?.[1] ?? 1), hash })
+    const body = await readFile(path.join(PROMPTS_DIR, f), "utf8");
+    const hash = "sha256:" + createHash("sha256").update(body).digest("hex");
+    const id = f.replace(".md", "");
+    const versionMatch = body.match(/^version:\s*(\d+)/m);
+    registry.prompts.push({
+      id,
+      version: Number(versionMatch?.[1] ?? 1),
+      hash,
+    });
   }
-  await writeFile(registryPath, JSON.stringify(registry, null, 2))
+  await writeFile(registryPath, JSON.stringify(registry, null, 2));
 }
-main()
+main();
 ```
 
 CI 統合: PR で `pnpm compute:prompt-hash` 実行 → diff あればコミット強制。
@@ -152,72 +163,94 @@ samples:
 `scripts/run-eval.ts`:
 
 ```typescript
-import yaml from 'yaml'
-import { readFile, writeFile, mkdir } from 'fs/promises'
+import yaml from "yaml";
+import { readFile, writeFile, mkdir } from "fs/promises";
 
 type Sample = {
-  id: string
-  question: string
-  expected_answer_contains?: string[]
-  expected_answer_must_not_contain?: string[]
-  expected_citations?: string[]
-  expected_refusal?: boolean
-  min_faithfulness?: number
-}
+  id: string;
+  question: string;
+  expected_answer_contains?: string[];
+  expected_answer_must_not_contain?: string[];
+  expected_citations?: string[];
+  expected_refusal?: boolean;
+  min_faithfulness?: number;
+};
 
 async function runOne(s: Sample) {
-  const start = Date.now()
-  const res = await fetch(`${process.env.EVAL_BASE_URL}/api/conversations/eval/messages`, {
-    method: 'POST',
-    body: JSON.stringify({ content: s.question }),
-    headers: { authorization: `Bearer ${process.env.EVAL_API_KEY}` }
-  })
-  const { answer, citations, faithfulness } = await res.json()
-  const latency = Date.now() - start
+  const start = Date.now();
+  const res = await fetch(
+    `${process.env.EVAL_BASE_URL}/api/conversations/eval/messages`,
+    {
+      method: "POST",
+      body: JSON.stringify({ content: s.question }),
+      headers: { authorization: `Bearer ${process.env.EVAL_API_KEY}` },
+    },
+  );
+  const { answer, citations, faithfulness } = await res.json();
+  const latency = Date.now() - start;
 
-  const contextPrecision = citations.filter((c: any) =>
-    (s.expected_citations ?? []).some(ex => c.documentId.includes(ex))
-  ).length / Math.max(citations.length, 1)
+  const contextPrecision =
+    citations.filter((c: any) =>
+      (s.expected_citations ?? []).some((ex) => c.documentId.includes(ex)),
+    ).length / Math.max(citations.length, 1);
 
-  const contextRecall = (s.expected_citations ?? []).filter(ex =>
-    citations.some((c: any) => c.documentId.includes(ex))
-  ).length / Math.max((s.expected_citations ?? []).length, 1)
+  const contextRecall =
+    (s.expected_citations ?? []).filter((ex) =>
+      citations.some((c: any) => c.documentId.includes(ex)),
+    ).length / Math.max((s.expected_citations ?? []).length, 1);
 
   const answerRelevance = cosineSimilarity(
     await embed(s.question),
-    await embed(answer)
-  )
+    await embed(answer),
+  );
 
-  return { id: s.id, contextPrecision, contextRecall, faithfulness, answerRelevance, latency }
+  return {
+    id: s.id,
+    contextPrecision,
+    contextRecall,
+    faithfulness,
+    answerRelevance,
+    latency,
+  };
 }
 
 async function main() {
-  const yml = yaml.parse(await readFile('apps/knowledge/docs/eval/golden_qa.yaml','utf8'))
-  const results = await Promise.all(yml.samples.map(runOne))
+  const yml = yaml.parse(
+    await readFile("apps/knowledge/docs/eval/golden_qa.yaml", "utf8"),
+  );
+  const results = await Promise.all(yml.samples.map(runOne));
   const report = {
-    date: new Date().toISOString().slice(0,10),
+    date: new Date().toISOString().slice(0, 10),
     n: results.length,
-    contextPrecision: mean(results.map(r => r.contextPrecision)),
-    contextRecall: mean(results.map(r => r.contextRecall)),
-    faithfulness: mean(results.map(r => r.faithfulness)),
-    answerRelevance: mean(results.map(r => r.answerRelevance)),
-    latencyP95: percentile(results.map(r => r.latency), 95),
-  }
-  await mkdir('docs/eval/reports', { recursive: true })
-  await writeFile(`docs/eval/reports/${report.date}.json`, JSON.stringify(report, null, 2))
+    contextPrecision: mean(results.map((r) => r.contextPrecision)),
+    contextRecall: mean(results.map((r) => r.contextRecall)),
+    faithfulness: mean(results.map((r) => r.faithfulness)),
+    answerRelevance: mean(results.map((r) => r.answerRelevance)),
+    latencyP95: percentile(
+      results.map((r) => r.latency),
+      95,
+    ),
+  };
+  await mkdir("docs/eval/reports", { recursive: true });
+  await writeFile(
+    `docs/eval/reports/${report.date}.json`,
+    JSON.stringify(report, null, 2),
+  );
 
-  if (report.contextPrecision < 0.80 ||
-      report.contextRecall < 0.75 ||
-      report.faithfulness < 0.85 ||
-      report.answerRelevance < 0.80 ||
-      report.latencyP95 > 1500) {
-    console.error('[EVAL] threshold breach', report)
-    process.exit(1)
+  if (
+    report.contextPrecision < 0.8 ||
+    report.contextRecall < 0.75 ||
+    report.faithfulness < 0.85 ||
+    report.answerRelevance < 0.8 ||
+    report.latencyP95 > 1500
+  ) {
+    console.error("[EVAL] threshold breach", report);
+    process.exit(1);
   }
-  console.log('[EVAL] OK', report)
+  console.log("[EVAL] OK", report);
 }
 
-main()
+main();
 ```
 
 ## 4. CI 設定
@@ -227,12 +260,12 @@ main()
 on:
   pull_request:
     paths:
-      - 'apps/knowledge/src/server/ai/**'
-      - 'apps/knowledge/docs/eval/**'
+      - "apps/knowledge/src/server/ai/**"
+      - "apps/knowledge/docs/eval/**"
   push:
     branches: [main]
   schedule:
-    - cron: '0 18 * * *'  # nightly 03:00 JST
+    - cron: "0 18 * * *" # nightly 03:00 JST
 
 jobs:
   eval:
@@ -265,13 +298,13 @@ jobs:
 
 ## 5. しきい値(ADR-0015)
 
-| 指標 | 目標 |
-|---|---|
-| Context Precision | ≥ 0.80 |
-| Context Recall | ≥ 0.75 |
-| Faithfulness | ≥ 0.85 |
-| Answer Relevance | ≥ 0.80 |
-| Latency p95 | ≤ 1500ms |
+| 指標              | 目標     |
+| ----------------- | -------- |
+| Context Precision | ≥ 0.80   |
+| Context Recall    | ≥ 0.75   |
+| Faithfulness      | ≥ 0.85   |
+| Answer Relevance  | ≥ 0.80   |
+| Latency p95       | ≤ 1500ms |
 
 割れ → CI red → マージブロック。
 

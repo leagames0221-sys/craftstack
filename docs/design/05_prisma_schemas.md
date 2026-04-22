@@ -10,6 +10,7 @@ type: project
 ## Boardly `apps/collab/prisma/schema.prisma` 構成要素
 
 ### generator / datasource
+
 ```prisma
 generator client {
   provider        = "prisma-client-js"
@@ -24,12 +25,14 @@ datasource db {
 ```
 
 ### Enum
+
 - `Role` = OWNER | ADMIN | EDITOR | VIEWER
 - `Theme` = SYSTEM | LIGHT | DARK
 - `ActivityAction` = WORKSPACE_CREATED 等 24 種
 - `NotificationType` = MENTION | ASSIGNED | DUE_SOON | INVITED | COMMENT_ON_CARD
 
 ### テーブル一覧(Boardly)
+
 1. Auth.js adapter: Account / Session / VerificationToken
 2. Core: User / Workspace / Membership / Invitation
 3. Kanban: Board / List / Card
@@ -40,6 +43,7 @@ datasource db {
 8. Notification: Notification / NotificationSubscription
 
 ### onDelete 指針(Critical 修正反映)
+
 - `ActivityLog.actor → User`: **SetNull**(actorId nullable)
 - `Invitation.inviter → User`: **SetNull**(inviterId nullable)
 - `Workspace 配下 (Board/Label/Membership/Invitation/ActivityLog)`: Cascade
@@ -50,18 +54,22 @@ datasource db {
 - `User 削除時`: memberships/comments/mentions/subscriptions Cascade、ActivityLog/Invitation は SetNull
 
 ### Card の楽観ロック
+
 ```prisma
 model Card {
   // ...
   version Int @default(1)
 }
 ```
+
 PATCH で `version` mismatch → 409 返却。
 
 ### LexoRank
+
 `position String`(文字列)。`@hellopablo/lexorank` ライブラリで生成。
 
 ### 手書き migration(全文検索)
+
 ```sql
 ALTER TABLE "Card" ADD COLUMN "search_vector" tsvector
   GENERATED ALWAYS AS (
@@ -83,6 +91,7 @@ CREATE INDEX comment_body_trgm_idx ON "Comment" USING GIN ("body" gin_trgm_ops);
 ## Knowlex `apps/knowledge/prisma/schema.prisma` 構成要素
 
 ### generator / datasource
+
 ```prisma
 datasource db {
   provider   = "postgresql"
@@ -93,6 +102,7 @@ datasource db {
 ```
 
 ### Enum
+
 - `Role`, `Theme`, `Plan`(FREE/PRO/ENTERPRISE)
 - `SourceType`(PDF/MARKDOWN/DOCX/TEXT/URL/HTML)
 - `DocumentStatus`(PENDING/PROCESSING/READY/FAILED)
@@ -102,6 +112,7 @@ datasource db {
 - `AuditAction`(13 種)
 
 ### テーブル一覧(Knowlex)
+
 1. Auth.js adapter
 2. Core: User / Tenant / TenantMember / TenantInvitation
 3. Doc: Folder / Document / DocumentVersion / Chunk / **Embedding(分離)**
@@ -110,6 +121,7 @@ datasource db {
 6. Notif: Notification / NotificationSubscription
 
 ### Embedding 分離設計(ADR-0012)
+
 ```prisma
 model Chunk {
   id                String   @id @default(cuid())
@@ -130,9 +142,11 @@ model Embedding {
   @@index([model])
 }
 ```
+
 `vector(768)` 列は手書き migration で追加(Prisma は vector 型を直接扱えない)。
 
 ### onDelete 指針(Critical 修正反映)
+
 - `TenantInvitation.inviter`, `Conversation.user`, `Feedback.user`, `AuditLog.actor` → **SetNull**
 - `Document.owner` → **Restrict**(監査のため削除ブロック)
 - `Citation.chunk` → **Restrict**(引用整合性)
@@ -260,14 +274,18 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE O
 ## `packages/db/src/client.ts` ヘルパ
 
 ```typescript
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'development'
-    ? ['query', 'error', 'warn'] : ['error']
-})
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "error", "warn"]
+        : ["error"],
+  });
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 // RLS 用トランザクション(Knowlex 全 API で必須)
 export async function withTenant<T>(
@@ -275,17 +293,21 @@ export async function withTenant<T>(
   fn: (tx: PrismaClient) => Promise<T>,
 ): Promise<T> {
   return prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe(`SET LOCAL app.tenant_id = '${tenantId}'`)
-    return fn(tx as unknown as PrismaClient)
-  })
+    await tx.$executeRawUnsafe(`SET LOCAL app.tenant_id = '${tenantId}'`);
+    return fn(tx as unknown as PrismaClient);
+  });
 }
 ```
 
 ## Vector 検索 helper
 
 ```typescript
-import { Prisma } from '@prisma/client'
-export const vectorSearch = (embedding: number[], tenantId: string, topK = 50) => Prisma.sql`
+import { Prisma } from "@prisma/client";
+export const vectorSearch = (
+  embedding: number[],
+  tenantId: string,
+  topK = 50,
+) => Prisma.sql`
   SELECT c.id, c.content, c."documentVersionId",
          1 - (e.embedding <=> ${embedding}::vector) AS score
   FROM "Embedding" e
@@ -296,10 +318,11 @@ export const vectorSearch = (embedding: number[], tenantId: string, topK = 50) =
     AND d."deletedAt" IS NULL AND d."status" = 'READY'
   ORDER BY e.embedding <=> ${embedding}::vector
   LIMIT ${topK}
-`
+`;
 ```
 
 ## DoD
+
 - [ ] 両 schema が `prisma format` 通過
 - [ ] `prisma migrate dev` で DIRECT_DATABASE_URL 経由で適用成功
 - [ ] pgvector/RLS 手書き migration 適用

@@ -1,5 +1,5 @@
-import { Role } from '@prisma/client'
-import { prisma } from '@/lib/db'
+import { Role } from "@prisma/client";
+import { prisma } from "@/lib/db";
 
 /**
  * Role hierarchy:  OWNER > ADMIN > EDITOR > VIEWER
@@ -10,11 +10,11 @@ const RANK: Record<Role, number> = {
   ADMIN: 2,
   EDITOR: 1,
   VIEWER: 0,
-}
+};
 
 /** True iff `actual` meets or exceeds `required`. */
 export function roleAtLeast(actual: Role, required: Role): boolean {
-  return RANK[actual] >= RANK[required]
+  return RANK[actual] >= RANK[required];
 }
 
 /** True iff `userId` has any membership in `workspaceId` with role >= `required`. */
@@ -26,8 +26,8 @@ export async function hasRole(
   const m = await prisma.membership.findUnique({
     where: { userId_workspaceId: { userId, workspaceId } },
     select: { role: true },
-  })
-  return !!m && roleAtLeast(m.role, required)
+  });
+  return !!m && roleAtLeast(m.role, required);
 }
 
 export class RoleError extends Error {
@@ -35,8 +35,8 @@ export class RoleError extends Error {
     public readonly required: Role,
     public readonly actual: Role | null,
   ) {
-    super(`Role insufficient: needed ${required}, got ${actual ?? 'NONE'}`)
-    this.name = 'RoleError'
+    super(`Role insufficient: needed ${required}, got ${actual ?? "NONE"}`);
+    this.name = "RoleError";
   }
 }
 
@@ -49,9 +49,9 @@ export async function requireRole(
   const m = await prisma.membership.findUnique({
     where: { userId_workspaceId: { userId, workspaceId } },
     select: { role: true },
-  })
+  });
   if (!m || !roleAtLeast(m.role, required)) {
-    throw new RoleError(required, m?.role ?? null)
+    throw new RoleError(required, m?.role ?? null);
   }
-  return m.role
+  return m.role;
 }

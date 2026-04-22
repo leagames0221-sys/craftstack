@@ -8,6 +8,7 @@ type: project
 両アプリ分の `openapi.yaml` を `docs/api/` に配置。`openapi-typescript` で型自動生成 → `packages/api-client` に反映。
 
 ## ファイル配置
+
 - `docs/api/collab-openapi.yaml`(Boardly)
 - `docs/api/knowledge-openapi.yaml`(Knowlex)
 - `packages/api-client/src/collab.d.ts`(自動生成、コミット対象)
@@ -16,15 +17,18 @@ type: project
 ## Boardly エンドポイント一覧(全 58)
 
 ### Auth
+
 - GET /api/me
 - PATCH /api/me
 
 ### Workspaces
+
 - GET/POST /api/workspaces
 - GET/PATCH/DELETE /api/workspaces/:slug
 - POST /api/workspaces/:slug/restore
 
 ### Members/Invitations
+
 - GET /api/workspaces/:slug/members
 - PATCH/DELETE /api/workspaces/:slug/members/:userId
 - POST /api/workspaces/:slug/invitations
@@ -33,36 +37,43 @@ type: project
 - POST /api/invitations/:token/accept
 
 ### Boards
+
 - GET/POST /api/workspaces/:slug/boards
 - GET/PATCH/DELETE /api/boards/:id
 - POST /api/boards/:id/archive
 - POST /api/boards/:id/export?format=json|csv
 
 ### Lists
+
 - POST /api/boards/:id/lists
 - PATCH/DELETE /api/lists/:id
 
 ### Cards
+
 - POST /api/lists/:id/cards
-- GET/PATCH/DELETE /api/cards/:id  (PATCH は version 必須で 409)
+- GET/PATCH/DELETE /api/cards/:id (PATCH は version 必須で 409)
 - POST /api/cards/:id/move
 - POST/DELETE /api/cards/:id/assignees/:userId
 - POST/DELETE /api/cards/:id/labels/:labelId
 
 ### Labels
+
 - GET/POST /api/workspaces/:slug/labels
 - PATCH/DELETE /api/labels/:id
 
 ### Comments
+
 - POST /api/cards/:id/comments
 - PATCH/DELETE /api/comments/:id
 
 ### Attachments
+
 - POST /api/cards/:id/attachments/presign
 - POST /api/cards/:id/attachments/confirm
 - DELETE /api/attachments/:id
 
 ### Activity / Search / Notifications
+
 - GET /api/workspaces/:slug/activity
 - GET /api/workspaces/:slug/search
 - GET /api/notifications
@@ -72,20 +83,24 @@ type: project
 ## Knowlex エンドポイント一覧
 
 ### Auth / Tenants
+
 - GET /api/me
 - GET/POST /api/tenants
 - GET/PATCH/DELETE /api/tenants/:slug
 
 ### Members
+
 - GET /api/tenants/:slug/members
 - POST /api/tenants/:slug/invitations
 - POST /api/invitations/:token/accept
 
 ### Folders
+
 - GET/POST /api/tenants/:slug/folders
 - PATCH/DELETE /api/folders/:id
 
 ### Documents
+
 - POST /api/tenants/:slug/documents/upload-presign
 - POST /api/tenants/:slug/documents/upload-confirm
 - POST /api/tenants/:slug/documents/url-ingest
@@ -96,6 +111,7 @@ type: project
 - GET /api/documents/:id/progress(SSE)
 
 ### Search / Conversations
+
 - GET /api/tenants/:slug/search?mode=hybrid|vector|keyword
 - GET/POST /api/tenants/:slug/conversations
 - GET/DELETE /api/conversations/:id
@@ -104,12 +120,14 @@ type: project
 - GET /api/messages/:id/citations
 
 ### API Keys / Webhooks
+
 - GET/POST /api/tenants/:slug/api-keys
 - DELETE /api/api-keys/:id
 - GET/POST /api/tenants/:slug/webhooks
 - DELETE /api/webhooks/:id
 
 ### Usage / Audit / Export
+
 - GET /api/tenants/:slug/usage
 - GET /api/tenants/:slug/audit
 - POST /api/tenants/:slug/export
@@ -128,9 +146,10 @@ OpenAPI 3.1 security requirement に `role` のようなカスタムキーは書
 ```
 
 middleware ヘルパで読取り:
+
 ```typescript
-const required = (openapi.paths[path][method] as any)['x-required-roles']
-if (required) await requireRole(userId, slug, required)
+const required = (openapi.paths[path][method] as any)["x-required-roles"];
+if (required) await requireRole(userId, slug, required);
 ```
 
 ## セキュリティスキーム
@@ -142,7 +161,7 @@ components:
       type: apiKey
       in: cookie
       name: __Secure-authjs.session-token
-    bearerApiKey:         # Knowlex のみ
+    bearerApiKey: # Knowlex のみ
       type: http
       scheme: bearer
       description: Tenant API key (prefix `klx_`)
@@ -151,6 +170,7 @@ components:
 ## 型自動生成パイプライン
 
 `packages/api-client/package.json`:
+
 ```json
 {
   "scripts": {
@@ -167,10 +187,11 @@ components:
 ```
 
 利用例:
+
 ```typescript
-import type { paths } from '@craftstack/api-client/collab'
+import type { paths } from "@craftstack/api-client/collab";
 type CreateBoardBody =
-  paths['/api/workspaces/{slug}/boards']['post']['requestBody']['content']['application/json']
+  paths["/api/workspaces/{slug}/boards"]["post"]["requestBody"]["content"]["application/json"];
 ```
 
 ## CI 契約検査
@@ -189,6 +210,7 @@ type CreateBoardBody =
 ```
 
 ## DoD
+
 - [ ] 両 YAML が `redocly lint` 通過
 - [ ] `openapi-typescript` が型生成し両アプリから import 可能
 - [ ] CI 差分チェック実行

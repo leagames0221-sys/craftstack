@@ -1,4 +1,4 @@
-import { LexoRank } from 'lexorank'
+import { LexoRank } from "lexorank";
 
 /**
  * Thin wrapper around the `lexorank` package (Jira-compatible format).
@@ -11,22 +11,22 @@ import { LexoRank } from 'lexorank'
 
 /** The rank placed before everything else. */
 export function first(): string {
-  return LexoRank.min().genNext().toString()
+  return LexoRank.min().genNext().toString();
 }
 
 /** The rank placed after everything else. */
 export function last(): string {
-  return LexoRank.max().genPrev().toString()
+  return LexoRank.max().genPrev().toString();
 }
 
 /** Rank strictly between two neighbors; omit either end for open range. */
 export function between(prev?: string | null, next?: string | null): string {
-  const prevRank = prev ? LexoRank.parse(prev) : LexoRank.min()
-  const nextRank = next ? LexoRank.parse(next) : LexoRank.max()
-  return prevRank.between(nextRank).toString()
+  const prevRank = prev ? LexoRank.parse(prev) : LexoRank.min();
+  const nextRank = next ? LexoRank.parse(next) : LexoRank.max();
+  return prevRank.between(nextRank).toString();
 }
 
 /** Stable comparator: negative / zero / positive (Array.prototype.sort style). */
 export function compare(a: string, b: string): number {
-  return LexoRank.parse(a).compareTo(LexoRank.parse(b))
+  return LexoRank.parse(a).compareTo(LexoRank.parse(b));
 }

@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
-import { auth } from '@/auth'
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 
 /**
  * Root route acts as a gate:
@@ -7,6 +7,6 @@ import { auth } from '@/auth'
  *   - unauthenticated -> /signin
  */
 export default async function Home() {
-  const session = await auth()
-  redirect(session?.user ? '/dashboard' : '/signin')
+  const session = await auth();
+  redirect(session?.user ? "/dashboard" : "/signin");
 }

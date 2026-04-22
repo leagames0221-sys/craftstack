@@ -93,6 +93,7 @@ This portfolio is two production-grade SaaS apps I designed and shipped.
 ---
 
 ## What I bring
+
 - **設計から運用まで単独完遂**: ER / API / ADR 22 本 / Eval / Runbook 完備
 - **品質装置を最初から**: CI で lint / test / Contract / Eval / A11y / Load すべて緑
 - **ゼロ円運用の制約設計力**: 無料枠で本番品質を届ける発想と実装
@@ -100,6 +101,7 @@ This portfolio is two production-grade SaaS apps I designed and shipped.
 ---
 
 ## Contact
+
 Email / GitHub / Resume(EN/JA)
 ```
 

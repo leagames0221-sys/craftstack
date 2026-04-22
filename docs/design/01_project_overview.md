@@ -8,7 +8,9 @@ type: project
 ## プロダクト 2 本
 
 ### 🟣 Boardly (apps/collab)
+
 **リアルタイム協働カンバン**
+
 - OAuth(Google/GitHub)+ 4 階層 RBAC(OWNER/ADMIN/EDITOR/VIEWER)
 - WebSocket(Socket.IO + Redis Pub/Sub)同時編集 + プレゼンス + カーソル共有
 - 楽観ロック(version 列) + LexoRank による並び替え
@@ -17,7 +19,9 @@ type: project
 - 多言語(JP/EN)/ ダークモード / WAI-ARIA 準拠
 
 ### 🟠 Knowlex (apps/knowledge)
+
 **マルチテナント AI ナレッジ検索 SaaS**
+
 - OAuth + マルチテナント(RLS + クエリ層の二重防御)
 - ドキュメント取込(PDF/MD/DOCX/URL)BullMQ 非同期パイプライン
 - ハイブリッド検索(pgvector HNSW + BM25 + RRF)+ Cohere Rerank
@@ -27,39 +31,39 @@ type: project
 
 ## 完全無料スタック
 
-| 層 | サービス | 無料枠 |
-|---|---|---|
-| コード | GitHub Public | 無制限 |
-| CI | GitHub Actions | Public 完全無料 |
-| Front/SSR | Vercel Hobby | 100GB/月 |
-| 常駐 Server | Fly.io | shared-cpu-1x 3 台(クレカ登録必須) |
-| DB | Neon Postgres + pgvector | 0.5GB/プロジェクト |
-| Redis | Upstash | 10,000 cmd/day |
-| Storage | Cloudflare R2 | 10GB egress 無料 |
-| Auth | Auth.js v5 + OAuth | 無料 |
-| Mail | Resend | 100/day, 3,000/月 |
-| LLM | Google Gemini Flash | 1,500 req/day |
-| Embedding | text-embedding-004 | 無料枠あり |
-| Rerank | Cohere trial | 1000/月 |
-| Error | Sentry | 5,000 event/月 |
-| Log | Better Stack | 1GB/月 |
-| Uptime | UptimeRobot | 50 monitor |
-| Drive | `*.vercel.app` / `*.fly.dev` 無料サブドメイン |
+| 層          | サービス                                      | 無料枠                             |
+| ----------- | --------------------------------------------- | ---------------------------------- |
+| コード      | GitHub Public                                 | 無制限                             |
+| CI          | GitHub Actions                                | Public 完全無料                    |
+| Front/SSR   | Vercel Hobby                                  | 100GB/月                           |
+| 常駐 Server | Fly.io                                        | shared-cpu-1x 3 台(クレカ登録必須) |
+| DB          | Neon Postgres + pgvector                      | 0.5GB/プロジェクト                 |
+| Redis       | Upstash                                       | 10,000 cmd/day                     |
+| Storage     | Cloudflare R2                                 | 10GB egress 無料                   |
+| Auth        | Auth.js v5 + OAuth                            | 無料                               |
+| Mail        | Resend                                        | 100/day, 3,000/月                  |
+| LLM         | Google Gemini Flash                           | 1,500 req/day                      |
+| Embedding   | text-embedding-004                            | 無料枠あり                         |
+| Rerank      | Cohere trial                                  | 1000/月                            |
+| Error       | Sentry                                        | 5,000 event/月                     |
+| Log         | Better Stack                                  | 1GB/月                             |
+| Uptime      | UptimeRobot                                   | 50 monitor                         |
+| Drive       | `*.vercel.app` / `*.fly.dev` 無料サブドメイン |
 
 **月額**: ¥0。保険で API に $5 チャージ可能(任意)。
 
 ## 実装ロードマップ(18 週)
 
-| 週 | 内容 |
-|---|---|
-| Week 1-2 | Phase 1: monorepo 基盤 + CI + Docker Compose |
-| Week 3-8 | Boardly 実装(8 週) |
-| Week 9 | Boardly 多言語 / a11y / ダークモード / Load test |
-| Week 10 | **Boardly 公開**(デプロイ + README + デモ動画)← 応募可能ライン |
-| Week 9-14 | Knowlex 実装(並行 6 週、Week 9 から共通基盤再利用) |
-| Week 15 | Knowlex API キー / Webhook / 多言語 / a11y / Load |
-| Week 16 | **Knowlex 公開** |
-| Week 17-18 | 両アプリ README 最終磨き + ポートフォリオ LP + 面接準備 |
+| 週         | 内容                                                           |
+| ---------- | -------------------------------------------------------------- |
+| Week 1-2   | Phase 1: monorepo 基盤 + CI + Docker Compose                   |
+| Week 3-8   | Boardly 実装(8 週)                                             |
+| Week 9     | Boardly 多言語 / a11y / ダークモード / Load test               |
+| Week 10    | **Boardly 公開**(デプロイ + README + デモ動画)← 応募可能ライン |
+| Week 9-14  | Knowlex 実装(並行 6 週、Week 9 から共通基盤再利用)             |
+| Week 15    | Knowlex API キー / Webhook / 多言語 / a11y / Load              |
+| Week 16    | **Knowlex 公開**                                               |
+| Week 17-18 | 両アプリ README 最終磨き + ポートフォリオ LP + 面接準備        |
 
 ## リスク制御(ADR-0017)
 

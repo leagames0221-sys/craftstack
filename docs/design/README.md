@@ -2,7 +2,7 @@
 name: craftstack — 転職用ポートフォリオ 2 本立て (Boardly + Knowlex)
 description: GitHub 代表作として Next.js 15 monorepo で作る、リアルタイム協働カンバン (Boardly) と マルチテナント AI ナレッジ SaaS (Knowlex) の設計 bible。採用面接で唸らせる最高品質ルート、全ドキュメント完成済み。
 type: project
-isolation: STRICT  # UE5/ZN と完全独立、相互参照禁止
+isolation: STRICT # UE5/ZN と完全独立、相互参照禁止
 updated: 2026-04-22
 originSessionId: Session248
 ---
@@ -26,6 +26,7 @@ originSessionId: Session248
 ユーザーが以下いずれかを発言したら、**本 README を最初に full Read** してから応答する:
 
 ## 再突入トリガー
+
 - 「craftstack」
 - 「Boardly」または「ボードリー」
 - 「Knowlex」または「ノーレックス」
@@ -70,21 +71,21 @@ originSessionId: Session248
 
 # 📂 ファイル構成(本ディレクトリ内)
 
-| ファイル | 内容 | 主な参照タイミング |
-|---|---|---|
-| `README.md` | **本ファイル** = 本 PJ 唯一の入口 + 独立宣言 + ファイル index | 毎回最初 |
-| `01_project_overview.md` | プロダクト 2 本の狙い / 無料スタック / 18 週ロードマップ / リスク制御 | 全体像質問 |
-| `02_monorepo_structure.md` | Phase 1: monorepo ディレクトリ + 初期セットアップ | 実装着手時 |
-| `03_boardly_design.md` | Boardly (案A) 完全版(要件 F-01〜F-20 / ER / WS / E2E) | Boardly 質問 |
-| `04_knowlex_design.md` | Knowlex (案B) 完全版(要件 F-01〜F-26 / RAG / Eval) | Knowlex 質問 |
-| `05_prisma_schemas.md` | 両アプリ Prisma schema + RLS + pgvector migration + migrator/app ロール分離 | DB 設計質問 |
-| `06_openapi_specs.md` | 両アプリ OpenAPI YAML + 型自動生成パイプライン + `x-required-roles` | API 設計質問 |
-| `07_week3_tasks.md` | Boardly Week 3 日次タスク分解(31 commits / 7 PR) | 実装着手週 |
-| `08_adr_0001_0022.md` | ADR 全 22 本サマリ + 面接で語る用のキーポイント | 設計判断質問 |
-| `09_threat_model_runbook.md` | STRIDE 脅威モデル + 障害対応 Runbook + Rate Limits + データ保持 | セキュリティ/運用質問 |
-| `10_prompts_eval.md` | プロンプトレジストリ + Golden QA 50 問 + Eval スクリプト + CI | RAG 品質質問 |
-| `11_hiring_materials.md` | 面接想定 Q&A 30 問 + ポートフォリオ LP + デモ動画絵コンテ | 面接準備時 |
-| `12_critical_fixes.md` | 自己レビューで判明した Critical/High 修正パッチ(schema/OpenAPI/Socket.IO) | 実装前の注意点確認 |
+| ファイル                     | 内容                                                                        | 主な参照タイミング    |
+| ---------------------------- | --------------------------------------------------------------------------- | --------------------- |
+| `README.md`                  | **本ファイル** = 本 PJ 唯一の入口 + 独立宣言 + ファイル index               | 毎回最初              |
+| `01_project_overview.md`     | プロダクト 2 本の狙い / 無料スタック / 18 週ロードマップ / リスク制御       | 全体像質問            |
+| `02_monorepo_structure.md`   | Phase 1: monorepo ディレクトリ + 初期セットアップ                           | 実装着手時            |
+| `03_boardly_design.md`       | Boardly (案A) 完全版(要件 F-01〜F-20 / ER / WS / E2E)                       | Boardly 質問          |
+| `04_knowlex_design.md`       | Knowlex (案B) 完全版(要件 F-01〜F-26 / RAG / Eval)                          | Knowlex 質問          |
+| `05_prisma_schemas.md`       | 両アプリ Prisma schema + RLS + pgvector migration + migrator/app ロール分離 | DB 設計質問           |
+| `06_openapi_specs.md`        | 両アプリ OpenAPI YAML + 型自動生成パイプライン + `x-required-roles`         | API 設計質問          |
+| `07_week3_tasks.md`          | Boardly Week 3 日次タスク分解(31 commits / 7 PR)                            | 実装着手週            |
+| `08_adr_0001_0022.md`        | ADR 全 22 本サマリ + 面接で語る用のキーポイント                             | 設計判断質問          |
+| `09_threat_model_runbook.md` | STRIDE 脅威モデル + 障害対応 Runbook + Rate Limits + データ保持             | セキュリティ/運用質問 |
+| `10_prompts_eval.md`         | プロンプトレジストリ + Golden QA 50 問 + Eval スクリプト + CI               | RAG 品質質問          |
+| `11_hiring_materials.md`     | 面接想定 Q&A 30 問 + ポートフォリオ LP + デモ動画絵コンテ                   | 面接準備時            |
+| `12_critical_fixes.md`       | 自己レビューで判明した Critical/High 修正パッチ(schema/OpenAPI/Socket.IO)   | 実装前の注意点確認    |
 
 ---
 
@@ -111,15 +112,15 @@ originSessionId: Session248
 
 本 PJ は **ZN とは別の技術領域** のため、両者を同セッション内で議論しない方が安全:
 
-| | ZenithNexus (ZN) | craftstack |
-|---|---|---|
-| 言語 | C++ / Python / Blueprint | TypeScript / SQL |
-| FW | Unreal Engine 5.7 | Next.js 15 |
-| DB | UAsset / DataTable | PostgreSQL / pgvector |
-| デプロイ | — (EA 予定) | Vercel / Fly.io |
-| 目的 | NC/Ymir 級 MMORPG | 転職用ポートフォリオ |
-| AI 役割 | Plan / Execute 分離(厳格) | 通常の Claude Code |
-| ルート | `C:/Users/admin/Documents/Unreal Projects/ZenithNexus/` | GitHub 新規リポジトリ(未作成) |
+|          | ZenithNexus (ZN)                                        | craftstack                    |
+| -------- | ------------------------------------------------------- | ----------------------------- |
+| 言語     | C++ / Python / Blueprint                                | TypeScript / SQL              |
+| FW       | Unreal Engine 5.7                                       | Next.js 15                    |
+| DB       | UAsset / DataTable                                      | PostgreSQL / pgvector         |
+| デプロイ | — (EA 予定)                                             | Vercel / Fly.io               |
+| 目的     | NC/Ymir 級 MMORPG                                       | 転職用ポートフォリオ          |
+| AI 役割  | Plan / Execute 分離(厳格)                               | 通常の Claude Code            |
+| ルート   | `C:/Users/admin/Documents/Unreal Projects/ZenithNexus/` | GitHub 新規リポジトリ(未作成) |
 
 **セッション中に片方を扱っている時、他方の議論・参照は発生させない**。切替時は明示的な宣言を待つ。
 

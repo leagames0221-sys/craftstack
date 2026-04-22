@@ -13,9 +13,9 @@ Two production-grade SaaS applications designed and built from schema to deploy,
 
 ## Apps
 
-| App | Description | Tech highlights |
-|---|---|---|
-| [**Boardly**](apps/collab) | Realtime collaborative kanban board | Next.js 15 · Socket.IO · Redis Pub/Sub · Prisma · PostgreSQL · LexoRank · Optimistic locking |
+| App                           | Description                              | Tech highlights                                                                               |
+| ----------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [**Boardly**](apps/collab)    | Realtime collaborative kanban board      | Next.js 15 · Socket.IO · Redis Pub/Sub · Prisma · PostgreSQL · LexoRank · Optimistic locking  |
 | [**Knowlex**](apps/knowledge) | Multi-tenant AI knowledge retrieval SaaS | Next.js 15 · pgvector · BullMQ · Gemini API · Cohere Rerank · RLS · HyDE · Faithfulness check |
 
 ## Monorepo layout

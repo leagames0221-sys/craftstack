@@ -1,8 +1,8 @@
-import { PrismaAdapter } from '@auth/prisma-adapter'
-import type { NextAuthConfig } from 'next-auth'
-import GitHub from 'next-auth/providers/github'
-import Google from 'next-auth/providers/google'
-import { prisma } from '@/lib/db'
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import type { NextAuthConfig } from "next-auth";
+import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
+import { prisma } from "@/lib/db";
 
 /**
  * Auth.js v5 configuration (ADR-0003).
@@ -17,7 +17,7 @@ import { prisma } from '@/lib/db'
  */
 export const authConfig = {
   adapter: PrismaAdapter(prisma),
-  session: { strategy: 'database' },
+  session: { strategy: "database" },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -31,14 +31,14 @@ export const authConfig = {
     }),
   ],
   pages: {
-    signIn: '/signin',
+    signIn: "/signin",
   },
   callbacks: {
     authorized: async ({ auth }) => !!auth?.user,
     session: async ({ session, user }) => {
       // expose internal user id to the app surface
-      session.user.id = user.id
-      return session
+      session.user.id = user.id;
+      return session;
     },
   },
-} satisfies NextAuthConfig
+} satisfies NextAuthConfig;

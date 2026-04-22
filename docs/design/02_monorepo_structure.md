@@ -6,6 +6,7 @@ type: project
 # Phase 1: Monorepo ディレクトリ構成 + 初期セットアップ
 
 ## ツール
+
 - Package manager: **pnpm 9+**
 - Monorepo: **Turborepo 2.3+**
 - Node: **20 LTS**(`.nvmrc` 固定)
@@ -96,9 +97,9 @@ packages:
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "build": { "dependsOn": ["^build"], "outputs": [".next/**", "dist/**"] },
-    "dev":   { "cache": false, "persistent": true },
-    "lint":  {},
-    "test":  { "dependsOn": ["^build"] },
+    "dev": { "cache": false, "persistent": true },
+    "lint": {},
+    "test": { "dependsOn": ["^build"] },
     "test:e2e": { "dependsOn": ["build"], "cache": false },
     "db:migrate": { "cache": false }
   }

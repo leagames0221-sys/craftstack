@@ -1,5 +1,5 @@
-import { PrismaPg } from '@prisma/adapter-pg'
-import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
 
 /**
  * Prisma 7 requires a driver adapter or Accelerate URL at client construction.
@@ -10,24 +10,24 @@ import { PrismaClient } from '@prisma/client'
  * Globally cached so Next.js HMR doesn't spawn a new pool on every reload.
  */
 const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient
-}
+  prisma?: PrismaClient;
+};
 
 function createPrisma(): PrismaClient {
   const connectionString =
-    process.env.DATABASE_URL ?? 'postgresql://app:app@localhost:5432/boardly'
-  const adapter = new PrismaPg({ connectionString })
+    process.env.DATABASE_URL ?? "postgresql://app:app@localhost:5432/boardly";
+  const adapter = new PrismaPg({ connectionString });
   return new PrismaClient({
     adapter,
     log:
-      process.env.NODE_ENV === 'development'
-        ? ['query', 'error', 'warn']
-        : ['error'],
-  })
+      process.env.NODE_ENV === "development"
+        ? ["query", "error", "warn"]
+        : ["error"],
+  });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrisma()
+export const prisma = globalForPrisma.prisma ?? createPrisma();
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
 }

@@ -1,17 +1,17 @@
-import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { auth, signOut } from '@/auth'
-import { listWorkspacesForUser } from '@/server/workspace'
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth, signOut } from "@/auth";
+import { listWorkspacesForUser } from "@/server/workspace";
 
 export const metadata = {
-  title: 'Dashboard · Boardly',
-}
+  title: "Dashboard · Boardly",
+};
 
 export default async function DashboardPage() {
-  const session = await auth()
-  if (!session?.user) redirect('/signin?callbackUrl=/dashboard')
+  const session = await auth();
+  if (!session?.user) redirect("/signin?callbackUrl=/dashboard");
 
-  const workspaces = await listWorkspacesForUser(session.user.id)
+  const workspaces = await listWorkspacesForUser(session.user.id);
 
   return (
     <main className="min-h-screen bg-neutral-950 text-neutral-100">
@@ -25,8 +25,8 @@ export default async function DashboardPage() {
             <span className="text-neutral-400">{session.user.email}</span>
             <form
               action={async () => {
-                'use server'
-                await signOut({ redirectTo: '/signin' })
+                "use server";
+                await signOut({ redirectTo: "/signin" });
               }}
             >
               <button
@@ -43,11 +43,13 @@ export default async function DashboardPage() {
       <section className="mx-auto max-w-6xl px-6 py-10">
         <div className="mb-8 flex items-end justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Your workspaces</h2>
+            <h2 className="text-2xl font-bold tracking-tight">
+              Your workspaces
+            </h2>
             <p className="mt-1 text-sm text-neutral-400">
               {workspaces.length === 0
-                ? 'You do not belong to a workspace yet.'
-                : `${workspaces.length} workspace${workspaces.length === 1 ? '' : 's'} accessible to you.`}
+                ? "You do not belong to a workspace yet."
+                : `${workspaces.length} workspace${workspaces.length === 1 ? "" : "s"} accessible to you.`}
             </p>
           </div>
           <Link
@@ -85,7 +87,7 @@ export default async function DashboardPage() {
         )}
       </section>
     </main>
-  )
+  );
 }
 
 function EmptyState() {
@@ -102,16 +104,16 @@ function EmptyState() {
         Create workspace
       </Link>
     </div>
-  )
+  );
 }
 
 function RoleBadge({ role }: { role: string }) {
   const styles: Record<string, string> = {
-    OWNER: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
-    ADMIN: 'bg-violet-500/10 text-violet-300 border-violet-500/30',
-    EDITOR: 'bg-sky-500/10 text-sky-300 border-sky-500/30',
-    VIEWER: 'bg-neutral-500/10 text-neutral-300 border-neutral-500/30',
-  }
+    OWNER: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    ADMIN: "bg-violet-500/10 text-violet-300 border-violet-500/30",
+    EDITOR: "bg-sky-500/10 text-sky-300 border-sky-500/30",
+    VIEWER: "bg-neutral-500/10 text-neutral-300 border-neutral-500/30",
+  };
   return (
     <span
       className={`rounded-md border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
@@ -120,5 +122,5 @@ function RoleBadge({ role }: { role: string }) {
     >
       {role}
     </span>
-  )
+  );
 }
