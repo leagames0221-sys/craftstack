@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { removeCard, saveCard } from "./actions";
 import { BoardClient, type ClientList } from "./BoardClient";
+import { CommentsPanel } from "./CommentsPanel";
 
 export async function generateMetadata({
   params,
@@ -122,6 +123,8 @@ export default async function BoardPage({
           cardId={cardParam}
           error={errorParam ?? null}
           canWrite={canWrite}
+          currentUserId={session.user.id}
+          canModerate={role === "OWNER" || role === "ADMIN"}
         />
       ) : null}
     </main>
@@ -134,12 +137,16 @@ async function CardModal({
   cardId,
   error,
   canWrite,
+  currentUserId,
+  canModerate,
 }: {
   slug: string;
   boardId: string;
   cardId: string;
   error: string | null;
   canWrite: boolean;
+  currentUserId: string;
+  canModerate: boolean;
 }) {
   const card = await prisma.card.findFirst({
     where: {
@@ -281,6 +288,13 @@ async function CardModal({
           </div>
         </div>
       </form>
+
+      <CommentsPanel
+        cardId={cardId}
+        currentUserId={currentUserId}
+        canComment={canWrite}
+        canModerate={canModerate}
+      />
 
       {canWrite ? (
         <form
