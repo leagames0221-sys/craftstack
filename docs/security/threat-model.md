@@ -74,10 +74,9 @@ construction).
 
 **Failure mode**: every layer here `refuses` rather than `scales`.
 There is no path from this repository's configuration to a billed
-invoice without an explicit, deliberate operator action (plan upgrade
-
-- credit card + env rotation to a paid key). The guarantee is
-  structural, not aspirational.
+invoice without an explicit, deliberate operator action: plan upgrade,
+credit card on file, and env rotation to a paid key. The guarantee is
+structural, not aspirational.
 
 ## Out-of-scope for v1 (tracked, not mitigated)
 

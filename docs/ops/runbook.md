@@ -127,6 +127,42 @@ Incident playbook for production services. Every section follows the same shape:
 
 ---
 
+## 8. Incident report template
+
+```markdown
+# Incident <YYYY-MM-DD>: <one-line headline>
+
+**Severity**: SEV1 | SEV2 | SEV3
+**Impact start**: YYYY-MM-DD HH:MM UTC
+**Impact end**: YYYY-MM-DD HH:MM UTC
+**Affected**: <apps / regions / user %>
+
+## Timeline
+
+- HH:MM — detection
+- HH:MM — triage
+- HH:MM — mitigation applied
+- HH:MM — verified resolved
+
+## Root cause
+
+<one paragraph>
+
+## What went well
+
+- ...
+
+## What did not
+
+- ...
+
+## Action items
+
+- [ ] owner · deadline · task
+```
+
+---
+
 ## 9. Emergency stop (`EMERGENCY_STOP=1`)
 
 The nuclear option. Setting `EMERGENCY_STOP=1` in a deployment's env
@@ -170,44 +206,8 @@ read-only observability endpoints (`/api/kb/stats`, `/api/kb/budget`,
 2. Vercel Settings → Environment Variables → delete `EMERGENCY_STOP`
    (or set to `0`)
 3. Redeploy
-4. Verify the `/api/kb/budget` response now reports `emergencyStop:
-false`, and a fresh `/api/kb/ask` probe streams successfully
+4. Verify the `/api/kb/budget` response now reports `emergencyStop: false`,
+   and a fresh `/api/kb/ask` probe streams successfully
 
 **Data loss risk during stop**: zero. No writes are partially applied;
 the handler short-circuits before any DB or embedding call.
-
----
-
-## 8. Incident report template
-
-```markdown
-# Incident <YYYY-MM-DD>: <one-line headline>
-
-**Severity**: SEV1 | SEV2 | SEV3
-**Impact start**: YYYY-MM-DD HH:MM UTC
-**Impact end**: YYYY-MM-DD HH:MM UTC
-**Affected**: <apps / regions / user %>
-
-## Timeline
-
-- HH:MM — detection
-- HH:MM — triage
-- HH:MM — mitigation applied
-- HH:MM — verified resolved
-
-## Root cause
-
-<one paragraph>
-
-## What went well
-
-- ...
-
-## What did not
-
-- ...
-
-## Action items
-
-- [ ] owner · deadline · task
-```
