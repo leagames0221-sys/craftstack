@@ -50,7 +50,7 @@ export default function PlaygroundPage() {
             <span className="text-neutral-200">Knowlex</span>, the
             AI-knowledge-retrieval half of the craftstack monorepo. The model is
             told to use <em>only</em> the context you paste — if the answer
-            isn't there, it says so. Plumbed via Vercel AI SDK ·
+            isn&apos;t there, it says so. Plumbed via Vercel AI SDK ·
             Gemini-2.0-flash · streaming response via{" "}
             <code className="rounded bg-neutral-800/70 px-1 text-[11px]">
               fetch

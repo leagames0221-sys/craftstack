@@ -143,7 +143,7 @@ export function NotificationsBell() {
               </p>
             ) : data.rows.length === 0 ? (
               <p className="px-4 py-6 text-center text-xs text-neutral-500">
-                You're all caught up.
+                You&apos;re all caught up.
               </p>
             ) : (
               <ul className="divide-y divide-neutral-800">
@@ -187,7 +187,7 @@ function Item({ row, onMarkRead }: { row: Row; onMarkRead: () => void }) {
       </div>
       {excerpt ? (
         <div className="mt-0.5 text-xs text-neutral-400 line-clamp-2">
-          "{excerpt}"
+          &ldquo;{excerpt}&rdquo;
         </div>
       ) : null}
       <div className="mt-0.5 text-[10px] text-neutral-500">{when}</div>

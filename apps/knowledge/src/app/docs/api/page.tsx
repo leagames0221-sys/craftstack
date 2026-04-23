@@ -101,7 +101,7 @@ export default function DocsApiPage() {
         <aside className="col-span-12 md:col-span-3">
           <div className="sticky top-24 space-y-4">
             <div>
-              <h2 className="text-xs uppercase tracking-widest text-neutral-500">
+              <h2 className="text-xs uppercase tracking-widest text-neutral-400">
                 {spec.info.title}
               </h2>
               <p className="mt-1 text-sm text-neutral-400">
@@ -119,20 +119,20 @@ export default function DocsApiPage() {
                     className="flex items-center justify-between rounded-md px-2 py-1 text-sm text-neutral-300 hover:bg-neutral-900/60 hover:text-neutral-100"
                   >
                     <span>{tag}</span>
-                    <span className="text-[10px] text-neutral-500">
+                    <span className="text-[10px] text-neutral-400">
                       {count}
                     </span>
                   </a>
                 );
               })}
             </nav>
-            <div className="pt-4 text-[10px] leading-relaxed text-neutral-500">
+            <div className="pt-4 text-[10px] leading-relaxed text-neutral-400">
               Hand-written OpenAPI per{" "}
               <a
                 href="https://github.com/leagames0221-sys/craftstack/blob/main/docs/adr/0035-hand-written-openapi-as-the-contract.md"
                 target="_blank"
                 rel="noreferrer"
-                className="text-indigo-300 hover:text-indigo-200"
+                className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
               >
                 ADR-0035
               </a>
@@ -188,7 +188,7 @@ export default function DocsApiPage() {
       </div>
 
       <footer className="border-t border-neutral-800">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-6 text-xs text-neutral-500">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-6 text-xs text-neutral-400">
           <span>
             Generated from{" "}
             <code className="text-neutral-400">src/openapi.ts</code>.

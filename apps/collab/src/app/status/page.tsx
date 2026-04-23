@@ -126,8 +126,8 @@ export default async function StatusPage() {
         </h2>
         <p className="mt-3 max-w-2xl text-sm text-neutral-400">
           Every external service this project talks to is optional. Missing
-          credentials don't break the app — they degrade to a graceful fallback.
-          This page shows which paths are currently live.
+          credentials don&apos;t break the app — they degrade to a graceful
+          fallback. This page shows which paths are currently live.
         </p>
 
         <ul className="mt-8 divide-y divide-neutral-800 overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900/40">

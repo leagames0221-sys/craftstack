@@ -25,7 +25,7 @@ export default async function InvitePage({
     return (
       <Shell>
         <h1 className="text-2xl font-semibold tracking-tight">
-          You're invited to Boardly
+          You&apos;re invited to Boardly
         </h1>
         <p className="mt-2 text-sm text-neutral-400">
           Sign in to accept this invitation. Your email address must match the
@@ -63,7 +63,7 @@ export default async function InvitePage({
       return (
         <Shell>
           <h1 className="text-xl font-semibold tracking-tight text-red-300">
-            Couldn't accept invitation
+            Couldn&apos;t accept invitation
           </h1>
           <p className="mt-2 text-sm text-neutral-300">{err.message}</p>
           <p className="mt-1 text-xs text-neutral-500">

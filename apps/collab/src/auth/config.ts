@@ -51,7 +51,6 @@ function maybeCredentialsProvider() {
   if (!expected || expected.length < 16) return null;
   const expectedBytes = Buffer.from(expected);
 
-  // eslint-disable-next-line no-console
   console.warn(
     "[auth] E2E credentials provider REGISTERED — VERCEL=%s E2E_ENABLED=%s. This should only happen in CI/test runs.",
     process.env.VERCEL ?? "<unset>",

@@ -47,7 +47,7 @@ describe("move-history", () => {
   });
 
   it("popRedo is the inverse of popUndo", () => {
-    let h = pushMove(emptyHistory(), entry(1));
+    const h = pushMove(emptyHistory(), entry(1));
     const afterUndo = popUndo(h)!.next;
     const afterRedo = popRedo(afterUndo)!;
     expect(afterRedo.entry.cardId).toBe("c1");

@@ -49,7 +49,7 @@ export function ApiOperation({
         </code>
         <span
           aria-hidden
-          className="text-xs text-neutral-500 transition-transform"
+          className="text-xs text-neutral-400 transition-transform"
           style={{ transform: open ? "rotate(90deg)" : undefined }}
         >
           ▶
@@ -73,7 +73,7 @@ export function ApiOperation({
           {parameters.length > 0 ? (
             <Section title="Parameters">
               <table className="w-full border-collapse text-left">
-                <thead className="text-[10px] uppercase tracking-widest text-neutral-500">
+                <thead className="text-[10px] uppercase tracking-widest text-neutral-400">
                   <tr>
                     <th className="pb-2 pr-3 font-medium">Name</th>
                     <th className="pb-2 pr-3 font-medium">In</th>
@@ -162,7 +162,7 @@ function Section({
 }) {
   return (
     <div className="mb-4 last:mb-0">
-      <h4 className="mb-2 text-[10px] uppercase tracking-widest text-neutral-500">
+      <h4 className="mb-2 text-[10px] uppercase tracking-widest text-neutral-400">
         {title}
       </h4>
       {children}
@@ -197,7 +197,7 @@ function stringProp(
 function renderSchemaLine(body: Record<string, unknown>) {
   const content = isObject(body.content) ? body.content : {};
   const types = Object.keys(content);
-  if (types.length === 0) return <div className="text-neutral-500">—</div>;
+  if (types.length === 0) return <div className="text-neutral-400">—</div>;
   return (
     <div className="space-y-1 font-mono text-[11px] text-neutral-400">
       {types.map((t) => (

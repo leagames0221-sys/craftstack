@@ -28,6 +28,10 @@ export function CorpusClient() {
   }, []);
 
   useEffect(() => {
+    // Initial fetch on mount. Syncing external (server) state into
+    // React at mount is the textbook-approved use of an effect —
+    // react-hooks/set-state-in-effect is overzealous for this pattern.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [load]);
 
@@ -72,7 +76,7 @@ export function CorpusClient() {
   return (
     <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-2">
       <div className="flex flex-col gap-3">
-        <label className="text-[10px] uppercase tracking-widest text-neutral-500">
+        <label className="text-[10px] uppercase tracking-widest text-neutral-400">
           Title
         </label>
         <input
@@ -84,7 +88,7 @@ export function CorpusClient() {
           className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-3 text-sm text-neutral-100 placeholder:text-neutral-600 focus:border-indigo-500 focus:outline-none"
         />
 
-        <label className="mt-3 text-[10px] uppercase tracking-widest text-neutral-500">
+        <label className="mt-3 text-[10px] uppercase tracking-widest text-neutral-400">
           Content
         </label>
         <textarea
@@ -96,7 +100,7 @@ export function CorpusClient() {
           placeholder="Paste a passage — docs, notes, a memo. Will be chunked + embedded."
           className="min-h-[320px] rounded-lg border border-neutral-800 bg-neutral-900/60 p-3 text-sm text-neutral-100 placeholder:text-neutral-600 focus:border-indigo-500 focus:outline-none"
         />
-        <div className="flex items-center justify-between text-[10px] text-neutral-500">
+        <div className="flex items-center justify-between text-[10px] text-neutral-400">
           <span>{content.length.toLocaleString()} / 50,000 chars</span>
           <button
             type="button"
@@ -111,7 +115,7 @@ export function CorpusClient() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <div className="text-[10px] uppercase tracking-widest text-neutral-500">
+        <div className="text-[10px] uppercase tracking-widest text-neutral-400">
           Corpus ({docs.length})
         </div>
         <ul className="divide-y divide-neutral-800 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40">

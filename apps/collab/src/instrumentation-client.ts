@@ -37,7 +37,7 @@
     });
   } catch (err) {
     // Observability must never brick the page.
-    // eslint-disable-next-line no-console
+
     console.warn(
       "[instrumentation-client] Sentry init skipped:",
       (err as Error).message,

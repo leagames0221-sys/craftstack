@@ -69,7 +69,7 @@ export function PlaygroundClient() {
         return;
       }
       const decoder = new TextDecoder();
-      // eslint-disable-next-line no-constant-condition
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -246,8 +246,8 @@ export function PlaygroundClient() {
           ) : null}
         </div>
         <p className="text-[10px] text-neutral-600">
-          Answers are grounded only in the context above. If the context doesn't
-          cover the question, the model will say so.
+          Answers are grounded only in the context above. If the context
+          doesn&apos;t cover the question, the model will say so.
         </p>
       </div>
     </div>

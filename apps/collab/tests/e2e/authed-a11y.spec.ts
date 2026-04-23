@@ -42,7 +42,7 @@ for (const route of AUTHED_ROUTES) {
 
     if (serious.length > 0) {
       // Log for human review; don't fail the build yet.
-      // eslint-disable-next-line no-console
+
       console.warn(
         `[a11y] ${route} — ${serious.length} serious violation(s) (non-blocking):\n` +
           serious
