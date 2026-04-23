@@ -13,9 +13,11 @@ export type RetrievedChunk = {
 
 /**
  * Embed the question once and pull the top-K nearest chunks via
- * pgvector's `<=>` cosine-distance operator. The ivfflat index is used
- * transparently when present; a small corpus hits the seq-scan path
- * and is still sub-10 ms on Neon.
+ * pgvector's `<=>` cosine-distance operator. Backed by an HNSW index
+ * (see 20260424_hnsw migration) — we previously had ivfflat with
+ * lists=100 which silently returned 0 rows on small corpora because
+ * the default `probes=1` almost never hit the 1 list that held our
+ * 2-3 rows.
  *
  * Joins back to Document so the caller can cite by title without a
  * second round-trip.
@@ -31,51 +33,7 @@ export async function retrieveTopK(opts: {
 
   const [queryVector] = await embedTexts(opts.apiKey, [trimmed]);
   const vec = vectorLiteral(queryVector);
-  console.log(
-    `[retrieve] queryVector dim=${queryVector.length}, k=${k}, vec preview=${vec.slice(0, 80)}...`,
-  );
 
-  // Fallback sanity: if the query vector has the wrong dimensionality
-  // pgvector will throw on the `<=>` comparison. Surface that
-  // explicitly so we see which side of the pipeline is off.
-  const storedRows = await prisma.$queryRawUnsafe<
-    Array<{ count: bigint; any_dim: number | null }>
-  >(
-    `SELECT COUNT(*) AS count, MAX(vector_dims("embedding")) AS any_dim FROM "Embedding"`,
-  );
-  console.log(
-    `[retrieve] Embedding table: count=${storedRows[0] ? Number(storedRows[0].count) : 0}, stored_dim=${storedRows[0]?.any_dim ?? "?"}`,
-  );
-
-  const fullDiag = await prisma.$queryRawUnsafe<
-    Array<{
-      embChunkId: string;
-      hasChunk: boolean;
-      chunkDocId: string | null;
-      hasDocument: boolean;
-      embDim: number | null;
-      distance: number | null;
-    }>
-  >(
-    `SELECT e."chunkId" AS "embChunkId",
-            (c."id" IS NOT NULL)  AS "hasChunk",
-            c."documentId"        AS "chunkDocId",
-            (d."id" IS NOT NULL)  AS "hasDocument",
-            vector_dims(e."embedding") AS "embDim",
-            (e."embedding" <=> '${vec}'::vector) AS "distance"
-       FROM "Embedding" e
-       LEFT JOIN "Chunk"    c ON c."id" = e."chunkId"
-       LEFT JOIN "Document" d ON d."id" = c."documentId"
-       LIMIT 4`,
-  );
-  console.log(`[retrieve] full diag:`, JSON.stringify(fullDiag));
-
-  // Inline both the vector literal and LIMIT rather than binding via
-  // `$1`/`$2`. Prisma's `$queryRawUnsafe` positional binding was
-  // silently returning 0 rows despite count=2 and matching dims; inlining
-  // sidesteps whatever coercion was happening. Safe because `vec` is
-  // built from `Number.prototype.toString()` floats and `k` is clamped
-  // to `[1, 16]` above — no user input reaches the SQL string.
   const rows = await prisma.$queryRawUnsafe<
     Array<{
       chunkId: string;
@@ -92,14 +50,15 @@ export async function retrieveTopK(opts: {
        d."title"          AS "documentTitle",
        c."ordinal"        AS "ordinal",
        c."content"        AS "content",
-       (e."embedding" <=> '${vec}'::vector) AS "distance"
+       (e."embedding" <=> $1::vector) AS "distance"
      FROM "Embedding" e
      JOIN "Chunk"    c ON c."id" = e."chunkId"
      JOIN "Document" d ON d."id" = c."documentId"
-     ORDER BY e."embedding" <=> '${vec}'::vector
-     LIMIT ${k}`,
+     ORDER BY e."embedding" <=> $1::vector
+     LIMIT $2`,
+    vec,
+    k,
   );
-  console.log(`[retrieve] kNN returned ${rows.length} rows`);
 
   return rows.map((r) => ({
     chunkId: r.chunkId,
