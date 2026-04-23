@@ -105,7 +105,15 @@ export default async function Home() {
             rel="noreferrer"
             className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/60 px-5 py-3 text-sm text-neutral-200 hover:bg-neutral-800"
           >
-            ▶ Watch 45-second walkthrough
+            ▶ Boardly walkthrough (45 s)
+          </a>
+          <a
+            href="https://www.loom.com/share/acff991e3da94d5aa4e98dcee0b100e2"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900/60 px-5 py-3 text-sm text-neutral-200 hover:bg-neutral-800"
+          >
+            ▶ Knowlex RAG walkthrough (33 s)
           </a>
         </div>
 

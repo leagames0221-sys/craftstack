@@ -14,11 +14,12 @@
 
 Two production-grade SaaS applications designed and built from schema to deploy, as a solo developer, to demonstrate full-stack × from-scratch engineering capability.
 
-## 🎬 45-second walkthrough
+## 🎬 Walkthroughs
 
-[▶️ Watch on Loom](https://www.loom.com/share/1f6915e588cb4176bfc8272f0f9310bb)
+Two narrated demos, one per app. Japanese narration via VOICEVOX (speaker: ずんだもん, free tier); pipeline reproducible end-to-end — see [`scripts/demo/`](scripts/demo/) + [`scripts/demo-knowlex/`](scripts/demo-knowlex/).
 
-Covers DnD, labels, assignees, @mentions + notifications bell, invitations with the acceptUrl flow, activity feed, and the architectural decisions summary.
+- [▶️ **Boardly** — 45 s walkthrough](https://www.loom.com/share/1f6915e588cb4176bfc8272f0f9310bb) — DnD, labels, assignees, @mentions + notifications bell, invitations with the acceptUrl flow, activity feed, and the architectural decisions summary.
+- [▶️ **Knowlex** — 33 s RAG walkthrough](https://www.loom.com/share/acff991e3da94d5aa4e98dcee0b100e2) — `/kb` ingest (chunk → 768-dim embed), `/` ask (pgvector HNSW cosine kNN → streamed Gemini 2.0 Flash with numbered citations), `/api/kb/stats` live index-type probe, `/docs/api` hand-written OpenAPI 3.1.
 
 ## 🗺️ Architecture
 
