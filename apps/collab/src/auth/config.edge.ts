@@ -28,7 +28,15 @@ export const authEdgeConfig = {
   ],
   pages: { signIn: "/signin" },
   callbacks: {
-    authorized: async ({ auth }) => !!auth?.user,
+    authorized: async ({ auth, request }) => {
+      const { pathname } = request.nextUrl;
+      // Unauthenticated pages that still flow through the proxy so they
+      // get the nonce-based CSP header. Returning true here short-circuits
+      // the auth gate without changing page-level RBAC.
+      if (pathname.startsWith("/signin")) return true;
+      if (pathname.startsWith("/invite")) return true;
+      return !!auth?.user;
+    },
     session: async ({ session, token }) => {
       if (token.sub) session.user.id = token.sub;
       return session;
