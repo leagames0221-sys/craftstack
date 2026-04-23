@@ -12,9 +12,10 @@ ADR-0022 reserved the pattern of an Auth.js `Credentials` provider that only reg
 
 Implement the provider with a triple safety gate and wire an authenticated Playwright suite to it:
 
-1. **Credentials provider registration is gated on BOTH**:
-   - `process.env.NODE_ENV !== "production"` — mechanically excludes prod.
-   - `process.env.E2E_ENABLED === "1"` — off by default even in dev.
+1. **Credentials provider registration is gated on ALL of**:
+   - `process.env.VERCEL !== "1"` — mechanically excludes every Vercel-hosted deployment. Vercel always injects `VERCEL=1`. We originally used `NODE_ENV !== "production"` but `next build` + `next start` both run with `NODE_ENV=production`, which is also the mode CI serves from — so a `NODE_ENV` gate would break CI while providing no prod protection. The Vercel-env check is the honest one.
+   - `process.env.E2E_ENABLED === "1"` — off by default.
+   - `process.env.E2E_SHARED_SECRET` present and ≥ 16 bytes.
 2. **A valid credentials signin also requires**:
    - The email to be in a short hard-coded allowlist (`e2e+owner@e2e.example`, `e2e+editor@e2e.example`, `e2e+viewer@e2e.example`).
    - The `secret` field to constant-time-match `E2E_SHARED_SECRET` (≥16 chars).

@@ -40,6 +40,8 @@ jobs:
       DATABASE_URL: postgresql://app:app@localhost:5432/boardly
       DIRECT_DATABASE_URL: postgresql://app:app@localhost:5432/boardly
       AUTH_SECRET: ci-only-static-secret-for-jwt-signature-bytes-xxxxxxxxxx
+      AUTH_TRUST_HOST: "true"
+      AUTH_URL: http://127.0.0.1:3000
       E2E_ENABLED: "1"
       E2E_SHARED_SECRET: ci-only-shared-secret-for-credentials-provider
       E2E_BASE_URL: http://127.0.0.1:3000

@@ -22,14 +22,21 @@ import { prisma } from "@/lib/db";
 /**
  * E2E-only credentials provider (ADR-0022, implementation ADR-0038).
  *
- * Registered ONLY when BOTH gates are green:
- *   - NODE_ENV !== "production"
+ * Registered ONLY when the triple gate is green:
  *   - E2E_ENABLED === "1"
+ *   - E2E_SHARED_SECRET is set and >= 16 bytes
+ *   - VERCEL env var is NOT set (mechanically excludes Vercel-hosted
+ *     deploys regardless of NODE_ENV; Vercel always sets VERCEL=1)
  *
- * Even with both set, a valid signin requires a `secret` field matching
+ * Even with all three, a valid signin requires a `secret` field matching
  * E2E_SHARED_SECRET via constant-time compare, AND the email must be in
  * a short allowlist. This makes the provider a surgical tool for the
- * Playwright CI suite and mechanically inert everywhere else.
+ * Playwright CI suite and mechanically inert on prod.
+ *
+ * Note: `next build` sets NODE_ENV=production for the optimized output,
+ * and `next start` preserves it — so a NODE_ENV-based gate would break
+ * CI. We use the Vercel-env heuristic instead, which is set by the
+ * hosting platform, not by the build step.
  */
 const ALLOWED_E2E_EMAILS = new Set([
   "e2e+owner@e2e.example",
@@ -38,7 +45,7 @@ const ALLOWED_E2E_EMAILS = new Set([
 ]);
 
 function maybeCredentialsProvider() {
-  if (process.env.NODE_ENV === "production") return null;
+  if (process.env.VERCEL === "1") return null;
   if (process.env.E2E_ENABLED !== "1") return null;
   const expected = process.env.E2E_SHARED_SECRET;
   if (!expected || expected.length < 16) return null;
@@ -46,8 +53,8 @@ function maybeCredentialsProvider() {
 
   // eslint-disable-next-line no-console
   console.warn(
-    "[auth] E2E credentials provider REGISTERED — NODE_ENV=%s E2E_ENABLED=%s. This should only happen in CI/test runs.",
-    process.env.NODE_ENV,
+    "[auth] E2E credentials provider REGISTERED — VERCEL=%s E2E_ENABLED=%s. This should only happen in CI/test runs.",
+    process.env.VERCEL ?? "<unset>",
     process.env.E2E_ENABLED,
   );
 
