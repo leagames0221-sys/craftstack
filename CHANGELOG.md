@@ -4,11 +4,42 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-Next candidate blocks are tracked in the session memory at `~/.claude/other-projects/craftstack/26_session_251_v030_release.md`. Short list:
+- LLM-as-judge mode for `scripts/eval.ts` (`--judge`, env-gated).
+- Secrets-gated CI job that runs the RAG eval nightly and commits reports into `docs/eval/reports/`.
+- Sentry browser SDK + release source-map upload (server-side capture ships in 0.4.0; client capture needs an actual DSN and build-time auth token).
+- Boardly: card attachments (base64 data URL, < 256 KB).
 
-- Knowlex proper (apps/knowledge deploy + pgvector + real RAG)
-- Playwright auth-scoped E2E suite
-- Card attachments (base64 data URL, <256 KB)
+## [0.4.0] — 2026-04-24
+
+Release: <https://github.com/leagames0221-sys/craftstack/releases/tag/v0.4.0>
+
+Knowlex goes URL-level live with real RAG: its own Vercel project, its own Neon Postgres with pgvector, citation-grounded Gemini 2.0 Flash answers. Comes with an integration-test / bench / live-smoke / eval quartet designed so the class of bug that blocked the 0.3.x RAG path never silently reshiped.
+
+### Added
+
+- **Knowlex RAG app** at <https://craftstack-knowledge.vercel.app>, own Vercel deployment against a dedicated Neon `knowlex-db` (Singapore, Free). Ingest at `/kb`, ask at `/`. Paragraph-aware 512-char chunking, 768-dim embeddings via `gemini-embedding-001` (`outputDimensionality` provider option), pgvector kNN over an **HNSW** cosine index, streamed Gemini 2.0 Flash answer with numbered citations. Separate Prisma migration chain, separate Vitest suite, separate Playwright smoke.
+- **`/api/kb/stats`** — operational probe returning `{ documents, chunks, embeddings, orphanEmbeddings, storedDim, expectedDim, embeddingModel, indexType }`. Makes "why is retrieval returning 0?" a one-curl diagnosis instead of a redeploy loop.
+- **Integration test harness** — `apps/knowledge/src/server/retrieve.integration.test.ts` exercises the real pgvector kNN path against a docker-compose postgres, with a mocked Gemini embedder so no API key is required. Asserts that `retrieveTopK` returns every row when `k ≥ corpus size` — the exact regression that the ivfflat path produced silently. Runs in CI via the new `knowledge-integration` job with a `pgvector/pgvector:pg16` service container.
+- **Bench script** — `pnpm --filter knowledge bench` seeds N=1000 random 768-dim vectors and runs M=100 kNN probes, reporting min / p50 / p95 / p99 / max. Idempotent seed + `BENCH_CLEAN=1` teardown. Prints numbers instead of asserting them, by design.
+- **Live smoke** — `.github/workflows/smoke.yml` runs a Knowlex Playwright smoke against the live Vercel URL every 6 hours (plus on workflow_dispatch and main pushes, with a 90-second sleep so Vercel has time to deploy). Asserts among other things that `indexType === "hnsw"`, so an accidental ivfflat rollback trips the workflow.
+- **RAG regression eval** — `pnpm --filter knowledge eval` seeds a self-contained 3-doc / 10-question golden set (`docs/eval/golden_qa.json`), asks each question, scores `expectedSubstrings` (faithfulness proxy), `expectedDocumentTitle` (citation-coverage proxy), and `expectedRefusal` (robustness against prompt injection / out-of-corpus), and fails the script when pass rate drops below 80 % or p95 latency exceeds 8 s. `docs/eval/README.md` now accurately describes what ships vs. what's still aspirational (LLM-as-judge, multilingual).
+- **Cost guards on Knowlex** — `apps/knowledge/src/lib/kb-rate-limit.ts` (per-IP sliding window) + `apps/knowledge/src/lib/global-budget.ts` (per-container day/month cap, env-tunable), wired into both `/api/kb/ask` and `/api/kb/ingest` with distinct error codes (`RATE_LIMIT_EXCEEDED`, `BUDGET_EXCEEDED_DAY`, `BUDGET_EXCEEDED_MONTH`). Parity with the Boardly-hosted playground.
+- **Transactional ingest** — `ingestDocument` now wraps Document + Chunk + Embedding writes in `prisma.$transaction` so a mid-flight DB failure no longer leaves a partial corpus. Earlier JSDoc claimed this; the code didn't.
+- **Unified embedder path** — `embedTexts` routes through `embedMany` for single- and multi-value calls alike, with a post-hoc `length !== 768` assert that surfaces silent dim drift at the boundary instead of downstream.
+- **Knowlex Playwright config + smoke suite** — `apps/knowledge/tests/smoke/stats.spec.ts` covers `/`, `/kb`, and `/api/kb/stats` shape.
+- **4 new ADRs** (ADR-0041 through ADR-0044): ivfflat → HNSW, test & observability stack, operational parity (cost + CI + eval), and OpenAPI + a11y + Sentry instrumentation for Knowlex.
+
+### Changed
+
+- **`docs/eval/`** — the aspirational `golden_qa.yaml` (referenced a nonexistent `run-eval.ts`, quoted thresholds the code couldn't compute) replaced with a working `golden_qa.json` and a rewritten README that calls out what's measured vs. aspirational.
+- **Boardly `/api/kb/ask`** — the bit-rotted diagnostic code left over from Session 252 is retired. The unreachable `streamText` import and the `[debug]`-prefixed error strings are gone; the `generateText`-vs-`streamText` choice is now documented as intentional (12 KB context + Vercel proxy streaming edge cases) rather than half-investigated, and error paths return structured JSON codes (`EMPTY_ANSWER`, `GENERATION_FAILED`) instead of leaking exception shape.
+- **Knowlex `/api/kb/ask`** — the `[debug]` prefix on 500 responses removed; failures return `{ code: "RETRIEVAL_FAILED" }`. Details stay server-side.
+- **README Apps table** — Knowlex goes from "Schema ready" to "MVP live deploy"; the stack column reflects the shipped pgvector HNSW / Gemini embedder reality instead of a planned-feature list.
+
+### Fixed
+
+- **Knowlex kNN returning 0 rows on a non-empty corpus** — the v0.3.x Knowlex MVP shipped with an ivfflat cosine index at `lists = 100`. pgvector's default `ivfflat.probes = 1` probed 1 of 100 inverted lists per query; against a small corpus the 2 rows that actually existed were almost never in the probed list, so `ORDER BY <=> LIMIT k` silently returned `[]`. Dropped for an HNSW index (no probe cutoff, correct at any corpus size). Full diagnostic trail in [ADR-0041](docs/adr/0041-knowlex-ivfflat-to-hnsw.md).
+- **`apps/knowledge/.gitignore`** was blocking `.env.example` with a `.env*` wildcard; now carves out `!.env.example` so the template ships. The template itself calls out the `prisma.config.ts` precedence trap that cost a round of debug in Session 253 (it reads `DIRECT_DATABASE_URL` before `DATABASE_URL`, so `.env`-set localhost wins over shell-set remote unless DIRECT is overridden too).
 
 ## [0.3.0] — 2026-04-23
 

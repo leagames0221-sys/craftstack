@@ -20,6 +20,55 @@ Two production-grade SaaS applications designed and built from schema to deploy,
 
 Covers DnD, labels, assignees, @mentions + notifications bell, invitations with the acceptUrl flow, activity feed, and the architectural decisions summary.
 
+## 🗺️ Architecture
+
+```mermaid
+flowchart LR
+    subgraph client["Browser"]
+        B_UI["Boardly UI<br/>(Next.js 16 client)"]
+        K_UI["Knowlex UI<br/>(Next.js 16 client)"]
+    end
+
+    subgraph vercel["Vercel Hobby ($0)"]
+        B_APP["craftstack-collab<br/>Node + Edge runtime"]
+        K_APP["craftstack-knowledge<br/>Node runtime"]
+    end
+
+    subgraph neon["Neon Singapore (Free)"]
+        B_DB[("boardly-db<br/>Postgres 16")]
+        K_DB[("knowlex-db<br/>Postgres 16 + pgvector<br/>HNSW cosine index")]
+    end
+
+    subgraph ext["External (all free tier, $0)"]
+        UPSTASH[("Upstash Redis<br/>Tokyo")]
+        PUSHER["Pusher Channels"]
+        RESEND["Resend email"]
+        GEMINI["Google AI Studio<br/>gemini-embedding-001<br/>gemini-2.5-flash"]
+    end
+
+    subgraph ghci["GitHub Actions (free)"]
+        CI["ci.yml<br/>lint + typecheck + test<br/>+ knowledge-integration<br/>(pgvector service)"]
+        SMOKE["smoke.yml<br/>live smoke every 6 h"]
+        CODEQL["codeql.yml<br/>security scan"]
+        SBOM["sbom.yml<br/>CycloneDX on tag"]
+    end
+
+    B_UI -->|"auth · boards · cards"| B_APP
+    K_UI -->|"ingest · ask"| K_APP
+    B_APP --> B_DB
+    B_APP -.->|"rate-limited<br/>$0 cap"| GEMINI
+    K_APP --> K_DB
+    K_APP -->|"768-dim embeddings<br/>+ streamed answer"| GEMINI
+    B_APP -.-> UPSTASH
+    B_APP -.-> PUSHER
+    B_APP -.-> RESEND
+
+    SMOKE -.->|"E2E_BASE_URL"| K_APP
+    CI -->|"service: pgvector"| CI
+```
+
+All production services are free-tier, no credit-card-on-file. Full cost model in [`COST_SAFETY.md`](COST_SAFETY.md).
+
 ## 🌐 Live demo
 
 **Boardly**: <https://craftstack-collab.vercel.app>
