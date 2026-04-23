@@ -11,6 +11,12 @@
 
 Two production-grade SaaS applications designed and built from schema to deploy, as a solo developer, to demonstrate full-stack × from-scratch engineering capability.
 
+## 🎬 45-second walkthrough
+
+[▶️ Watch on Loom](https://www.loom.com/share/1f6915e588cb4176bfc8272f0f9310bb)
+
+Covers DnD, labels, assignees, @mentions + notifications bell, invitations with the acceptUrl flow, activity feed, and the architectural decisions summary.
+
 ## 🌐 Live demo
 
 **Boardly**: <https://craftstack-collab.vercel.app>
