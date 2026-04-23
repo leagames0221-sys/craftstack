@@ -18,6 +18,8 @@
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
     "db:migrate": "turbo run db:migrate",
+    "demo:tts": "node scripts/demo/demo-tts.mjs",
+    "demo:compose": "node scripts/demo/demo-compose.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,md,json,yaml,yml}\"",
     "prepare": "husky"

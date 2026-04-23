@@ -79,6 +79,7 @@ craftstack/
 - **Card assignees**: full-replace PUT with membership guard (cross-workspace assigns rejected), avatar stack on board cards with +N overflow, modal picker listing workspace members, newly-added assignees get an ASSIGNED notification (self-assigns silent)
 - **Board label filter**: URL-driven (`?labels=id1,id2`) chip bar above the board — shareable, survives refresh, union semantics (card shown if it has **any** active label)
 - **WIP limits per list** (ADMIN+): inline `⚙` editor on list headers, amber header at-limit, red border + ring when over, back-end validates positive integer or null
+- **Demo video pipeline** (`pnpm demo:tts && pnpm demo:compose`): capture a silent screen recording once, and an ffmpeg+TTS toolchain overlays a fully synthesized Japanese narration. Pluggable providers — **VOICEVOX** (local, $0) or **Azure Neural TTS** (500k chars/mo free). Script lives as JSON; editing the story is two commands away from a new mp4. See [scripts/demo/README.md](scripts/demo/README.md)
 
 ### Planned (see [Roadmap](#roadmap))
 

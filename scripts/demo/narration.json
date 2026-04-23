@@ -1,0 +1,55 @@
+{
+  "title": "Craftstack Boardly — 90-second tour",
+  "description": "Timeline-driven narration for the Boardly demo video. Each line plays at its start timestamp; the TTS tool rounds to 50ms. Keep each line under ~4s of spoken audio to avoid overlap with the next cue. Re-run `pnpm demo:tts` after editing.",
+  "language": "ja-JP",
+  "voice": {
+    "voicevox": { "speaker": 3 },
+    "azure": { "name": "ja-JP-NanamiNeural", "style": "friendly" }
+  },
+  "lines": [
+    {
+      "at": 0.5,
+      "text": "こちらは Boardly。リアルタイム協働カンバンを Next.js 16 で組みました。"
+    },
+    {
+      "at": 7.0,
+      "text": "GitHub でサインインすると、ダッシュボードからワークスペースとボードを作成できます。"
+    },
+    {
+      "at": 14.0,
+      "text": "ボードはリストとカードで構成。カードはドラッグアンドドロップで列を移動できます。"
+    },
+    {
+      "at": 22.0,
+      "text": "位置情報は LexoRank で管理していて、並び替えは1行の更新で済みます。楽観ロックで同時編集の競合も検出。"
+    },
+    {
+      "at": 31.0,
+      "text": "カードを開くと、ラベルとアサイニー、期日、コメント、そしてカード履歴が見えます。"
+    },
+    {
+      "at": 40.0,
+      "text": "コメントでアットマーク付きのハンドルを書けば、ワークスペースのメンバーに通知が飛びます。"
+    },
+    {
+      "at": 48.0,
+      "text": "ヘッダーのベルアイコンには未読バッジ。クリックでそのカードに直接飛べます。"
+    },
+    {
+      "at": 56.0,
+      "text": "招待はトークンハッシュで保存、3層レート制限で不正利用も防いでいます。"
+    },
+    {
+      "at": 64.0,
+      "text": "リアルタイム連携は Pusher Channels。2つのタブで同じボードを開くと、変更が1秒以内に反映されます。"
+    },
+    {
+      "at": 74.0,
+      "text": "テストは Vitest が130件、Playwright が11件、すべてグリーン。"
+    },
+    {
+      "at": 81.0,
+      "text": "詳細は GitHub リポジトリと v0.2.0 リリースノートをご覧ください。ご覧いただきありがとうございました。"
+    }
+  ]
+}
