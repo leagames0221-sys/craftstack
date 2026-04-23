@@ -135,3 +135,93 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
           DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
         run: pnpm --filter knowledge test:integration
+
+  a11y-knowledge:
+    name: knowlex a11y gate (WCAG 2.1 AA)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # Same pgvector service as the integration job — /kb renders
+    # CorpusClient which calls /api/kb/stats, and that query set
+    # needs a live Embedding table.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Knowlex Prisma client
+        run: pnpm --filter knowledge exec prisma generate
+
+      - name: Create knowlex database + pgvector extension
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c 'CREATE DATABASE knowlex;'
+          psql -h localhost -U postgres -d knowlex -c 'CREATE EXTENSION vector;'
+
+      - name: Apply migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
+        run: pnpm --filter knowledge exec prisma migrate deploy
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browser
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+            pnpm --filter knowledge exec playwright install --with-deps chromium
+          else
+            pnpm --filter knowledge exec playwright install-deps chromium
+          fi
+
+      # E2E_BASE_URL left unset so playwright.config.ts auto-spins up
+      # `pnpm dev` on :3001. The a11y spec itself needs no secrets —
+      # /, /kb, /docs/api are all public pages — and the Gemini key is
+      # optional at load time (ingest / ask calls aren't exercised).
+      - name: Run Knowlex a11y gate
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
+        run: pnpm --filter knowledge exec playwright test tests/smoke/a11y.spec.ts
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: knowlex-a11y-report
+          path: apps/knowledge/playwright-report/
+          retention-days: 7
