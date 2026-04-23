@@ -21,9 +21,15 @@
  */
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(new URL(".", import.meta.url).pathname, "..", "..");
+// Resolve paths from the script's own location so the tool works regardless
+// of the cwd when invoked via pnpm. fileURLToPath is the correct Windows-
+// friendly way to turn `import.meta.url` into a filesystem path — raw
+// `.pathname` leaves a leading slash that path.resolve mishandles.
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(HERE, "..", "..");
 const SCRIPT_FILE = resolve(ROOT, "scripts/demo/narration.json");
 const OUT_DIR = resolve(ROOT, "scripts/demo/out");
 
@@ -38,11 +44,25 @@ async function main() {
   for (let i = 0; i < script.lines.length; i++) {
     const line = script.lines[i];
     const outPath = resolve(OUT_DIR, `line-${String(i).padStart(3, "0")}.wav`);
-    console.log(`[tts] ${i + 1}/${script.lines.length} @${line.at}s: ${line.text.slice(0, 40)}...`);
+    // Per-line overrides take priority over the voice-level default. This
+    // lets the first / last lines run at a different speed without having
+    // to split the narration file.
+    const mergedVoice = (base) => ({
+      ...(base ?? {}),
+      ...(typeof line.speedScale === "number"
+        ? { speedScale: line.speedScale }
+        : {}),
+      ...(typeof line.pitchScale === "number"
+        ? { pitchScale: line.pitchScale }
+        : {}),
+    });
+    console.log(
+      `[tts] ${i + 1}/${script.lines.length} @${line.at}s${typeof line.speedScale === "number" ? ` (x${line.speedScale})` : ""}: ${line.text.slice(0, 40)}...`,
+    );
     if (provider === "voicevox") {
-      await viaVoicevox(line.text, script.voice.voicevox, outPath);
+      await viaVoicevox(line.text, mergedVoice(script.voice.voicevox), outPath);
     } else if (provider === "azure") {
-      await viaAzure(line.text, script.voice.azure, outPath);
+      await viaAzure(line.text, mergedVoice(script.voice.azure), outPath);
     } else {
       throw new Error(`Unknown TTS_PROVIDER: ${provider}`);
     }
@@ -70,6 +90,15 @@ async function viaVoicevox(text, voice, outPath) {
     );
   }
   const query = await q.json();
+  // Apply speed / pitch / volume tweaks from narration.json. speedScale
+  // defaults to 1.0 (normal); set 1.15 for a slightly faster delivery that
+  // fits more text into each cue window without running into the next line.
+  if (typeof voice?.speedScale === "number") query.speedScale = voice.speedScale;
+  if (typeof voice?.pitchScale === "number") query.pitchScale = voice.pitchScale;
+  if (typeof voice?.intonationScale === "number")
+    query.intonationScale = voice.intonationScale;
+  if (typeof voice?.volumeScale === "number")
+    query.volumeScale = voice.volumeScale;
 
   // Step 2: synthesis — render the wav.
   const s = await fetch(`${base}/synthesis?speaker=${speaker}`, {
@@ -92,10 +121,18 @@ async function viaAzure(text, voice, outPath) {
   }
   const voiceName = voice?.name ?? "ja-JP-NanamiNeural";
   const style = voice?.style ?? "general";
+  // Map the VOICEVOX-ish speedScale to Azure's prosody rate. 1.0 = +0%,
+  // 1.15 = +15%, 0.9 = -10%.
+  const rate =
+    typeof voice?.speedScale === "number"
+      ? `${Math.round((voice.speedScale - 1) * 100)}%`
+      : "+0%";
   const ssml = `<?xml version='1.0'?>
 <speak version='1.0' xml:lang='ja-JP' xmlns:mstts='https://www.w3.org/2001/mstts'>
   <voice name='${voiceName}'>
-    <mstts:express-as style='${style}'>${escapeXml(text)}</mstts:express-as>
+    <mstts:express-as style='${style}'>
+      <prosody rate='${rate}'>${escapeXml(text)}</prosody>
+    </mstts:express-as>
   </voice>
 </speak>`;
 

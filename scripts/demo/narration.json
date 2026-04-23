@@ -1,55 +1,46 @@
 {
-  "title": "Craftstack Boardly — 90-second tour",
-  "description": "Timeline-driven narration for the Boardly demo video. Each line plays at its start timestamp; the TTS tool rounds to 50ms. Keep each line under ~4s of spoken audio to avoid overlap with the next cue. Re-run `pnpm demo:tts` after editing.",
+  "title": "Craftstack Boardly — 45-second walkthrough",
+  "description": "Timeline-driven narration. Each line plays at `at` seconds. Use `voice.voicevox.speedScale` for the default delivery rate, and override per-line with `speedScale` on any individual line (e.g. to rush a long cue without changing the rest).",
   "language": "ja-JP",
   "voice": {
-    "voicevox": { "speaker": 3 },
-    "azure": { "name": "ja-JP-NanamiNeural", "style": "friendly" }
+    "voicevox": { "speaker": 3, "speedScale": 1.15 },
+    "azure": {
+      "name": "ja-JP-NanamiNeural",
+      "style": "friendly",
+      "speedScale": 1.1
+    }
   },
   "lines": [
     {
       "at": 0.5,
-      "text": "こちらは Boardly。リアルタイム協働カンバンを Next.js 16 で組みました。"
+      "speedScale": 1.35,
+      "text": "Boardly、Next.js 16 で構築したリアルタイム協働カンバンです。"
     },
     {
-      "at": 7.0,
-      "text": "GitHub でサインインすると、ダッシュボードからワークスペースとボードを作成できます。"
+      "at": 6.5,
+      "text": "ワークスペースとボードで階層を作り、カードはドラッグで列間を移動。"
     },
     {
-      "at": 14.0,
-      "text": "ボードはリストとカードで構成。カードはドラッグアンドドロップで列を移動できます。"
+      "at": 13.0,
+      "text": "位置は LexoRank、楽観ロックで同時編集の競合も検出します。"
     },
     {
-      "at": 22.0,
-      "text": "位置情報は LexoRank で管理していて、並び替えは1行の更新で済みます。楽観ロックで同時編集の競合も検出。"
+      "at": 19.0,
+      "text": "カードにはラベル、アサイニー、期日、コメント、履歴が揃います。"
     },
     {
-      "at": 31.0,
-      "text": "カードを開くと、ラベルとアサイニー、期日、コメント、そしてカード履歴が見えます。"
+      "at": 25.5,
+      "text": "アットマーク付きハンドルで通知が飛び、ベルのバッジから直接移動できます。"
     },
     {
-      "at": 40.0,
-      "text": "コメントでアットマーク付きのハンドルを書けば、ワークスペースのメンバーに通知が飛びます。"
+      "at": 32.5,
+      "speedScale": 1.3,
+      "text": "招待はトークンハッシュ、3層レート制限で保護。"
     },
     {
-      "at": 48.0,
-      "text": "ヘッダーのベルアイコンには未読バッジ。クリックでそのカードに直接飛べます。"
-    },
-    {
-      "at": 56.0,
-      "text": "招待はトークンハッシュで保存、3層レート制限で不正利用も防いでいます。"
-    },
-    {
-      "at": 64.0,
-      "text": "リアルタイム連携は Pusher Channels。2つのタブで同じボードを開くと、変更が1秒以内に反映されます。"
-    },
-    {
-      "at": 74.0,
-      "text": "テストは Vitest が130件、Playwright が11件、すべてグリーン。"
-    },
-    {
-      "at": 81.0,
-      "text": "詳細は GitHub リポジトリと v0.2.0 リリースノートをご覧ください。ご覧いただきありがとうございました。"
+      "at": 36.0,
+      "speedScale": 1.35,
+      "text": "Vitest 130件、Playwright 11件。詳細は GitHub で。"
     }
   ]
 }
