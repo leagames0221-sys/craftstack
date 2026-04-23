@@ -1,6 +1,16 @@
 # Demo video pipeline
 
-Overlays a synthesized TTS narration onto a silent screen recording so you can ship a presentable demo without owning a microphone or editing software. All tooling is free-tier.
+Produces a narrated demo video of Boardly without a microphone, without screen-recording skill, and with zero ongoing cost.
+
+The pipeline is **split into three optional stages** so you can enter at whichever point matches the time you have:
+
+| Stage      | Command                                                     | What it does                                                                                                            | When you'd skip                                                                                    |
+| ---------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1. Capture | `pnpm demo:auth` → `pnpm demo:record` → `pnpm demo:convert` | Drives a real browser via Playwright using your saved OAuth cookies, records a silent mp4 into `scripts/demo/input.mp4` | If you'd rather record manually with OBS / Win+G and drop your own mp4 at `scripts/demo/input.mp4` |
+| 2. Narrate | `pnpm demo:tts`                                             | Synthesizes Japanese narration from `narration.json` using VOICEVOX or Azure Neural TTS                                 | If you want no voice-over                                                                          |
+| 3. Compose | `pnpm demo:compose`                                         | ffmpeg overlays the narration (and optional subtitles) onto `input.mp4`, emits `scripts/demo/out/final.mp4`             | You can't skip this if you ran stage 2                                                             |
+
+Or just `pnpm demo:all` from the repo root to run all three back to back.
 
 ## One-time setup
 
@@ -26,41 +36,65 @@ Install **ffmpeg** (any platform) and pick a TTS provider:
    ```
 3. Voice name lives in `narration.json` under `voice.azure.name` (default: `ja-JP-NanamiNeural`).
 
-## Recording workflow
+## Stage 1: Automated capture (Playwright)
 
-1. **Capture a silent screen recording** (~90 seconds) walking through the board. Save it as:
+Uses **your** saved OAuth cookies to drive a real browser end-to-end. Records against `https://craftstack-collab.vercel.app` by default; override with `DEMO_BASE_URL` (e.g. `http://localhost:3000` when you want to record against dev).
 
-   ```
-   scripts/demo/input.mp4
-   ```
+Pre-req: have at least one workspace + board + a handful of cards already created in the account you'll sign in as. The script doesn't create data — it navigates what's there.
 
-   Any tool works — OBS, Windows Game Bar (Win+G), macOS Screenshot (Cmd+Shift+5), Loom → download. Mute the microphone before recording.
+### One-time auth capture
 
-2. **Edit `narration.json`** if you want to change the script. The `at` timestamps are your cue points; each line plays at `at` seconds into the video.
+```bash
+pnpm demo:auth
+```
 
-3. **Generate the voice tracks:**
+A browser window opens on `/signin`. **Sign in manually with GitHub** (recommended — Google is still in Testing gate). As soon as `/dashboard` loads, Playwright saves the cookies to `apps/collab/playwright/.auth/user.json` and the window closes. Re-run this whenever the session cookie expires (~30 days).
 
-   ```bash
-   # VOICEVOX engine must be running
-   TTS_PROVIDER=voicevox pnpm demo:tts
+### Reproducible recording
 
-   # or
-   TTS_PROVIDER=azure pnpm demo:tts
-   ```
+```bash
+pnpm demo:record
+# optional: point at a specific workspace / board
+DEMO_WORKSPACE_SLUG=demo DEMO_BOARD_SLUG=sprint-1 pnpm demo:record
+```
 
-   Output: `scripts/demo/out/line-NNN.wav` (one per narration line) + `captions.srt`.
+A real Chrome window opens at 1920×1080, navigates dashboard → workspace → board, drags a card, opens the card modal, scrolls to show labels / assignees / comments / history, opens the notifications bell, and returns to the workspace page — a roughly 60-second silent walkthrough.
 
-4. **Compose the final mp4:**
+### Convert to mp4
 
-   ```bash
-   pnpm demo:compose
-   # or with subtitles burned in:
-   DEMO_SUBTITLES=1 pnpm demo:compose
-   ```
+```bash
+pnpm demo:convert
+```
 
-   Output: `scripts/demo/out/final.mp4`
+Finds the newest `video.webm` that Playwright wrote under `apps/collab/test-results-demo/**`, trims the dead frames off the head, caps at 95 seconds, and writes `scripts/demo/input.mp4`.
 
-5. Upload to Loom / YouTube / paste into README.
+## Stage 1 alternative: manual screen recording
+
+If you'd rather not automate the browser, capture a silent mp4 with any tool (OBS, Windows Game Bar / Win+G, macOS Screenshot, Loom → download) and save it as `scripts/demo/input.mp4`. Skip to Stage 2.
+
+## Stage 2: Narration (TTS)
+
+Edit `narration.json` if you want to change the script. The `at` timestamps are cue points; each line plays at `at` seconds into the video.
+
+```bash
+# VOICEVOX engine must be running locally
+TTS_PROVIDER=voicevox pnpm demo:tts
+
+# or Azure Neural TTS (AZURE_TTS_KEY + AZURE_TTS_REGION env vars required)
+TTS_PROVIDER=azure pnpm demo:tts
+```
+
+Output: `scripts/demo/out/line-NNN.wav` (one per narration line) + `captions.srt`.
+
+## Stage 3: Compose
+
+```bash
+pnpm demo:compose
+# or with subtitles burned in:
+DEMO_SUBTITLES=1 pnpm demo:compose
+```
+
+Output: `scripts/demo/out/final.mp4`. Upload to Loom / YouTube / embed in README.
 
 ## Troubleshooting
 

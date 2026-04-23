@@ -12,6 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install --with-deps chromium",
+    "demo:auth": "playwright test --config=playwright.demo.config.ts --project=setup",
+    "demo:record": "playwright test --config=playwright.demo.config.ts --project=record",
     "db:seed": "tsx prisma/seed.ts",
     "postinstall": "prisma generate"
   },
