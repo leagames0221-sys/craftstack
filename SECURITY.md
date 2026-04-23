@@ -1,5 +1,7 @@
 # Security policy
 
+See also: [**COST_SAFETY.md**](COST_SAFETY.md) for the threat model and mitigations around runaway-cost attacks (bandwidth, LLM-invocation, email-quota abuse).
+
 ## Supported versions
 
 This is a solo portfolio project. Only the `main` branch is supported. Please exercise `main`'s current HEAD when reporting.

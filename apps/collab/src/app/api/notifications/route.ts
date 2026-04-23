@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { handle, json } from "@/lib/api";
-import { UnauthorizedError } from "@/lib/errors";
+import { RateLimitError, UnauthorizedError } from "@/lib/errors";
+import { checkUserLimit } from "@/lib/user-rate-limit";
 import { listNotifications, unreadCount } from "@/server/notification";
 
 /**
@@ -11,6 +12,15 @@ import { listNotifications, unreadCount } from "@/server/notification";
 export const GET = handle(async (req: Request) => {
   const session = await auth();
   if (!session?.user) throw new UnauthorizedError();
+
+  // The bell polls every 30s; 30 req/minute is ~15x normal headroom.
+  const rl = checkUserLimit("notifications", session.user.id, 60_000, 30);
+  if (!rl.ok) {
+    throw new RateLimitError(
+      "NOTIFICATIONS_RATE_LIMITED",
+      `Too many notification polls. Retry in ${rl.retryAfterSeconds}s.`,
+    );
+  }
 
   const url = new URL(req.url);
   const limitRaw = url.searchParams.get("limit");

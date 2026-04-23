@@ -2,6 +2,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { streamText } from "ai";
 import { z } from "zod";
 
+import { checkAndIncrementGlobalBudget } from "@/lib/global-budget";
 import { buildDemoAnswer, streamStringAsResponse } from "@/lib/kb-demo";
 import { checkAndIncrement } from "@/lib/kb-rate-limit";
 
@@ -82,6 +83,27 @@ export async function POST(req: Request) {
     // UX is fully demonstrable without a Gemini key. See lib/kb-demo.
     return streamStringAsResponse(
       buildDemoAnswer(parsed.data.context, parsed.data.question),
+    );
+  }
+
+  // Global invocation budget — defense-in-depth in case GEMINI_API_KEY is
+  // ever wired to a billing-enabled Google Cloud project (vs. the
+  // recommended free-tier AI Studio key). See COST_SAFETY.md + lib/global-budget.
+  const budget = checkAndIncrementGlobalBudget("kb-ask");
+  if (!budget.ok) {
+    return Response.json(
+      {
+        code:
+          budget.scope === "day"
+            ? "BUDGET_EXCEEDED_DAY"
+            : "BUDGET_EXCEEDED_MONTH",
+        message:
+          "This deployment has reached its Gemini invocation budget. Try again later; if you operate this deploy, see COST_SAFETY.md.",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(budget.retryAfterSeconds) },
+      },
     );
   }
 
