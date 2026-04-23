@@ -124,6 +124,54 @@ export function checkAndIncrementGlobalBudget(
   };
 }
 
+/**
+ * Read-only snapshot of current counters for a namespace. Used by
+ * `/api/kb/budget` to expose the budget state as an observability
+ * surface (matches the shape of `/api/kb/stats`). Never mutates.
+ *
+ * `used` is the count consumed in the current window; `cap` is the
+ * configured ceiling; `resetInSeconds` is how long until the window
+ * rolls over. When the window has never been opened (no traffic yet or
+ * expired), `used = 0` and `resetInSeconds = 0`.
+ */
+export type BudgetWindowSnapshot = {
+  used: number;
+  cap: number;
+  resetInSeconds: number;
+};
+
+export type BudgetNamespaceSnapshot = {
+  day: BudgetWindowSnapshot;
+  month: BudgetWindowSnapshot;
+};
+
+function snapshotWindow(
+  key: string,
+  cap: number,
+  now: number,
+): BudgetWindowSnapshot {
+  const e = buckets.get(key);
+  if (!e || e.resetAt <= now) {
+    return { used: 0, cap, resetInSeconds: 0 };
+  }
+  return {
+    used: e.count,
+    cap,
+    resetInSeconds: Math.max(0, Math.ceil((e.resetAt - now) / 1000)),
+  };
+}
+
+export function snapshotBudget(
+  namespace: string,
+  now = Date.now(),
+): BudgetNamespaceSnapshot {
+  const cfg = limits();
+  return {
+    day: snapshotWindow(`${namespace}:day`, cfg.perDay, now),
+    month: snapshotWindow(`${namespace}:month`, cfg.perMonth, now),
+  };
+}
+
 export function _resetForTests() {
   buckets.clear();
 }

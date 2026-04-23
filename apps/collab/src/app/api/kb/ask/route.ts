@@ -2,6 +2,10 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { z } from "zod";
 
+import {
+  emergencyStopResponse,
+  isEmergencyStopped,
+} from "@/lib/emergency-stop";
 import { checkAndIncrementGlobalBudget } from "@/lib/global-budget";
 import { buildDemoAnswer, streamStringAsResponse } from "@/lib/kb-demo";
 import { checkAndIncrement } from "@/lib/kb-rate-limit";
@@ -42,6 +46,9 @@ Write concisely. Prefer 1–4 short paragraphs. Quote directly when useful,
 using inline quotes ("like this") rather than block quotes.`;
 
 export async function POST(req: Request) {
+  // Human-driven kill switch — precedes every other check.
+  if (isEmergencyStopped()) return emergencyStopResponse();
+
   const apiKey = process.env.GEMINI_API_KEY;
 
   const ip =

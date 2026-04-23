@@ -1,6 +1,10 @@
 import { streamText } from "ai";
 import { z } from "zod";
 
+import {
+  emergencyStopResponse,
+  isEmergencyStopped,
+} from "@/lib/emergency-stop";
 import { GENERATION_MODEL, getGemini } from "@/lib/gemini";
 import { checkAndIncrementGlobalBudget } from "@/lib/global-budget";
 import { checkAndIncrement } from "@/lib/kb-rate-limit";
@@ -29,6 +33,10 @@ const bodySchema = z.object({
  * citations panel without a second round-trip.
  */
 export async function POST(req: Request) {
+  // Human-driven kill switch — must precede every other check because
+  // its purpose is to stop traffic immediately, not negotiate limits.
+  if (isEmergencyStopped()) return emergencyStopResponse();
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return Response.json(

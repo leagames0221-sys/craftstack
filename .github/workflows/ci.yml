@@ -10,7 +10,31 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Minimum-privilege default for every job in this workflow. Individual
+# jobs can narrow further but cannot escalate.
+permissions:
+  contents: read
+
 jobs:
+  free-tier-compliance:
+    name: free-tier compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+
+      # Node-only check, zero deps. PR-blocking gate that enforces the
+      # zero-cost-by-construction guarantee declared in COST_SAFETY.md
+      # and ADR-0046: no paid-tier Vercel plans, no billable SDKs, no
+      # leaked secrets in example files.
+      - name: Run free-tier compliance check
+        run: node scripts/check-free-tier-compliance.mjs
+
   ci:
     name: lint / typecheck / test / build
     runs-on: ubuntu-latest

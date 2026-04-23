@@ -32,6 +32,9 @@ concurrency:
   group: live-smoke
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   knowlex-live-smoke:
     name: knowlex live smoke

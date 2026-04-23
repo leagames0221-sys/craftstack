@@ -13,6 +13,7 @@ Incident playbook for production services. Every section follows the same shape:
 6. [High latency at the edge](#6-high-latency-at-the-edge)
 7. [Data corruption recovery](#7-data-corruption-recovery)
 8. [Incident report template](#8-incident-report-template)
+9. [Emergency stop (`EMERGENCY_STOP=1`)](#9-emergency-stop-emergency_stop1)
 
 ---
 
@@ -123,6 +124,57 @@ Incident playbook for production services. Every section follows the same shape:
 2. Restore from Neon PITR to a shadow project
 3. Compare checksums of affected tables
 4. Replay traffic from BullMQ dead-letter queue if applicable
+
+---
+
+## 9. Emergency stop (`EMERGENCY_STOP=1`)
+
+The nuclear option. Setting `EMERGENCY_STOP=1` in a deployment's env
+disables every write and AI-consuming endpoint on the next request;
+read-only observability endpoints (`/api/kb/stats`, `/api/kb/budget`,
+`/api/health`) stay live so operators can still see what's happening.
+
+**When to reach for it**
+
+- Suspected Gemini key leak — before the key has been rotated
+- Traffic anomaly that the per-IP + per-container budgets haven't
+  contained (e.g. botnet-scale IP rotation)
+- Abuse report that needs a pause while you investigate
+- Any situation where the right answer is "stop everything, think"
+
+**How to activate (Vercel)**
+
+1. Vercel dashboard → project → Settings → Environment Variables
+2. Add `EMERGENCY_STOP=1` to Production (and Preview if you want that
+   covered too)
+3. Deployments → ⋯ → **Redeploy** the current production build
+   (no code change needed; env reads happen per request after deploy)
+4. Verify: `curl -sS https://<host>/api/kb/budget | jq .emergencyStop`
+   returns `true`
+5. Verify: `curl -sS -X POST https://<host>/api/kb/ask -H content-type:application/json -d '{"question":"x"}'`
+   returns HTTP 503 with `{ "code": "EMERGENCY_STOP" }`
+
+**While stopped**
+
+- Reads continue: landing, `/docs/api`, `/kb` (UI stays browsable),
+  `/api/kb/stats`, `/api/kb/budget`, `/api/openapi.json`
+- Writes fail fast with a stable, non-PII-leaking `{ code, message }`
+  body and `Retry-After: 3600`
+- CI smoke tests will still pass (they only hit read endpoints and
+  public pages)
+
+**How to restore**
+
+1. Only after the underlying cause is resolved (key rotated, budget
+   restored, abuse mitigated)
+2. Vercel Settings → Environment Variables → delete `EMERGENCY_STOP`
+   (or set to `0`)
+3. Redeploy
+4. Verify the `/api/kb/budget` response now reports `emergencyStop:
+false`, and a fresh `/api/kb/ask` probe streams successfully
+
+**Data loss risk during stop**: zero. No writes are partially applied;
+the handler short-circuits before any DB or embedding call.
 
 ---
 

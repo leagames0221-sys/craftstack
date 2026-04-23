@@ -31,6 +31,7 @@
     "demo:knowlex:all": "pnpm demo:knowlex:record && pnpm demo:knowlex:convert && pnpm demo:knowlex:tts && pnpm demo:knowlex:compose",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,md,json,yaml,yml}\"",
+    "check:free-tier": "node scripts/check-free-tier-compliance.mjs",
     "prepare": "husky"
   },
   "lint-staged": {

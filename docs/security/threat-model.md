@@ -55,6 +55,30 @@ Numbering conforms to STRIDE so each row has a single, distinct category.
 | E-02 | API key used outside declared scopes | Scopes validated per endpoint; missing scope → 403                           |
 | E-03 | SQL injection                        | Prisma parameterization only; raw queries via `Prisma.sql` template literals |
 
+## Cost exhaustion (free-tier resilience)
+
+Dedicated category for the attack shape this portfolio is most exposed
+to: a malicious actor burning the operator's inference or bandwidth
+budget. Every mitigation here is implemented; see ADR-0037 (layered
+budgets), ADR-0043 (cost-guard parity), and ADR-0046 (zero-cost by
+construction).
+
+| ID   | Threat                                             | Mitigation                                                                                                                                                                                                |
+| ---- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C-01 | Attacker floods `/api/kb/ask` from a single IP     | `kb-rate-limit.ts` per-IP sliding window (10 req / 60 s); 429 with `Retry-After`                                                                                                                          |
+| C-02 | Attacker rotates IPs to bypass per-IP cap          | `global-budget.ts` per-container day/month ceiling (800/day, 10 000/month default); 429 `BUDGET_EXCEEDED_{DAY,MONTH}` with `Retry-After`                                                                  |
+| C-03 | Gemini key leak rotated to a billing-enabled key   | Key provenance locked to Google AI Studio (free-tier only); `scripts/check-free-tier-compliance.mjs` blocks PR merges that introduce paid SDKs; `docs/FREE_TIER_ONBOARDING.md` forbids Cloud Console keys |
+| C-04 | Infrastructure tier silently upgraded to paid      | No credit card on file at Vercel / Neon / Upstash / Resend / Sentry; Hobby/Free tiers refuse rather than auto-scale; CI gate rejects `"plan": "pro"` / `"enterprise"` in any `vercel.json`                |
+| C-05 | Slow to respond to a live key leak or abuse wave   | `EMERGENCY_STOP=1` env flag disables every write + AI endpoint on the next request (no redeploy required); read-only observability endpoints stay live; see runbook § Emergency stop                      |
+| C-06 | Oversize ingest payload exhausts Neon free storage | `apps/knowledge/src/app/api/kb/ingest/route.ts` caps `content` at 50 000 chars via Zod before any DB / embedding work                                                                                     |
+
+**Failure mode**: every layer here `refuses` rather than `scales`.
+There is no path from this repository's configuration to a billed
+invoice without an explicit, deliberate operator action (plan upgrade
+
+- credit card + env rotation to a paid key). The guarantee is
+  structural, not aspirational.
+
 ## Out-of-scope for v1 (tracked, not mitigated)
 
 - Client-device compromise
