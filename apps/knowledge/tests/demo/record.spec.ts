@@ -5,22 +5,20 @@ import { expect, test } from "@playwright/test";
  * /docs/api flow on a timeline that matches the cues in
  * `scripts/demo-knowlex/narration.json`. Target runtime ~33 s.
  *
- * Timing contract (both sides must agree):
+ * Timing contract (both sides must agree — narration.json v2 cues):
  *
  *   0.0  s  : /kb loads, heading visible
- *   0.8  s  : narration line 1 "Knowlex は RAG アプリ..."  (ends ~4 s)
- *   3-6  s  : fill title + content (slowMo 250ms makes this visible)
- *   6.0  s  : narration line 2 "貼った文を 512 文字で..."  (ends ~12 s)
- *   6-12 s  : click Ingest, server replies, chunks appear
- *   12-14 s : navigate to /, fill question
- *   14.0 s  : narration line 3 "HNSW で kNN..."            (ends ~19 s)
+ *   0.8  s  : narration line 1 (~3 s at 1.3x)
+ *   3-6  s  : fill title + content (slowMo 250 ms makes this visible)
+ *   6.0  s  : narration line 2 (~5.5 s at 1.25x)
+ *   6-12 s  : click Ingest, server replies
+ *   12-13.5 s : navigate to /, fill question
+ *   13.5 s  : narration line 3 (~4 s at 1.25x)
  *   14-20 s : Ask click + Gemini streams the answer with citations
- *   20-22 s : navigate to /api/kb/stats, JSON renders
- *   21.5 s  : narration line 4 "stats エンドポイント..."    (ends ~25.5 s)
- *   22-27 s : dwell on the stats JSON
- *   27-28 s : navigate to /docs/api
- *   27.5 s  : narration line 5 "OpenAPI 手書き..."          (ends ~31.5 s)
- *   28-33 s : scroll /docs/api slowly
+ *   20.0 s  : narration line 4 (~3.5 s at 1.25x)
+ *   20-27 s : /api/kb/stats JSON on screen
+ *   27.0 s  : narration line 5 (~3 s at 1.25x)
+ *   27-33 s : /docs/api scrolling
  *
  * If you change any `waitForTimeout` below, re-check the narration
  * `at` values in `scripts/demo-knowlex/narration.json` and re-run

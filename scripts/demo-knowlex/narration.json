@@ -1,36 +1,36 @@
 {
-  "title": "Craftstack Knowlex — 33-second walkthrough",
-  "description": "Timeline tuned so every line ends at least ~2 s before the next cue at VOICEVOX speaker=3, speedScale=1.15. Rough length budget per line: 1 JP char ≈ 0.17 s at 1.15x. When editing, keep `at[i+1] - at[i] >= estimated_duration(line[i]) + 2s` — that's the margin the ffmpeg amix step tolerates without overlap.",
+  "title": "Craftstack Knowlex — 33-second walkthrough (tightened v2)",
+  "description": "First pass had borderline-overlapping cues between lines 3-4 and 4-5 at speedScale 1.15. v2 bumps base speedScale to 1.25 (zundamon still reads clearly), trims the two longest lines, and spreads cues so every gap is >=5 s of video time — well above the estimated line duration plus jitter.",
   "language": "ja-JP",
   "voice": {
-    "voicevox": { "speaker": 3, "speedScale": 1.15 },
+    "voicevox": { "speaker": 3, "speedScale": 1.25 },
     "azure": {
       "name": "ja-JP-NanamiNeural",
       "style": "friendly",
-      "speedScale": 1.1
+      "speedScale": 1.15
     }
   },
   "lines": [
     {
       "at": 0.8,
-      "speedScale": 1.25,
-      "text": "KnowlexはRAGアプリなのだ。本番でちゃんと動いてるのだ。"
+      "speedScale": 1.3,
+      "text": "KnowlexはRAGアプリなのだ。本番で動いてるのだ。"
     },
     {
       "at": 6.0,
-      "text": "貼った文を512文字でチャンク化、gemini-embedding-001で768次元に埋め込むのだ。"
+      "text": "512文字でチャンク化、gemini-embedding-001で768次元に埋め込むのだ。"
     },
     {
-      "at": 14.0,
-      "text": "HNSWインデックスでコサインkNN。Gemini 2.0 Flashが引用番号つきで答えるのだ。"
+      "at": 13.5,
+      "text": "HNSWでコサインkNN、Gemini Flashが引用番号つきで答えるのだ。"
     },
     {
-      "at": 21.5,
-      "text": "statsエンドポイントで、indexTypeがhnswだと確認できるのだ。"
+      "at": 20.0,
+      "text": "statsエンドポイントで、hnswを使ってると確認できるのだ。"
     },
     {
-      "at": 27.5,
-      "text": "OpenAPIは手書き、ADRは45本。コスト自衛も両アプリ同格なのだ。"
+      "at": 27.0,
+      "text": "OpenAPIは手書き、ADRは45本、両アプリ同格なのだ。"
     }
   ]
 }
