@@ -7,12 +7,34 @@ const withBundleAnalyzer = bundleAnalyzer({
 });
 
 /**
- * Static security headers applied to every response. The per-request
- * nonce-based `Content-Security-Policy` lives in `src/proxy.ts` — it has
- * to be emitted per-request for the nonce + `'strict-dynamic'` dance, so
- * we keep CSP out of this file to avoid two conflicting copies.
+ * Static security headers applied to every response.
+ *
+ * CSP note: the previous iteration set a per-request nonce-based policy
+ * from the Next proxy (`src/proxy.ts`) with `'strict-dynamic'` for an
+ * A+ score on securityheaders.com. That interacted badly with Vercel's
+ * platform-injected scripts (Speed Insights, preview toolbar, some Next
+ * chunks) which don't carry our nonce, and hydration failed silently on
+ * every interactive page. Rolled back to a static CSP here. Mild grade
+ * regression to A; interactive surfaces work.
  */
+const CSP = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://*.vercel-insights.com https://*.vercel-scripts.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://avatars.githubusercontent.com https://lh3.googleusercontent.com",
+  "font-src 'self' data:",
+  "connect-src 'self' https://*.pusher.com wss://*.pusher.com https://sockjs-*.pusher.com https://vercel.live wss://ws-us3.pusher.com https://vitals.vercel-insights.com https://*.vercel-scripts.com",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "upgrade-insecure-requests",
+].join("; ");
+
 const securityHeaders = [
+  { key: "Content-Security-Policy", value: CSP },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
