@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added (post-v0.4.0)
 
+#### Cost-safety enforcement (ADR-0046)
+
+- **`EMERGENCY_STOP=1` kill switch** — new `apps/{collab,knowledge}/src/lib/emergency-stop.ts` wired into `/api/kb/{ask,ingest}` on both apps. When the env flag is set, those handlers short-circuit before any DB / rate-limit / Gemini work and return HTTP 503 with `{ code: "EMERGENCY_STOP" }` and `Retry-After: 3600`. Read-only observability endpoints stay live so operators can still see state during a pause. Full activate/observe/restore procedure in `docs/ops/runbook.md § 9`.
+- **PR-blocking `free-tier-compliance` CI gate** — new `scripts/check-free-tier-compliance.mjs` runs as its own job in `ci.yml` (Node-only, zero deps). Blocks merges that introduce a paid-plan `vercel.json`, a billable-only SDK (`stripe`, `twilio`, `@vercel/kv`, `@vercel/postgres`, `@vercel/blob`, `@sendgrid/mail`, `mongodb-atlas`), or a real-looking secret pattern leaked into `.env.example`. Conservative blocklist — SDKs with credible CC-free tiers (Sentry, Upstash, Pusher Sandbox, Resend, AI Studio Gemini) pass. `pnpm check:free-tier` runs it locally.
+- **`/api/kb/budget` observability surface** — mirrors the `/api/kb/stats` shape. Exposes both `kb-ask` and `kb-ingest` namespaces' current `{used, cap, resetInSeconds}` plus the emergency-stop flag, fed by a new read-only `snapshotBudget()` helper on `lib/global-budget.ts`. Cheap, no auth, no Gemini calls — safe for UptimeRobot and smoke tests.
+- **STRIDE `C-01..C-06` rows** in `docs/security/threat-model.md` — makes free-tier bleed a first-class category alongside Spoofing / Tampering / DoS, documenting the mitigation path for each of: single-IP flood, IP rotation, Gemini key leak to a billable key, silent infra tier upgrade, slow operator response, oversize ingest.
+- **Workflow-level `permissions: contents: read`** defaulted across `ci.yml`, `e2e.yml`, `smoke.yml` (CodeQL + SBOM already had explicit permissions).
+- **PR-blocking a11y gate** — new `a11y-knowledge` job in `ci.yml` + second Playwright invocation in `e2e.yml`. Previously only `smoke.yml`'s 6h cron caught regressions post-merge; now `/`, `/kb`, `/docs/api` and `/`, `/signin`, `/playground` fail the PR on serious+critical WCAG 2.1 AA violations.
+- **Vitest: +11 cases** — `apps/knowledge/src/lib/emergency-stop.test.ts` (env-flag semantics + 503 response shape) and `apps/knowledge/src/lib/global-budget.test.ts` (`snapshotBudget` invariants: zero-used for untouched namespace, read-only under repeated snapshot, reflects consumption after increment, reports fresh window once the day rolls over). Knowledge-app Vitest: 18 → 29.
+
 #### Observability
 
 - **Unified observability seam** in `apps/{collab,knowledge}/src/lib/observability.ts` — every `captureException` call now flows through a DSN-gated helper that forwards to Sentry when configured and stashes into a per-container in-memory ring buffer otherwise. Complements, not replaces, the instrumentation hooks (ADR-0044); lets reviewers prove the pipeline works without a Sentry account.
