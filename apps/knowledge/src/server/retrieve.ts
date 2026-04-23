@@ -47,9 +47,12 @@ export async function retrieveTopK(opts: {
     `[retrieve] Embedding table: count=${storedRows[0] ? Number(storedRows[0].count) : 0}, stored_dim=${storedRows[0]?.any_dim ?? "?"}`,
   );
 
-  // $queryRawUnsafe with parameter binding — pgvector needs an explicit
-  // ::vector cast. Prisma's $queryRaw tagged template can't do that
-  // cleanly because the vector literal arrives as a JS string.
+  // Inline both the vector literal and LIMIT rather than binding via
+  // `$1`/`$2`. Prisma's `$queryRawUnsafe` positional binding was
+  // silently returning 0 rows despite count=2 and matching dims; inlining
+  // sidesteps whatever coercion was happening. Safe because `vec` is
+  // built from `Number.prototype.toString()` floats and `k` is clamped
+  // to `[1, 16]` above — no user input reaches the SQL string.
   const rows = await prisma.$queryRawUnsafe<
     Array<{
       chunkId: string;
@@ -66,15 +69,14 @@ export async function retrieveTopK(opts: {
        d."title"          AS "documentTitle",
        c."ordinal"        AS "ordinal",
        c."content"        AS "content",
-       (e."embedding" <=> $1::vector) AS "distance"
+       (e."embedding" <=> '${vec}'::vector) AS "distance"
      FROM "Embedding" e
      JOIN "Chunk"    c ON c."id" = e."chunkId"
      JOIN "Document" d ON d."id" = c."documentId"
-     ORDER BY e."embedding" <=> $1::vector
-     LIMIT $2`,
-    vec,
-    k,
+     ORDER BY e."embedding" <=> '${vec}'::vector
+     LIMIT ${k}`,
   );
+  console.log(`[retrieve] kNN returned ${rows.length} rows`);
 
   return rows.map((r) => ({
     chunkId: r.chunkId,
