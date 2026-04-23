@@ -1,41 +1,62 @@
 # Knowlex RAG evaluation
 
-Eval is the last line of defense against silent retrieval regressions. Every PR touching Knowlex AI code will run the suite; any threshold breach blocks merge.
+Eval is the last line of defense against silent retrieval regressions. A shallow-but-working harness ships today; a deeper LLM-as-judge layer is a follow-up.
 
-> **Status**: Knowlex itself is pre-implementation in v0.1.0. The golden QA set and threshold manifest are checked in, but the CI job and first measured report land when the ingestion pipeline ships (Week 12). Numbers referenced in ADRs are targets, not measurements.
+## What is measured today
 
-## What is measured
+`apps/knowledge/scripts/eval.ts` runs the set in [`golden_qa.json`](./golden_qa.json) against a live Knowlex deployment (`E2E_BASE_URL`) or a local dev server. Each question is scored on three proxies:
 
-| Metric            | Definition                                                         | Threshold |
-| ----------------- | ------------------------------------------------------------------ | --------- |
-| Context Precision | Retrieved chunks that are actually relevant                        | ≥ 0.80    |
-| Context Recall    | Expected chunks that appear in retrieval                           | ≥ 0.75    |
-| Faithfulness      | Claims in the answer backed by cited chunks                        | ≥ 0.85    |
-| Answer Relevance  | Cosine similarity between answer embedding and question embedding  | ≥ 0.80    |
-| Latency p95       | End-to-end time including retrieve, rerank, generate, faithfulness | ≤ 1500ms  |
+| Signal                | Implementation                                                                                                                                                    | Proxy for      |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| **Answer substrings** | every `expectedSubstrings[*]` must appear in the answer body (case-insensitive)                                                                                   | Faithfulness   |
+| **Citation coverage** | `expectedDocumentTitle` must appear in the `x-knowlex-docs` response header                                                                                       | Context recall |
+| **Refusal handling**  | adversarial / off-corpus questions flagged with `expectedRefusal: true` must not invent an answer — refusal markers ("do not contain", "cannot", ...) must appear | Robustness     |
+| **Latency p95**       | wall-clock of the Ask request, p95 across all questions ≤ `thresholds.maxP95LatencyMs`                                                                            | UX             |
+
+Exit code:
+
+- Pass rate ≥ `thresholds.minPassRate` AND p95 latency ≤ `thresholds.maxP95LatencyMs` → exit 0
+- Otherwise → exit 1 (safe to wire into a nightly workflow)
+
+## What is explicitly NOT measured yet
+
+- **LLM-as-judge faithfulness.** Substring check catches the coarsest failures (answer invents a model name, cites the wrong doc) but not subtle hallucinations. A follow-up pass using `gemini-2.5-pro` as a rubric judge is tracked in ADR-0042's follow-ups.
+- **Context precision / recall over multi-chunk corpora.** Today the golden set has 3 hand-written documents; precision/recall only stops being trivial once the corpus is large enough for retrieval to make real ranking calls.
+- **Multilingual evaluation.** Corpus is English-only. The `expectedSubstrings` check would need per-locale transforms.
+
+Numbers from earlier ADRs that reference `contextPrecision ≥ 0.80` and `faithfulness ≥ 0.85` are **targets for the deeper harness**, not the substring check shipped today.
 
 ## Layout
 
 ```
 docs/eval/
-├── README.md               # this file
-├── golden_qa.yaml          # curated set
-└── reports/                # YYYY-MM-DD.json, committed by nightly CI
+├── README.md           # this file
+└── golden_qa.json      # self-contained seed corpus + questions
 ```
 
-## Running locally
+## Running
 
 ```bash
-pnpm --filter knowledge exec tsx scripts/run-eval.ts --subset 10
-pnpm --filter knowledge exec tsx scripts/run-eval.ts --full
+# against local dev server (pnpm dev:knowledge, port 3001)
+E2E_BASE_URL=http://localhost:3001 pnpm --filter knowledge eval
+
+# against live Vercel deploy
+E2E_BASE_URL=https://craftstack-knowledge.vercel.app pnpm --filter knowledge eval
 ```
 
-Requires `GEMINI_API_KEY` and a populated `knowlex-db` with the test documents seeded.
+Requires `GEMINI_API_KEY` on the target server (the eval hits the live ingest + ask endpoints). The script seeds its own corpus at the start of each run; duplicates from earlier runs are tolerated because the retriever ranks by cosine distance, not by recency.
 
-## CI behavior
+## Authoring new questions
 
-- Pull request: `--subset 10`
-- Push to main: `--full`
-- Nightly (cron): `--full`, writes a report file, auto-commits
+`golden_qa.json` has two top-level arrays:
 
-See [ADR-0015](../adr/0015-eval-in-ci.md).
+- `corpus[i]`: `{ title, content }` — pasted into `/api/kb/ingest`.
+- `questions[i]`: `{ id, category, question, expectedSubstrings, expectedDocumentTitle }` or `{ id, category, question, expectedRefusal: true }`.
+
+Prefer questions where the expected answer contains distinctive, low-ambiguity substrings (model names, specific numbers, protocol names). Avoid scoring on style or phrasing.
+
+## Follow-ups
+
+- Wire `pnpm --filter knowledge eval` into a nightly GitHub Actions workflow against the live deploy; alert on regressions.
+- Commit JSON reports into `docs/eval/reports/YYYY-MM-DD.json` from the nightly run so trend visualisation becomes possible.
+- Add an optional `--judge` flag that posts answers to `gemini-2.5-pro` with a rubric prompt for true faithfulness scoring, and makes the flag a separate env-gated CI job so the default eval stays zero-cost-on-free-tier.

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { checkAndIncrementGlobalBudget } from "@/lib/global-budget";
+import { checkAndIncrement } from "@/lib/kb-rate-limit";
 import { ingestDocument } from "@/server/ingest";
 
 export const runtime = "nodejs";
@@ -29,6 +31,25 @@ export async function POST(req: Request) {
     );
   }
 
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+  const perIp = checkAndIncrement(ip);
+  if (!perIp.ok) {
+    return Response.json(
+      {
+        code: "RATE_LIMIT_EXCEEDED",
+        message:
+          "Too many ingests from this address. Please wait a minute and try again.",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(perIp.retryAfterSeconds) },
+      },
+    );
+  }
+
   const raw = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(raw);
   if (!parsed.success) {
@@ -39,6 +60,24 @@ export async function POST(req: Request) {
           "Body must be { title: string (1-200), content: string (1-50000) }.",
       },
       { status: 400 },
+    );
+  }
+
+  const budget = checkAndIncrementGlobalBudget("kb-ingest");
+  if (!budget.ok) {
+    return Response.json(
+      {
+        code:
+          budget.scope === "day"
+            ? "BUDGET_EXCEEDED_DAY"
+            : "BUDGET_EXCEEDED_MONTH",
+        message:
+          "This deployment has reached its Gemini invocation budget. Try again later; operators: see COST_SAFETY.md.",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(budget.retryAfterSeconds) },
+      },
     );
   }
 

@@ -2,6 +2,8 @@ import { streamText } from "ai";
 import { z } from "zod";
 
 import { GENERATION_MODEL, getGemini } from "@/lib/gemini";
+import { checkAndIncrementGlobalBudget } from "@/lib/global-budget";
+import { checkAndIncrement } from "@/lib/kb-rate-limit";
 import { buildUserMessage, RAG_SYSTEM_PROMPT } from "@/server/rag-prompt";
 import { retrieveTopK } from "@/server/retrieve";
 
@@ -38,12 +40,53 @@ export async function POST(req: Request) {
     );
   }
 
+  // Cost safety: per-IP window first (cheap, catches the loudest
+  // offender), then the global per-container day/month budget as a
+  // belt-and-braces cap against key misconfiguration. See
+  // COST_SAFETY.md.
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown";
+  const perIp = checkAndIncrement(ip);
+  if (!perIp.ok) {
+    return Response.json(
+      {
+        code: "RATE_LIMIT_EXCEEDED",
+        message:
+          "Too many questions from this address. Please wait a minute and try again.",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(perIp.retryAfterSeconds) },
+      },
+    );
+  }
+
   const raw = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(raw);
   if (!parsed.success) {
     return Response.json(
       { code: "BAD_REQUEST", message: "Body must be { question, k? }." },
       { status: 400 },
+    );
+  }
+
+  const budget = checkAndIncrementGlobalBudget("kb-ask");
+  if (!budget.ok) {
+    return Response.json(
+      {
+        code:
+          budget.scope === "day"
+            ? "BUDGET_EXCEEDED_DAY"
+            : "BUDGET_EXCEEDED_MONTH",
+        message:
+          "This deployment has reached its Gemini invocation budget. Try again later; operators: see COST_SAFETY.md.",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(budget.retryAfterSeconds) },
+      },
     );
   }
 
