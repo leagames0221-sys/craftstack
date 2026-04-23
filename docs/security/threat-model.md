@@ -72,6 +72,12 @@ construction).
 | C-05 | Slow to respond to a live key leak or abuse wave   | `EMERGENCY_STOP=1` env flag disables every write + AI endpoint on the next request (no redeploy required); read-only observability endpoints stay live; see runbook § Emergency stop                      |
 | C-06 | Oversize ingest payload exhausts Neon free storage | `apps/knowledge/src/app/api/kb/ingest/route.ts` caps `content` at 50 000 chars via Zod before any DB / embedding work                                                                                     |
 
+**Verification**: [`docs/security/ATTACK_SIMULATION.md`](./ATTACK_SIMULATION.md)
+describes the `scripts/attack-simulation.mjs` bench that exercises
+every row above against a running deployment, in one command. Honest
+limitations (including the known per-container limiter gap on Vercel
+multi-region) are called out there rather than hidden.
+
 **Failure mode**: every layer here `refuses` rather than `scales`.
 There is no path from this repository's configuration to a billed
 invoice without an explicit, deliberate operator action: plan upgrade,
