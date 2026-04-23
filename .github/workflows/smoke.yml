@@ -1,21 +1,21 @@
 name: Live smoke
 
-# Runs the Knowlex Playwright smoke suite against the live Vercel
-# deployment. Triggers:
+# Runs Playwright smoke suites against the live Vercel deployments of
+# both apps. Triggers:
 #
 #   - schedule: every 6 hours, catches regressions that slip past CI
 #     (Vercel rollbacks, Neon maintenance windows, Gemini quota
 #     issues, etc.) without needing a new push.
-#   - workflow_dispatch: manual run from the Actions tab when you
-#     want to verify a just-published deploy.
+#   - workflow_dispatch: manual run from the Actions tab.
 #   - push on main: runs 90 s after the push so Vercel has time to
 #     finish the deploy that a main-branch merge triggers.
 #
-# The suite itself is cheap: three checks (Ask UI, Corpus UI,
-# /api/kb/stats shape). No Gemini API calls, no ingestion, no auth.
-# See apps/knowledge/tests/smoke/stats.spec.ts for the assertions
-# (notably the `indexType === "hnsw"` guard against an ivfflat
-# regression — see ADR-0041).
+# Both suites are cheap: public-page renders and structured API
+# probes, no auth, no Gemini calls, no ingest. See
+# apps/knowledge/tests/smoke/stats.spec.ts (notably the
+# `indexType === "hnsw"` guard against an ivfflat regression —
+# ADR-0041) and apps/collab/tests/e2e/a11y.spec.ts (WCAG 2.1 AA
+# against /, /signin, /playground).
 
 on:
   schedule:
@@ -25,6 +25,7 @@ on:
     branches: [main]
     paths:
       - "apps/knowledge/**"
+      - "apps/collab/**"
       - ".github/workflows/smoke.yml"
 
 concurrency:
@@ -86,4 +87,66 @@ jobs:
         with:
           name: knowlex-smoke-report
           path: apps/knowledge/playwright-report/
+          retention-days: 7
+
+  collab-live-smoke:
+    name: boardly live smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Wait for Vercel deploy to settle (push only)
+        if: github.event_name == 'push'
+        run: sleep 90
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install Playwright browser
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" != "true" ]; then
+            pnpm --filter collab exec playwright install --with-deps chromium
+          else
+            pnpm --filter collab exec playwright install-deps chromium
+          fi
+
+      - name: Run Boardly a11y smoke against live
+        env:
+          CI: "true"
+          E2E_BASE_URL: https://craftstack-collab.vercel.app
+        # `a11y.spec.ts` already covers the three public surfaces and
+        # is safe to run against a live deploy (no auth, no state
+        # mutation). Its assertions — zero `serious`/`critical` WCAG
+        # 2.1 AA violations — are the right shape for a post-deploy
+        # gate.
+        run: pnpm --filter collab exec playwright test tests/e2e/a11y.spec.ts
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collab-smoke-report
+          path: apps/collab/playwright-report/
           retention-days: 7
