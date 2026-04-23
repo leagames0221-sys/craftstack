@@ -24,9 +24,11 @@
 import { spawn } from "node:child_process";
 import { access } from "node:fs/promises";
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(new URL(".", import.meta.url).pathname, "..", "..");
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(HERE, "..", "..");
 const NARRATION = resolve(ROOT, "scripts/demo/narration.json");
 const INPUT_VIDEO = resolve(ROOT, "scripts/demo/input.mp4");
 const OUT_DIR = resolve(ROOT, "scripts/demo/out");

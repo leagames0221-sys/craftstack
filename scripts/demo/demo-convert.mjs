@@ -14,9 +14,14 @@
 
 import { spawn } from "node:child_process";
 import { readdir, stat } from "node:fs/promises";
-import { resolve, relative } from "node:path";
+import { dirname, resolve, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(new URL(".", import.meta.url).pathname, "..", "..");
+// fileURLToPath handles Windows drive letters correctly; using
+// new URL(...).pathname leaves a leading slash that breaks path.resolve
+// on Windows (results in a path like "/C:/Users/..." that never matches).
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(HERE, "..", "..");
 const SEARCH_ROOT = resolve(ROOT, "apps/collab/test-results-demo");
 const OUT = resolve(ROOT, "scripts/demo/input.mp4");
 

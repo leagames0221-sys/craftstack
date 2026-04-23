@@ -21,8 +21,10 @@ out/
 coverage/
 .nyc_output/
 test-results/
+test-results-demo/
 playwright-report/
 playwright/.cache/
+playwright/.auth/
 
 # OS
 .DS_Store
