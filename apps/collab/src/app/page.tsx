@@ -117,7 +117,7 @@ export default async function Home() {
           </a>
         </div>
 
-        <div className="mt-12 grid grid-cols-2 gap-6 text-xs text-neutral-500 md:grid-cols-4">
+        <div className="mt-12 grid grid-cols-2 gap-6 text-xs text-neutral-400 md:grid-cols-4">
           <Stat label="Vitest cases" value="178" />
           <Stat label="Playwright" value="35+" />
           <Stat label="Next routes" value="41" />
@@ -185,7 +185,7 @@ export default async function Home() {
             Record in{" "}
             <a
               href="https://github.com/leagames0221-sys/craftstack/tree/main/docs/adr"
-              className="text-indigo-300 hover:text-indigo-200"
+              className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
               target="_blank"
               rel="noreferrer"
             >
@@ -280,7 +280,7 @@ export default async function Home() {
               </li>
             ))}
           </ul>
-          <p className="mt-8 text-xs text-neutral-500">
+          <p className="mt-8 text-xs text-neutral-400">
             Every service above is free-tier; no credit card on file. The apps
             degrade gracefully when an integration key is missing.
           </p>
@@ -288,7 +288,7 @@ export default async function Home() {
       </section>
 
       <footer className="border-t border-neutral-800">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-6 text-xs text-neutral-500">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-6 text-xs text-neutral-400">
           <span>© {new Date().getFullYear()} · craftstack</span>
           <div className="flex gap-4">
             <a
