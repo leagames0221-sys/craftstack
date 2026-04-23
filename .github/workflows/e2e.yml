@@ -1,0 +1,112 @@
+name: E2E (authed)
+
+# Authenticated Playwright suite (ADR-0022 + ADR-0038).
+# Runs against a dedicated Postgres service container; signs in via the
+# CI-only Credentials provider gated by E2E_ENABLED=1 + NODE_ENV != prod.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-authed:
+    name: authed Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: boardly
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d boardly"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://app:app@localhost:5432/boardly
+      DIRECT_DATABASE_URL: postgresql://app:app@localhost:5432/boardly
+      AUTH_SECRET: ci-only-static-secret-for-jwt-signature-bytes-xxxxxxxxxx
+      E2E_ENABLED: "1"
+      E2E_SHARED_SECRET: ci-only-shared-secret-for-credentials-provider
+      E2E_BASE_URL: http://127.0.0.1:3000
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      # Optional integrations stay unset so the app runs in graceful-fallback mode.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter collab exec prisma generate
+
+      - name: Apply Prisma migrations
+        run: pnpm --filter collab exec prisma migrate deploy
+
+      - name: Seed the database
+        run: pnpm --filter collab exec tsx prisma/seed.ts
+
+      - name: Build (Next.js)
+        run: pnpm --filter collab build
+
+      - name: Install Playwright browsers
+        run: pnpm --filter collab exec playwright install --with-deps chromium
+
+      - name: Start Next server
+        run: |
+          pnpm --filter collab start &
+          echo $! > next-server.pid
+          # Poll until the server is ready — credentials callback needs it.
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:3000/api/health > /dev/null; then
+              echo "server is up"
+              break
+            fi
+            echo "waiting for server ($i)..."
+            sleep 2
+          done
+
+      - name: Run authed Playwright suite
+        run: pnpm --filter collab test:e2e:auth
+
+      - name: Stop Next server
+        if: always()
+        run: |
+          if [ -f next-server.pid ]; then
+            kill "$(cat next-server.pid)" || true
+          fi
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/collab/playwright-report
+          retention-days: 7
