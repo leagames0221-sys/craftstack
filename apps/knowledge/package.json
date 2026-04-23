@@ -10,7 +10,11 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:integration": "cross-env KNOWLEX_INTEGRATION=1 vitest run",
+    "bench": "tsx scripts/bench-retrieve.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test tests/smoke"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.64",
@@ -25,11 +29,13 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",

@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateText, streamText } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 
 import { checkAndIncrementGlobalBudget } from "@/lib/global-budget";
@@ -107,12 +107,18 @@ export async function POST(req: Request) {
     );
   }
 
+  // The playground uses non-streaming `generateText` rather than
+  // `streamText`. Two reasons:
+  //  (1) With ~12 KB of user-pasted context + a 600-token ceiling, the
+  //      end-to-end response is small and fast enough that streaming
+  //      adds complexity without a perceptible UX win.
+  //  (2) Under Vercel's Node runtime we saw streamed responses
+  //      truncated when the underlying fetch was interrupted by the
+  //      platform proxy; `generateText` lets us return a single
+  //      text/plain body that's indivisible. The full RAG app in
+  //      apps/knowledge uses `streamText` because its answers are
+  //      smaller and citation-driven, so the UX benefit is real.
   const google = createGoogleGenerativeAI({ apiKey });
-  // Diagnostic: use generateText (non-streaming) and return the result
-  // as a plain text response. If streamText on Vercel silently drops
-  // chunks, this path still surfaces the full answer so we can confirm
-  // the Gemini call itself works. Will flip back to streamText once
-  // the underlying issue is pinpointed.
   const model = google("gemini-2.5-flash");
 
   try {
@@ -129,12 +135,22 @@ export async function POST(req: Request) {
       maxOutputTokens: 600,
     });
 
-    const body =
-      typeof result.text === "string" && result.text.length > 0
-        ? result.text
-        : `[debug] Gemini returned no text. finishReason=${result.finishReason ?? "?"} usage=${JSON.stringify(result.usage ?? {})}`;
+    if (typeof result.text !== "string" || result.text.length === 0) {
+      console.error(
+        "[kb-ask] Gemini returned no text",
+        result.finishReason,
+        result.usage,
+      );
+      return Response.json(
+        {
+          code: "EMPTY_ANSWER",
+          message: "The model returned no answer. Please retry or rephrase.",
+        },
+        { status: 502 },
+      );
+    }
 
-    return new Response(body, {
+    return new Response(result.text, {
       status: 200,
       headers: {
         "content-type": "text/plain; charset=utf-8",
@@ -142,20 +158,13 @@ export async function POST(req: Request) {
       },
     });
   } catch (err) {
-    const message = (err as Error).message ?? "unknown";
-    // eslint-disable-next-line no-console
     console.error("[kb-ask] Gemini call failed:", err);
-    return new Response(`[debug] Gemini call failed: ${message}`, {
-      status: 200,
-      headers: {
-        "content-type": "text/plain; charset=utf-8",
-        "x-playground-mode": "error",
+    return Response.json(
+      {
+        code: "GENERATION_FAILED",
+        message: "The model call failed. Please retry.",
       },
-    });
+      { status: 502 },
+    );
   }
-
-  // Unreachable for now — keep the original streaming import alive so
-  // the diagnostic diff is easy to revert once we know the root cause.
-  // eslint-disable-next-line no-unreachable
-  streamText;
 }
