@@ -47,11 +47,26 @@ export async function POST(req: Request) {
     );
   }
 
-  const hits = await retrieveTopK({
-    apiKey,
-    question: parsed.data.question,
-    k: parsed.data.k,
-  });
+  let hits;
+  try {
+    hits = await retrieveTopK({
+      apiKey,
+      question: parsed.data.question,
+      k: parsed.data.k,
+    });
+    console.log(
+      `[kb-ask] retrieved ${hits.length} chunks for question (len=${parsed.data.question.length})`,
+    );
+  } catch (err) {
+    console.error("[kb-ask] retrieveTopK failed:", err);
+    return new Response(
+      `[debug] retrieveTopK threw: ${(err as Error).message}`,
+      {
+        status: 500,
+        headers: { "content-type": "text/plain; charset=utf-8" },
+      },
+    );
+  }
 
   const google = getGemini(apiKey);
   const result = streamText({

@@ -31,6 +31,21 @@ export async function retrieveTopK(opts: {
 
   const [queryVector] = await embedTexts(opts.apiKey, [trimmed]);
   const vec = vectorLiteral(queryVector);
+  console.log(
+    `[retrieve] queryVector dim=${queryVector.length}, k=${k}, vec preview=${vec.slice(0, 80)}...`,
+  );
+
+  // Fallback sanity: if the query vector has the wrong dimensionality
+  // pgvector will throw on the `<=>` comparison. Surface that
+  // explicitly so we see which side of the pipeline is off.
+  const storedRows = await prisma.$queryRawUnsafe<
+    Array<{ count: bigint; any_dim: number | null }>
+  >(
+    `SELECT COUNT(*) AS count, MAX(vector_dims("embedding")) AS any_dim FROM "Embedding"`,
+  );
+  console.log(
+    `[retrieve] Embedding table: count=${Number(storedRows[0]?.count ?? 0n)}, stored_dim=${storedRows[0]?.any_dim ?? "?"}`,
+  );
 
   // $queryRawUnsafe with parameter binding — pgvector needs an explicit
   // ::vector cast. Prisma's $queryRaw tagged template can't do that
