@@ -110,10 +110,10 @@ export default async function Home() {
         </div>
 
         <div className="mt-12 grid grid-cols-2 gap-6 text-xs text-neutral-500 md:grid-cols-4">
-          <Stat label="Vitest cases" value="151" />
+          <Stat label="Vitest cases" value="160" />
           <Stat label="Playwright smoke" value="14" />
           <Stat label="Next routes" value="34" />
-          <Stat label="ADRs" value="36" />
+          <Stat label="ADRs" value="37" />
           <Stat label="Security Headers" value="A+" />
           <Stat label="Monthly infra" value="$0" />
           <Stat label="Prisma models" value="15 / 17" />
