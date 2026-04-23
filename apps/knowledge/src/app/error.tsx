@@ -19,11 +19,13 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("[app-error]", error);
-    void import("@sentry/nextjs")
-      .then((Sentry) => Sentry.captureException(error))
-      .catch(() => {
-        /* SDK missing from bundle → observability best-effort */
-      });
+    // Unified observability — forwards to Sentry when DSN set, and
+    // also stashes into the in-memory ring surfaced at
+    // /api/observability/captures so reviewers without a Sentry
+    // account can still prove the pipeline works.
+    void import("@/lib/observability").then(({ captureError }) =>
+      captureError(error, { route: "error.tsx" }),
+    );
   }, [error]);
 
   return (

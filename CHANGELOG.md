@@ -4,9 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added (post-v0.4.0)
+
+- **Unified observability seam** in `apps/{collab,knowledge}/src/lib/observability.ts` — every `captureException` call now flows through a DSN-gated helper that forwards to Sentry when configured and stashes into a per-container in-memory ring buffer otherwise. Complements, not replaces, the instrumentation hooks (ADR-0044); lets reviewers prove the pipeline works without a Sentry account.
+- **`/api/observability/captures`** endpoint on both apps — dumps the ring buffer as JSON. Open in dev / preview, closed in production unless `ENABLE_OBSERVABILITY_API=1`. Server-side routes (`/api/kb/ask`, `/api/kb/ingest`) and the `error.tsx` global boundaries route through this seam.
+- **`docs/FREE_TIER_ONBOARDING.md`** — step-by-step signup flow for every external service the repo touches, with explicit "credit card required at signup?" / "demo-mode behaviour when unconfigured" columns. Companion to `COST_SAFETY.md` (which covers runtime abuse caps, not signup).
+- **ADR-0045** — records the rationale for demo-mode observability + the follow-up path (capture positive signals, surface backend identity in `/api/kb/stats`).
+- Boardly: client-side Sentry init (`instrumentation-client.ts`) + wired `error.tsx` into the unified observability seam. Parity with Knowlex.
+- Knowlex: `error.tsx` (new) + `/api/observability/captures` + `observability.ts` vitest suite (+5 unit tests).
+
+### Follow-ups
+
 - LLM-as-judge mode for `scripts/eval.ts` (`--judge`, env-gated).
 - Secrets-gated CI job that runs the RAG eval nightly and commits reports into `docs/eval/reports/`.
-- Sentry browser SDK + release source-map upload (server-side capture ships in 0.4.0; client capture needs an actual DSN and build-time auth token).
+- `SENTRY_AUTH_TOKEN` in CI secrets → source-map upload + webpack plugin.
 - Boardly: card attachments (base64 data URL, < 256 KB).
 
 ## [0.4.0] — 2026-04-24

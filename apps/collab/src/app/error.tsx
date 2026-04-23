@@ -12,16 +12,14 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error("[app-error]", error);
-    // Forward to Sentry if the browser SDK was booted by
-    // src/instrumentation-client.ts. When `NEXT_PUBLIC_SENTRY_DSN`
-    // isn't set, the dynamic import resolves but `captureException`
-    // is a no-op — so this path stays free on deployments without
-    // Sentry configured.
-    void import("@sentry/nextjs")
-      .then((Sentry) => Sentry.captureException(error))
-      .catch(() => {
-        /* SDK missing from bundle → observability best-effort */
-      });
+    // Route through the unified observability seam so the capture
+    // lands in Sentry (if DSN configured) AND the in-memory ring
+    // buffer, which is readable from /api/observability/captures
+    // — meaning reviewers can verify the error pipeline works
+    // without ever touching a Sentry account.
+    void import("@/lib/observability").then(({ captureError }) =>
+      captureError(error, { route: "error.tsx" }),
+    );
   }, [error]);
 
   return (

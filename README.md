@@ -67,7 +67,7 @@ flowchart LR
     CI -.->|"pgvector service container"| K_DB
 ```
 
-All production services are free-tier, no credit-card-on-file. Full cost model in [`COST_SAFETY.md`](COST_SAFETY.md).
+All production services are free-tier, no credit-card-on-file. Step-by-step signup guide in [`docs/FREE_TIER_ONBOARDING.md`](docs/FREE_TIER_ONBOARDING.md); cost-attack threat model in [`COST_SAFETY.md`](COST_SAFETY.md).
 
 ## 🌐 Live demo
 

@@ -321,5 +321,59 @@ export const openApiSpec = {
         },
       },
     },
+    "/api/observability/captures": {
+      get: {
+        tags: ["Meta"],
+        summary: "Recent error captures (demo + diagnostic)",
+        description:
+          "Returns the last N errors forwarded through `src/lib/observability.ts`. When `SENTRY_DSN` is set these also ship to Sentry; without it, this endpoint is the sole readable record. Gated: open in non-production, closed in production unless `ENABLE_OBSERVABILITY_API=1`. See ADR-0045.",
+        responses: {
+          "200": {
+            description: "Ring of recent captures (newest first).",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["count", "backend", "captures"],
+                  properties: {
+                    count: { type: "integer", minimum: 0 },
+                    backend: {
+                      type: "string",
+                      description:
+                        "Backend used for the most recent capture — 'sentry' if DSN configured, 'memory' otherwise.",
+                    },
+                    captures: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          ts: { type: "string", format: "date-time" },
+                          kind: { type: "string" },
+                          message: { type: "string" },
+                          name: { type: "string" },
+                          digest: { type: "string" },
+                          sourceRoute: { type: "string" },
+                          env: { type: "string" },
+                          backend: { type: "string" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "404": {
+            description:
+              "Disabled in production (`ENABLE_OBSERVABILITY_API` unset).",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+              },
+            },
+          },
+        },
+      },
+    },
   },
 } as const;

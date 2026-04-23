@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { checkAndIncrementGlobalBudget } from "@/lib/global-budget";
 import { checkAndIncrement } from "@/lib/kb-rate-limit";
+import { captureError } from "@/lib/observability";
 import { ingestDocument } from "@/server/ingest";
 
 export const runtime = "nodejs";
@@ -91,6 +92,7 @@ export async function POST(req: Request) {
   } catch (err) {
     const code = (err as Error).message || "INGEST_FAILED";
     console.error("[ingest] failed", err);
+    void captureError(err, { route: "/api/kb/ingest" });
     return Response.json(
       { code, message: `Ingest failed: ${code}` },
       { status: 500 },

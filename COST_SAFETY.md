@@ -4,14 +4,16 @@ This project is designed to run at **$0/month** and to stay there under adversar
 
 ## Summary table
 
-| Service                                 | Free-tier cap                                                | Cap-exceeded behavior                              | Needs a credit card? | Auto-upgrades to paid?                 |
-| --------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------- | -------------------- | -------------------------------------- |
-| **Vercel Hobby**                        | 100 GB bandwidth, 100 function-hours, 1M invocations / month | `503 Service Unavailable`; functions refuse to run | **No**               | **No** — requires explicit Pro upgrade |
-| **Neon Postgres (Free)**                | 191.9 compute-hours, 0.5 GB storage, auto-scales to zero     | Connections refused                                | No                   | No                                     |
-| **Google AI Studio** (Gemini 2.0 Flash) | 1,500 requests/day, 15 RPM, 1M TPM                           | Returns `429 Too Many Requests`                    | No                   | No (Studio key is free-tier-locked)    |
-| **Pusher Channels** (Sandbox)           | 200k messages/day, 100 concurrent connections                | Messages dropped, new connections refused          | No                   | No                                     |
-| **Resend** (Free)                       | 100 emails/day, 3,000/month                                  | Sends refused                                      | No                   | No                                     |
-| **GitHub Actions** (public repo)        | Unlimited minutes for public repos                           | —                                                  | No                   | No                                     |
+| Service                                 | Free-tier cap                                                | Cap-exceeded behavior                                                                                 | Needs a credit card? | Auto-upgrades to paid?                 |
+| --------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- | -------------------- | -------------------------------------- |
+| **Vercel Hobby**                        | 100 GB bandwidth, 100 function-hours, 1M invocations / month | `503 Service Unavailable`; functions refuse to run                                                    | **No**               | **No** — requires explicit Pro upgrade |
+| **Neon Postgres (Free)**                | 191.9 compute-hours, 0.5 GB storage, auto-scales to zero     | Connections refused                                                                                   | No                   | No                                     |
+| **Google AI Studio** (Gemini 2.0 Flash) | 1,500 requests/day, 15 RPM, 1M TPM                           | Returns `429 Too Many Requests`                                                                       | No                   | No (Studio key is free-tier-locked)    |
+| **Pusher Channels** (Sandbox)           | 200k messages/day, 100 concurrent connections                | Messages dropped, new connections refused                                                             | No                   | No                                     |
+| **Resend** (Free)                       | 100 emails/day, 3,000/month                                  | Sends refused                                                                                         | No                   | No                                     |
+| **GitHub Actions** (public repo)        | Unlimited minutes for public repos                           | —                                                                                                     | No                   | No                                     |
+| **Upstash Redis** (Free)                | 10,000 commands/day                                          | Commands refused                                                                                      | No                   | No                                     |
+| **Sentry** (Developer)                  | 5,000 errors/month, 90-day retention                         | Further captures dropped (in-memory ring buffer at `/api/observability/captures` still works locally) | No                   | No                                     |
 
 Every service above ships the **"cap out to zero cost"** failure mode rather than the **"auto-scale to the attacker's credit card"** failure mode — provided you follow the setup rules below.
 

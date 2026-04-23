@@ -4,6 +4,7 @@ import { z } from "zod";
 import { GENERATION_MODEL, getGemini } from "@/lib/gemini";
 import { checkAndIncrementGlobalBudget } from "@/lib/global-budget";
 import { checkAndIncrement } from "@/lib/kb-rate-limit";
+import { captureError } from "@/lib/observability";
 import { buildUserMessage, RAG_SYSTEM_PROMPT } from "@/server/rag-prompt";
 import { retrieveTopK } from "@/server/retrieve";
 
@@ -98,9 +99,11 @@ export async function POST(req: Request) {
       k: parsed.data.k,
     });
   } catch (err) {
-    // Log details server-side only; never leak stack / message shape
-    // to the caller. The client renders a generic failure banner.
+    // Log server-side and forward to the observability seam (Sentry
+    // when DSN set, in-memory ring otherwise). Never leak stack
+    // shape to the caller.
     console.error("[kb-ask] retrieveTopK failed:", err);
+    void captureError(err, { route: "/api/kb/ask" });
     return Response.json(
       {
         code: "RETRIEVAL_FAILED",
