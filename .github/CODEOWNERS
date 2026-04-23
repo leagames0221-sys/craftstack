@@ -1,0 +1,32 @@
+# CODEOWNERS for craftstack
+# https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Every pull request gets auto-reviewed against these paths. The project
+# is currently solo-maintained, so one owner covers everything — but the
+# file is split by surface so a future contributor can take over a
+# specific slice without rewriting the whole file.
+
+# Default fallback — everything not matched more specifically.
+* @leagames0221-sys
+
+# Application source
+/apps/collab/     @leagames0221-sys
+/apps/knowledge/  @leagames0221-sys
+
+# Security-sensitive surfaces (CSP, auth, rate limits, cost hardening).
+/apps/collab/src/proxy.ts               @leagames0221-sys
+/apps/collab/src/auth/                  @leagames0221-sys
+/apps/collab/src/lib/kb-rate-limit.ts   @leagames0221-sys
+/apps/collab/src/lib/global-budget.ts   @leagames0221-sys
+/apps/collab/src/lib/user-rate-limit.ts @leagames0221-sys
+/apps/collab/src/app/api/               @leagames0221-sys
+
+# Architectural decision records and top-level policy docs.
+/docs/adr/         @leagames0221-sys
+/SECURITY.md       @leagames0221-sys
+/COST_SAFETY.md    @leagames0221-sys
+/CHANGELOG.md      @leagames0221-sys
+
+# CI / build / release.
+/.github/workflows/ @leagames0221-sys
+/.github/CODEOWNERS @leagames0221-sys

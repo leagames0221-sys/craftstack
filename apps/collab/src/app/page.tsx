@@ -306,6 +306,13 @@ export default async function Home() {
             >
               API Reference
             </Link>
+            <Link
+              href="/status"
+              className="hover:text-neutral-300"
+              title="Live integration-health board"
+            >
+              Status
+            </Link>
             <a
               href="https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on"
               target="_blank"

@@ -23,6 +23,20 @@ updates:
         patterns:
           - "prisma"
           - "@prisma/*"
+      auth:
+        patterns:
+          - "next-auth"
+          - "@auth/*"
+      ai:
+        patterns:
+          - "ai"
+          - "@ai-sdk/*"
+      testing:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "@playwright/*"
+          - "@axe-core/*"
       dev:
         dependency-type: "development"
     labels:

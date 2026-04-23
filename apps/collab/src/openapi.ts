@@ -339,6 +339,16 @@ export const openApiSpec = {
                   color: { type: "string" },
                 },
               },
+              examples: {
+                default: {
+                  summary: "Create a demo workspace",
+                  value: {
+                    name: "Acme Engineering",
+                    slug: "acme-eng",
+                    color: "#6366F1",
+                  },
+                },
+              },
             },
           },
         },
@@ -658,6 +668,16 @@ export const openApiSpec = {
                   expectedVersion: { type: "integer", minimum: 1 },
                 },
               },
+              examples: {
+                default: {
+                  summary: "Move into the first slot of a Done list",
+                  value: {
+                    targetListId: "ckl4j8a5g0000iv0b9d8d5m5x",
+                    position: "0|i0000f:",
+                    expectedVersion: 3,
+                  },
+                },
+              },
             },
           },
         },
@@ -927,7 +947,7 @@ export const openApiSpec = {
         summary:
           "Stream a Gemini 2.0 Flash answer grounded in the supplied context",
         description:
-          "Public / no auth. Missing GEMINI_API_KEY falls back to a deterministic demo mode streaming a canned answer with an x-playground-mode: demo header. Per-IP sliding-window rate limit (10/min).",
+          "Public / no auth. Missing GEMINI_API_KEY falls back to a deterministic demo mode streaming a canned answer with an x-playground-mode: demo header. Per-IP sliding-window rate limit (10/min); global daily/monthly budget as belt-and-suspenders (see ADR-0037 + COST_SAFETY.md).",
         security: [],
         requestBody: {
           required: true,
@@ -939,6 +959,16 @@ export const openApiSpec = {
                 properties: {
                   context: { type: "string", minLength: 1, maxLength: 12000 },
                   question: { type: "string", minLength: 1, maxLength: 500 },
+                },
+              },
+              examples: {
+                default: {
+                  summary: "Ground on a pasted passage",
+                  value: {
+                    context:
+                      "Boardly uses LexoRank strings for list and card ordering so reordering touches one row instead of N. Optimistic locking via a version column prevents stale-write races on concurrent drags.",
+                    question: "How does Boardly reorder cards?",
+                  },
                 },
               },
             },

@@ -40,6 +40,8 @@ export const authEdgeConfig = {
       if (pathname.startsWith("/playground")) return true;
       // Public API reference.
       if (pathname.startsWith("/docs")) return true;
+      // Public integration-health board.
+      if (pathname.startsWith("/status")) return true;
       return !!auth?.user;
     },
     session: async ({ session, token }) => {

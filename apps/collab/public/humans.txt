@@ -1,0 +1,25 @@
+/* TEAM */
+    Maker:     leagames0221-sys
+    Contact:   via GitHub — https://github.com/leagames0221-sys
+    Location:  Japan
+
+/* THANKS */
+    cmdk (MIT) — Paco Coursey
+    @dnd-kit (MIT) — Claudéric Demers
+    Vercel AI SDK — Vercel
+    Auth.js v5 — NextAuth.js contributors
+    Prisma — Prisma Labs
+
+/* SITE */
+    Last update: 2026-04-23
+    Language:    English + Japanese (JA-JP)
+    Doctype:     HTML5 (Next.js App Router)
+    IDE:         VS Code
+    Tools:       Claude Code (AI pair-programming, disclosed in README)
+
+/* THE STACK */
+    Next.js 16, React 19, TypeScript 5, Tailwind 4
+    PostgreSQL (Neon), Prisma 7, Auth.js v5 (JWT)
+    Pusher Channels, Vercel AI SDK, Gemini 2.0 Flash
+    Vitest, Playwright, axe-core, CodeQL
+    Vercel Hobby, GitHub Actions
