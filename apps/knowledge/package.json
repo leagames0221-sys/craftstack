@@ -15,7 +15,8 @@
     "bench": "tsx scripts/bench-retrieve.ts",
     "eval": "tsx scripts/eval.ts",
     "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test tests/smoke"
+    "test:e2e:smoke": "playwright test tests/smoke",
+    "demo:record": "playwright test --config=playwright.demo.config.ts --project=record"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.64",

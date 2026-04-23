@@ -24,6 +24,11 @@
     "demo:tts": "node scripts/demo/demo-tts.mjs",
     "demo:compose": "node scripts/demo/demo-compose.mjs",
     "demo:all": "pnpm demo:record && pnpm demo:convert && pnpm demo:tts && pnpm demo:compose",
+    "demo:knowlex:record": "pnpm --filter knowledge demo:record",
+    "demo:knowlex:convert": "cross-env DEMO_APP=knowledge DEMO_DIR=scripts/demo-knowlex node scripts/demo/demo-convert.mjs",
+    "demo:knowlex:tts": "cross-env DEMO_DIR=scripts/demo-knowlex node scripts/demo/demo-tts.mjs",
+    "demo:knowlex:compose": "cross-env DEMO_DIR=scripts/demo-knowlex node scripts/demo/demo-compose.mjs",
+    "demo:knowlex:all": "pnpm demo:knowlex:record && pnpm demo:knowlex:convert && pnpm demo:knowlex:tts && pnpm demo:knowlex:compose",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,md,json,yaml,yml}\"",
     "prepare": "husky"
@@ -34,6 +39,7 @@
     ]
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.4.0",

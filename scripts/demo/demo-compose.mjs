@@ -29,19 +29,22 @@ import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
-const NARRATION = resolve(ROOT, "scripts/demo/narration.json");
-const INPUT_VIDEO = resolve(ROOT, "scripts/demo/input.mp4");
-const OUT_DIR = resolve(ROOT, "scripts/demo/out");
+// Shared with the convert + tts steps via DEMO_DIR. Defaults to the
+// original Boardly path so the v0.3.0 pipeline is unchanged.
+const DEMO_DIR = process.env.DEMO_DIR ?? "scripts/demo";
+const NARRATION = resolve(ROOT, `${DEMO_DIR}/narration.json`);
+const INPUT_VIDEO = resolve(ROOT, `${DEMO_DIR}/input.mp4`);
+const OUT_DIR = resolve(ROOT, `${DEMO_DIR}/out`);
 const OUT_VIDEO = resolve(OUT_DIR, "final.mp4");
 const CAPTIONS = resolve(OUT_DIR, "captions.srt");
 
 async function main() {
   await requireFile(INPUT_VIDEO, [
-    "Put the silent screen recording at scripts/demo/input.mp4.",
+    `Put the silent screen recording at ${DEMO_DIR}/input.mp4.`,
     "Loom -> Share -> Download, or use OBS / Windows Game Bar to export a silent mp4.",
   ]);
   await requireFile(NARRATION, [
-    "scripts/demo/narration.json should exist — it ships with the repo.",
+    `${DEMO_DIR}/narration.json should exist — it ships with the repo.`,
   ]);
 
   const script = JSON.parse(await readFile(NARRATION, "utf8"));

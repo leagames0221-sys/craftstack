@@ -30,8 +30,12 @@ import { fileURLToPath } from "node:url";
 // `.pathname` leaves a leading slash that path.resolve mishandles.
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..", "..");
-const SCRIPT_FILE = resolve(ROOT, "scripts/demo/narration.json");
-const OUT_DIR = resolve(ROOT, "scripts/demo/out");
+// `DEMO_DIR` lets a second pipeline (Knowlex) share these scripts by
+// pointing at its own narration.json + output directory. Defaults
+// preserve the original Boardly paths.
+const DEMO_DIR = process.env.DEMO_DIR ?? "scripts/demo";
+const SCRIPT_FILE = resolve(ROOT, `${DEMO_DIR}/narration.json`);
+const OUT_DIR = resolve(ROOT, `${DEMO_DIR}/out`);
 
 async function main() {
   const raw = await readFile(SCRIPT_FILE, "utf8");
