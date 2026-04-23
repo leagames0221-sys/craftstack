@@ -65,6 +65,15 @@ export default async function SignInPage({
           Reviewers: GitHub works for any account. Google is still in Testing
           and accepts only registered test users.
         </p>
+        <p className="mt-4 text-center text-xs text-neutral-500">
+          Don&apos;t want to sign up?{" "}
+          <a
+            href="/playground"
+            className="font-medium text-indigo-300 hover:text-indigo-200"
+          >
+            Try the Knowlex AI playground →
+          </a>
+        </p>
         <p className="mt-2 text-center text-[11px] text-neutral-600">
           By signing in you agree to our Terms and Privacy Policy.
         </p>

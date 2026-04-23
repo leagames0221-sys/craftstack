@@ -25,6 +25,9 @@ importers:
 
   apps/collab:
     dependencies:
+      "@ai-sdk/google":
+        specifier: ^3.0.64
+        version: 3.0.64(zod@4.3.6)
       "@auth/prisma-adapter":
         specifier: ^2.11.2
         version: 2.11.2(@prisma/client@7.7.0(prisma@7.7.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3))(typescript@5.9.3))
@@ -43,6 +46,9 @@ importers:
       "@prisma/client":
         specifier: ^7.7.0
         version: 7.7.0(prisma@7.7.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3))(typescript@5.9.3)
+      ai:
+        specifier: ^6.0.168
+        version: 6.0.168(zod@4.3.6)
       cmdk:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -51,10 +57,10 @@ importers:
         version: 1.0.5
       next:
         specifier: 16.2.4
-        version: 16.2.4(@babel/core@7.29.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+        version: 16.2.4(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       next-auth:
         specifier: 5.0.0-beta.31
-        version: 5.0.0-beta.31(next@16.2.4(@babel/core@7.29.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)
+        version: 5.0.0-beta.31(next@16.2.4(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)
       pg:
         specifier: ^8.20.0
         version: 8.20.0
@@ -70,6 +76,9 @@ importers:
       react-dom:
         specifier: 19.2.5
         version: 19.2.5(react@19.2.5)
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       "@playwright/test":
         specifier: ^1.59.1
@@ -115,7 +124,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.1.5
-        version: 4.1.5(@types/node@20.19.39)(@vitest/coverage-v8@4.1.5)(vite@8.0.9(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
+        version: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@20.19.39)(@vitest/coverage-v8@4.1.5)(vite@8.0.9(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
 
   apps/knowledge:
     dependencies:
@@ -127,7 +136,7 @@ importers:
         version: 7.7.0(prisma@7.7.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.9.3))(typescript@5.9.3)
       next:
         specifier: 16.2.4
-        version: 16.2.4(@babel/core@7.29.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+        version: 16.2.4(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       pg:
         specifier: ^8.20.0
         version: 8.20.0
@@ -215,6 +224,40 @@ importers:
         version: 5.9.3
 
 packages:
+  "@ai-sdk/gateway@3.0.104":
+    resolution:
+      {
+        integrity: sha512-ZKX5n74io8VIRlhIMSLWVlvT3sXC8Z7cZ9GHuWBWZDVi96+62AIsWuLGvMfcBA1STYuSoDrp6rIziZmvrTq0TA==,
+      }
+    engines: { node: ">=18" }
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  "@ai-sdk/google@3.0.64":
+    resolution:
+      {
+        integrity: sha512-CbR82EgGPNrj/6q0HtclwuCqe0/pDShyv3nWDP/A9DroujzWXnLMlUJVrgPOsg4b40zQCwwVs2XSKCxvt/4QaA==,
+      }
+    engines: { node: ">=18" }
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  "@ai-sdk/provider-utils@4.0.23":
+    resolution:
+      {
+        integrity: sha512-z8GlDaCmRSDlqkMF2f4/RFgWxdarvIbyuk+m6WXT1LYgsnGiXRJGTD2Z1+SDl3LqtFuRtGX1aghYvQLoHL/9pg==,
+      }
+    engines: { node: ">=18" }
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  "@ai-sdk/provider@3.0.8":
+    resolution:
+      {
+        integrity: sha512-oGMAgGoQdBXbZqNG0Ze56CHjDZ1IDYOwGYxYjO5KLSlz5HiNQ9udIXsPZ61VWaHGZ5XW/jyjmr6t2xz2jGVwbQ==,
+      }
+    engines: { node: ">=18" }
+
   "@alloc/quick-lru@5.2.0":
     resolution:
       {
@@ -1174,6 +1217,13 @@ packages:
         integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==,
       }
     engines: { node: ">=12.4.0" }
+
+  "@opentelemetry/api@1.9.0":
+    resolution:
+      {
+        integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==,
+      }
+    engines: { node: ">=8.0.0" }
 
   "@oxc-project/types@0.126.0":
     resolution:
@@ -2192,6 +2242,13 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  "@vercel/oidc@3.2.0":
+    resolution:
+      {
+        integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==,
+      }
+    engines: { node: ">= 20" }
+
   "@vitest/coverage-v8@4.1.5":
     resolution:
       {
@@ -2276,6 +2333,15 @@ packages:
       }
     engines: { node: ">=0.4.0" }
     hasBin: true
+
+  ai@6.0.168:
+    resolution:
+      {
+        integrity: sha512-2HqCJuO+1V2aV7vfYs5LFEUfxbkGX+5oa54q/gCCTL7KLTdbxcCu5D7TdLA5kwsrs3Szgjah9q6D9tpjHM3hUQ==,
+      }
+    engines: { node: ">=18" }
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
 
   ajv@6.14.0:
     resolution:
@@ -3166,6 +3232,13 @@ packages:
         integrity: sha512-mlsTRyGaPBjPedk6Bvw+aqbsXDtoAyAzm5MO7JgU+yVRyMQ5O8bD4Kcci7BS85f93veegeCPkL8R4GLClnjLFw==,
       }
 
+  eventsource-parser@3.0.8:
+    resolution:
+      {
+        integrity: sha512-70QWGkr4snxr0OXLRWsFLeRBIRPuQOvt4s8QYjmUlmlkyTZkRqS7EDVRZtzU3TiyDbXSzaOeF0XUKy8PchzukQ==,
+      }
+    engines: { node: ">=18.0.0" }
+
   expect-type@1.3.0:
     resolution:
       {
@@ -3885,6 +3958,12 @@ packages:
     resolution:
       {
         integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==,
+      }
+
+  json-schema@0.4.0:
+    resolution:
+      {
+        integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==,
       }
 
   json-stable-stringify-without-jsonify@1.0.1:
@@ -5637,6 +5716,30 @@ packages:
       }
 
 snapshots:
+  "@ai-sdk/gateway@3.0.104(zod@4.3.6)":
+    dependencies:
+      "@ai-sdk/provider": 3.0.8
+      "@ai-sdk/provider-utils": 4.0.23(zod@4.3.6)
+      "@vercel/oidc": 3.2.0
+      zod: 4.3.6
+
+  "@ai-sdk/google@3.0.64(zod@4.3.6)":
+    dependencies:
+      "@ai-sdk/provider": 3.0.8
+      "@ai-sdk/provider-utils": 4.0.23(zod@4.3.6)
+      zod: 4.3.6
+
+  "@ai-sdk/provider-utils@4.0.23(zod@4.3.6)":
+    dependencies:
+      "@ai-sdk/provider": 3.0.8
+      "@standard-schema/spec": 1.1.0
+      eventsource-parser: 3.0.8
+      zod: 4.3.6
+
+  "@ai-sdk/provider@3.0.8":
+    dependencies:
+      json-schema: 0.4.0
+
   "@alloc/quick-lru@5.2.0": {}
 
   "@auth/core@0.41.2":
@@ -6139,6 +6242,8 @@ snapshots:
       fastq: 1.20.1
 
   "@nolyfill/is-core-module@1.0.39": {}
+
+  "@opentelemetry/api@1.9.0": {}
 
   "@oxc-project/types@0.126.0": {}
 
@@ -6738,6 +6843,8 @@ snapshots:
   "@unrs/resolver-binding-win32-x64-msvc@1.11.1":
     optional: true
 
+  "@vercel/oidc@3.2.0": {}
+
   "@vitest/coverage-v8@4.1.5(vitest@4.1.5)":
     dependencies:
       "@bcoe/v8-coverage": 1.0.2
@@ -6750,7 +6857,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.1.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.5(@types/node@20.19.39)(@vitest/coverage-v8@4.1.5)(vite@8.0.9(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
+      vitest: 4.1.5(@opentelemetry/api@1.9.0)(@types/node@20.19.39)(@vitest/coverage-v8@4.1.5)(vite@8.0.9(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
 
   "@vitest/expect@4.1.5":
     dependencies:
@@ -6802,6 +6909,14 @@ snapshots:
       acorn: 8.16.0
 
   acorn@8.16.0: {}
+
+  ai@6.0.168(zod@4.3.6):
+    dependencies:
+      "@ai-sdk/gateway": 3.0.104(zod@4.3.6)
+      "@ai-sdk/provider": 3.0.8
+      "@ai-sdk/provider-utils": 4.0.23(zod@4.3.6)
+      "@opentelemetry/api": 1.9.0
+      zod: 4.3.6
 
   ajv@6.14.0:
     dependencies:
@@ -7555,6 +7670,8 @@ snapshots:
 
   eventemitter3@5.0.4: {}
 
+  eventsource-parser@3.0.8: {}
+
   expect-type@1.3.0: {}
 
   exsolve@1.0.8: {}
@@ -7942,6 +8059,8 @@ snapshots:
 
   json-schema-traverse@1.0.0: {}
 
+  json-schema@0.4.0: {}
+
   json-stable-stringify-without-jsonify@1.0.1: {}
 
   json5@1.0.2:
@@ -8132,13 +8251,13 @@ snapshots:
 
   natural-compare@1.4.0: {}
 
-  next-auth@5.0.0-beta.31(next@16.2.4(@babel/core@7.29.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5):
+  next-auth@5.0.0-beta.31(next@16.2.4(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5):
     dependencies:
       "@auth/core": 0.41.2
-      next: 16.2.4(@babel/core@7.29.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      next: 16.2.4(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       react: 19.2.5
 
-  next@16.2.4(@babel/core@7.29.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
+  next@16.2.4(@babel/core@7.29.0)(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5):
     dependencies:
       "@next/env": 16.2.4
       "@swc/helpers": 0.5.15
@@ -8157,6 +8276,7 @@ snapshots:
       "@next/swc-linux-x64-musl": 16.2.4
       "@next/swc-win32-arm64-msvc": 16.2.4
       "@next/swc-win32-x64-msvc": 16.2.4
+      "@opentelemetry/api": 1.9.0
       "@playwright/test": 1.59.1
       sharp: 0.34.5
     transitivePeerDependencies:
@@ -8949,7 +9069,7 @@ snapshots:
       tsx: 4.21.0
       yaml: 2.8.3
 
-  vitest@4.1.5(@types/node@20.19.39)(@vitest/coverage-v8@4.1.5)(vite@8.0.9(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)):
+  vitest@4.1.5(@opentelemetry/api@1.9.0)(@types/node@20.19.39)(@vitest/coverage-v8@4.1.5)(vite@8.0.9(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)):
     dependencies:
       "@vitest/expect": 4.1.5
       "@vitest/mocker": 4.1.5(vite@8.0.9(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
@@ -8972,6 +9092,7 @@ snapshots:
       vite: 8.0.9(@types/node@20.19.39)(esbuild@0.27.7)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3)
       why-is-node-running: 2.3.0
     optionalDependencies:
+      "@opentelemetry/api": 1.9.0
       "@types/node": 20.19.39
       "@vitest/coverage-v8": 4.1.5(vitest@4.1.5)
     transitivePeerDependencies:

@@ -24,6 +24,12 @@ export default async function DashboardPage() {
             <h1 className="text-lg font-semibold tracking-tight">Boardly</h1>
           </div>
           <div className="flex items-center gap-3 text-sm">
+            <Link
+              href="/playground"
+              className="rounded-md border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-200 hover:bg-violet-500/20 transition"
+            >
+              Knowlex ✨
+            </Link>
             <CommandPalette />
             <NotificationsBell />
             <span className="text-neutral-400">{session.user.email}</span>

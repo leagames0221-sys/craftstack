@@ -18,12 +18,14 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.64",
     "@auth/prisma-adapter": "^2.11.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
+    "ai": "^6.0.168",
     "cmdk": "^1.1.1",
     "lexorank": "^1.0.5",
     "next": "16.2.4",
@@ -32,7 +34,8 @@
     "pusher": "^5.3.3",
     "pusher-js": "^8.5.0",
     "react": "19.2.5",
-    "react-dom": "19.2.5"
+    "react-dom": "19.2.5",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

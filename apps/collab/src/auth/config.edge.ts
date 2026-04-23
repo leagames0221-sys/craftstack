@@ -35,6 +35,8 @@ export const authEdgeConfig = {
       // the auth gate without changing page-level RBAC.
       if (pathname.startsWith("/signin")) return true;
       if (pathname.startsWith("/invite")) return true;
+      // Public playground demo for recruiters; no auth required.
+      if (pathname.startsWith("/playground")) return true;
       return !!auth?.user;
     },
     session: async ({ session, token }) => {
