@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Knowlex RAG regression eval.
  *
