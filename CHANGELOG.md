@@ -6,12 +6,34 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added (post-v0.4.0)
 
+#### Observability
+
 - **Unified observability seam** in `apps/{collab,knowledge}/src/lib/observability.ts` — every `captureException` call now flows through a DSN-gated helper that forwards to Sentry when configured and stashes into a per-container in-memory ring buffer otherwise. Complements, not replaces, the instrumentation hooks (ADR-0044); lets reviewers prove the pipeline works without a Sentry account.
 - **`/api/observability/captures`** endpoint on both apps — dumps the ring buffer as JSON. Open in dev / preview, closed in production unless `ENABLE_OBSERVABILITY_API=1`. Server-side routes (`/api/kb/ask`, `/api/kb/ingest`) and the `error.tsx` global boundaries route through this seam.
-- **`docs/FREE_TIER_ONBOARDING.md`** — step-by-step signup flow for every external service the repo touches, with explicit "credit card required at signup?" / "demo-mode behaviour when unconfigured" columns. Companion to `COST_SAFETY.md` (which covers runtime abuse caps, not signup).
-- **ADR-0045** — records the rationale for demo-mode observability + the follow-up path (capture positive signals, surface backend identity in `/api/kb/stats`).
 - Boardly: client-side Sentry init (`instrumentation-client.ts`) + wired `error.tsx` into the unified observability seam. Parity with Knowlex.
 - Knowlex: `error.tsx` (new) + `/api/observability/captures` + `observability.ts` vitest suite (+5 unit tests).
+
+#### Knowlex 33-second demo pipeline
+
+- **`scripts/demo/demo-{convert,tts,compose}.mjs` generalised** via `DEMO_APP` + `DEMO_DIR` env overrides — the Boardly v0.3.0 invocation is the default, so nothing existing breaks.
+- **`scripts/demo-knowlex/`** — self-contained companion directory: `narration.json` (ずんだもん, VOICEVOX speaker 3, 5 lines, base `speedScale: 1.25`), `README.md` (chars-to-duration budget table + 4-step edit checklist to avoid cue overlaps).
+- **`apps/knowledge/playwright.demo.config.ts` + `tests/demo/record.spec.ts`** — 1920×1080 headed record against `https://craftstack-knowledge.vercel.app`, no auth project needed (Knowlex is public). Drives `/kb` ingest → `/` ask with streaming citations → `/api/kb/stats` → `/docs/api` scroll on a timeline that aligns with the narration cues.
+- Root scripts `demo:knowlex:{record,convert,tts,compose,all}`; `cross-env` added at the repo root for env portability.
+- **Loom published**: <https://www.loom.com/share/acff991e3da94d5aa4e98dcee0b100e2>. Embedded in README's 🎬 Walkthroughs section (now listing both videos) and in the `apps/collab/src/app/page.tsx` landing hero next to the Boardly button.
+
+#### CI reliability
+
+- **`@sentry/nextjs` version unblock** — the initial wire used `^9.0.0` which does not match any published major (latest is 10.x). Bumped to `^10.50.0` on both apps; regenerated `pnpm-lock.yaml` so every `pnpm install --frozen-lockfile` step in CI actually resolves.
+- **`apps/knowledge/src/app/api/kb/stats/route.ts`** — replaced a `0n` BigInt literal that broke `tsc` under the app's compile target with a runtime `Number(count)` cast.
+- **`collab-live-smoke` job** in `.github/workflows/smoke.yml` — second job alongside the Knowlex smoke, runs `apps/collab/tests/e2e/a11y.spec.ts` against `https://craftstack-collab.vercel.app` on the same 6-hour cron + push + dispatch triggers. Both Playwright jobs cache `~/.cache/ms-playwright` via `actions/cache@v4`.
+
+#### Docs & portfolio polish
+
+- **`docs/FREE_TIER_ONBOARDING.md`** — step-by-step signup flow for every external service the repo touches, with explicit "credit card required at signup?" / "demo-mode behaviour when unconfigured" columns. Companion to `COST_SAFETY.md` (which covers runtime abuse caps, not signup).
+- **Mermaid architecture diagram** added to the top of README (2-app / 2-Neon-DB / Gemini / 4-workflow topology).
+- **Stat + cross-reference sync** — landing page, OG image, README badge, tech-stack bullet, and monorepo-layout ADR count all rebased onto reality (178 Vitest, ~35 Playwright, 45 ADRs). Four new README body bullets link `ADR-0041`..`ADR-0045` directly so the entry point from README prose matches the ADR density.
+- OG image tech-tag cloud gains `pgvector HNSW` so the Knowlex half of the portfolio is represented alongside Boardly-side tags like `Pusher`.
+- **ADR-0045** — records the rationale for demo-mode observability + the follow-up path (capture positive signals, surface backend identity in `/api/kb/stats`).
 
 ### Follow-ups
 

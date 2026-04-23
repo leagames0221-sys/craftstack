@@ -86,8 +86,9 @@ export default function OpenGraphImage() {
           "Next.js 16",
           "Prisma 7",
           "Auth.js v5",
-          "Pusher",
+          "pgvector HNSW",
           "Gemini Flash",
+          "Pusher",
           "A Security",
           "178 tests",
         ].map((t) => (

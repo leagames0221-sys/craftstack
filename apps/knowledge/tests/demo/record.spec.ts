@@ -49,12 +49,14 @@ test("knowlex walkthrough", async ({ page }) => {
   // Line 1 ("KnowlexはRAG...") plays over this idle dwell.
   await page.waitForTimeout(2500);
 
-  // The /kb form uses visual <label> elements that aren't tied to the
-  // inputs via htmlFor+id, so `getByLabel` doesn't resolve them.
-  // Placeholder text is the most stable anchor; if those placeholders
-  // change in CorpusClient.tsx, update the regexes below.
-  const titleField = page.getByPlaceholder(/Boardly overview|title/i);
-  const contentField = page.getByPlaceholder(/paste a passage|chunked/i);
+  // The /kb form uses visual <label> elements that aren't tied to
+  // the inputs via htmlFor+id, so `getByLabel` doesn't resolve them.
+  // Placeholder text is the most stable anchor; if these strings
+  // change in CorpusClient.tsx, update them here.
+  const titleField = page.getByPlaceholder("e.g. Boardly overview");
+  const contentField = page.getByPlaceholder(
+    /^Paste a passage/i, // matches the CONTENT textarea regardless of the full placeholder suffix
+  );
   await titleField.fill(DEMO_DOC.title);
   await contentField.fill(DEMO_DOC.content);
 
