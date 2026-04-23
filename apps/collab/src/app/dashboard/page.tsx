@@ -4,6 +4,7 @@ import { auth, signOut } from "@/auth";
 import { listWorkspacesForUser } from "@/server/workspace";
 import { CommandPalette } from "@/components/CommandPalette";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { ShortcutsHelp } from "@/components/ShortcutsHelp";
 
 export const metadata = {
   title: "Dashboard · Boardly",
@@ -32,6 +33,7 @@ export default async function DashboardPage() {
             </Link>
             <CommandPalette />
             <NotificationsBell />
+            <ShortcutsHelp />
             <span className="text-neutral-400">{session.user.email}</span>
             <form
               action={async () => {

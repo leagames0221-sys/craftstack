@@ -48,6 +48,24 @@ export function CommandPalette({ ctx = {} }: { ctx?: PaletteContext }) {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen((v) => !v);
+        return;
+      }
+      // "/" opens the palette (Slack / GitHub convention), but only when
+      // the user isn't already typing into a form field.
+      if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const t = e.target as HTMLElement | null;
+        if (!t) return;
+        const tag = t.tagName.toLowerCase();
+        if (
+          tag === "input" ||
+          tag === "textarea" ||
+          tag === "select" ||
+          t.isContentEditable
+        ) {
+          return;
+        }
+        e.preventDefault();
+        setOpen(true);
       }
     };
     document.addEventListener("keydown", onKey);

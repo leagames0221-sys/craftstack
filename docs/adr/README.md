@@ -42,6 +42,7 @@ Once Accepted, an ADR is immutable — later decisions supersede, they do not re
 | [0031](0031-url-as-state-for-filters.md)                        | URL query string as source of truth for filters            | Accepted |
 | [0032](0032-mention-resolution-and-env-guarded-integrations.md) | `@mention` resolution and env-guarded integrations         | Accepted |
 | [0033](0033-knowlex-playground-on-collab-deploy.md)             | Host the Knowlex "playground" surface on the collab deploy | Accepted |
+| [0034](0034-axe-core-a11y-in-playwright-smoke.md)               | A11y assertions via axe-core in Playwright smoke           | Accepted |
 
 ## Implementation-phase addendum (0023–0032)
 

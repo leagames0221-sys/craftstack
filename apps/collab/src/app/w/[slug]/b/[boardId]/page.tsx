@@ -10,6 +10,7 @@ import { AssigneesPicker } from "./AssigneesPicker";
 import { CardActivity } from "./CardActivity";
 import { CommandPalette } from "@/components/CommandPalette";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { ShortcutsHelp } from "@/components/ShortcutsHelp";
 
 export async function generateMetadata({
   params,
@@ -149,6 +150,7 @@ export default async function BoardPage({
             </span>
             <CommandPalette ctx={{ workspaceSlug: slug, boardId }} />
             <NotificationsBell />
+            <ShortcutsHelp />
           </div>
         </div>
       </header>

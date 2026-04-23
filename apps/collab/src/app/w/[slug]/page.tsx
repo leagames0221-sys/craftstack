@@ -6,6 +6,7 @@ import { MembersSection } from "./MembersSection";
 import { ActivityFeed } from "./ActivityFeed";
 import { CommandPalette } from "@/components/CommandPalette";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { ShortcutsHelp } from "@/components/ShortcutsHelp";
 
 export async function generateMetadata({
   params,
@@ -51,6 +52,7 @@ export default async function WorkspacePage({
           <div className="flex items-center gap-3 text-sm">
             <CommandPalette ctx={{ workspaceSlug: ws.slug }} />
             <NotificationsBell />
+            <ShortcutsHelp />
             <Link
               href="/dashboard"
               className="text-neutral-400 hover:text-neutral-200"
