@@ -72,7 +72,7 @@ craftstack/
 - **Database**: PostgreSQL 16 on Neon (Singapore) · Prisma 7 with `@prisma/adapter-pg`
 - **Auth**: Auth.js v5 with JWT session strategy · Google + GitHub OAuth · PrismaAdapter
 - **Deploy**: Vercel Hobby · GitHub Actions CI (lint / typecheck / test / build)
-- **Security headers**: HSTS 2y · X-Frame-Options DENY · Referrer-Policy · Permissions-Policy
+- **Security headers**: strict Content-Security-Policy (narrow origin allow-list for Pusher / OAuth avatars) · HSTS 2y preload · X-Frame-Options DENY · Cross-Origin-Opener-Policy same-origin · Cross-Origin-Resource-Policy same-origin · Permissions-Policy denying every unused sensor / media / power API · Referrer-Policy strict-origin-when-cross-origin. Scored on <https://securityheaders.com/?q=craftstack-collab.vercel.app>, target grade **A+**
 - **Testing**: Vitest (130 unit cases) · Playwright (11 smoke scenarios, run with `pnpm --filter collab test:e2e`) · k6 scenario
 - **Drag & drop**: `@dnd-kit` sortable cards with LexoRank positions + optimistic UI + `VERSION_MISMATCH` rollback
 - **Realtime**: Pusher Channels (free tier) — `board-<id>` fanout for card/list mutations; no-op locally when unconfigured
