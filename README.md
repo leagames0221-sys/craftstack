@@ -115,6 +115,8 @@ This codebase is AI-assisted. Claude (Anthropic's Claude Code) was used as a pai
 - **@mention resolution**: email local-part OR display-name slug. The regex is tuned to _not_ match email addresses in running text (`contact me at alice@example.com` doesn't fire).
 - **Env-guarded integrations** (Pusher, Resend). Missing credentials = silent no-op with a fallback (console log of accept URL, cross-tab refresh skipped). Means the app runs end-to-end locally without any external signup.
 
+Each of the ten items above is also captured as a one-page Architectural Decision Record with alternatives and trade-offs: see [`docs/adr/`](docs/adr/README.md) — ADR-0023 through ADR-0032 are the implementation-phase records mapping 1-to-1 to this list.
+
 See also the per-module doc comments in `apps/collab/src/server/*.ts` — each exported function has a short rationale for the specific design choice.
 
 ## Local development
