@@ -44,7 +44,7 @@ export async function retrieveTopK(opts: {
     `SELECT COUNT(*) AS count, MAX(vector_dims("embedding")) AS any_dim FROM "Embedding"`,
   );
   console.log(
-    `[retrieve] Embedding table: count=${Number(storedRows[0]?.count ?? 0n)}, stored_dim=${storedRows[0]?.any_dim ?? "?"}`,
+    `[retrieve] Embedding table: count=${storedRows[0] ? Number(storedRows[0].count) : 0}, stored_dim=${storedRows[0]?.any_dim ?? "?"}`,
   );
 
   // $queryRawUnsafe with parameter binding — pgvector needs an explicit
