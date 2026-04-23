@@ -120,7 +120,7 @@ export function CorpusClient() {
         </div>
         <ul className="divide-y divide-neutral-800 overflow-hidden rounded-lg border border-neutral-800 bg-neutral-900/40">
           {docs.length === 0 ? (
-            <li className="px-4 py-6 text-center text-xs text-neutral-500">
+            <li className="px-4 py-6 text-center text-xs text-neutral-400">
               No documents yet. Paste a passage on the left to get started.
             </li>
           ) : null}
@@ -133,7 +133,7 @@ export function CorpusClient() {
                 <div className="truncate font-medium text-neutral-100">
                   {d.title}
                 </div>
-                <div className="mt-0.5 text-[10px] text-neutral-500">
+                <div className="mt-0.5 text-[10px] text-neutral-400">
                   {d.chunks} chunk{d.chunks === 1 ? "" : "s"} ·{" "}
                   {d.charCount.toLocaleString()} chars ·{" "}
                   {new Date(d.createdAt)
