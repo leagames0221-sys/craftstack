@@ -30,9 +30,29 @@ The underlying Node scripts in `scripts/demo/` are shared; the Knowlex variants 
 DEMO_BASE_URL=http://localhost:3001 pnpm demo:knowlex:record
 ```
 
-## Editing the narration
+## Editing the narration — don't overlap the cues
 
-Open `narration.json`. `at` is cue time in seconds; each line plays then. If a line is too long for its slot, either shorten the text or push the next cue's `at` later, then re-run `pnpm demo:knowlex:tts` + `pnpm demo:knowlex:compose`.
+`narration.json` cues (`at` seconds) and the Playwright script's `waitForTimeout` values are a tight contract. If a line is longer than the gap to the next cue, ffmpeg's `amix` plays them on top of each other and the output is unlistenable.
+
+Rough budget for VOICEVOX speaker=3 at `speedScale: 1.15`:
+
+| Japanese chars | ≈ duration |
+| -------------- | ---------- |
+| 20             | ~3.4 s     |
+| 30             | ~5.1 s     |
+| 40             | ~6.8 s     |
+| 50             | ~8.5 s     |
+
+Target: `at[i+1] - at[i] >= estimated_duration(line[i]) + 2 s`. The +2 s cushion absorbs Playwright `slowMo` jitter and Vercel cold-start variance.
+
+If you edit a line:
+
+1. Eyeball the new character count against the table above.
+2. Bump the next cue's `at` if needed.
+3. Mirror any new dwell time in `apps/knowledge/tests/demo/record.spec.ts` so the video actually has content at each cue.
+4. Re-run `pnpm demo:knowlex:tts && pnpm demo:knowlex:compose`.
+
+The current script maxes at line 2 (~40 chars → ~6.8 s) between cues 6.0 and 14.0 — that's the tightest pair; everything else has ≥ 2.5 s headroom.
 
 ## Pre-requisites
 

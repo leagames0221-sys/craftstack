@@ -1,6 +1,6 @@
 {
-  "title": "Craftstack Knowlex — 30-second walkthrough",
-  "description": "Companion to scripts/demo/narration.json (Boardly). Same pipeline, different app: driven by apps/knowledge/tests/demo/record.spec.ts against https://craftstack-knowledge.vercel.app.",
+  "title": "Craftstack Knowlex — 33-second walkthrough",
+  "description": "Timeline tuned so every line ends at least ~2 s before the next cue at VOICEVOX speaker=3, speedScale=1.15. Rough length budget per line: 1 JP char ≈ 0.17 s at 1.15x. When editing, keep `at[i+1] - at[i] >= estimated_duration(line[i]) + 2s` — that's the margin the ffmpeg amix step tolerates without overlap.",
   "language": "ja-JP",
   "voice": {
     "voicevox": { "speaker": 3, "speedScale": 1.15 },
@@ -12,25 +12,25 @@
   },
   "lines": [
     {
-      "at": 0.5,
-      "speedScale": 1.3,
-      "text": "Knowlex、自作のRAGアプリなのだ。本番でちゃんと動いてるのだ。"
+      "at": 0.8,
+      "speedScale": 1.25,
+      "text": "KnowlexはRAGアプリなのだ。本番でちゃんと動いてるのだ。"
     },
     {
-      "at": 5.5,
-      "text": "貼ったテキストを512文字でチャンク化して、gemini-embedding-001で768次元ベクトルにするのだ。"
+      "at": 6.0,
+      "text": "貼った文を512文字でチャンク化、gemini-embedding-001で768次元に埋め込むのだ。"
     },
     {
-      "at": 12.0,
-      "text": "pgvectorのHNSWインデックスでコサインkNN、Gemini 2.0 Flashが引用番号つきでストリーミング回答するのだ。"
+      "at": 14.0,
+      "text": "HNSWインデックスでコサインkNN。Gemini 2.0 Flashが引用番号つきで答えるのだ。"
     },
     {
-      "at": 19.5,
-      "text": "stats エンドポイントでインデックス種別も確認できるのだ。hnswって書いてあるのだ。"
+      "at": 21.5,
+      "text": "statsエンドポイントで、indexTypeがhnswだと確認できるのだ。"
     },
     {
-      "at": 24.5,
-      "text": "OpenAPI仕様は手書き、ADRは45本。コスト自衛も両アプリ同格なのだ。"
+      "at": 27.5,
+      "text": "OpenAPIは手書き、ADRは45本。コスト自衛も両アプリ同格なのだ。"
     }
   ]
 }
