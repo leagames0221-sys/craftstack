@@ -98,7 +98,7 @@ export function ChatPanel() {
       </div>
 
       <div className="rounded-lg border border-neutral-800 bg-neutral-900/40 p-5">
-        <div className="mb-3 flex items-center justify-between text-[10px] uppercase tracking-widest text-neutral-500">
+        <div className="mb-3 flex items-center justify-between text-[10px] uppercase tracking-widest text-neutral-400">
           <span>Answer</span>
           {hits !== null ? (
             <span>
@@ -123,7 +123,7 @@ export function ChatPanel() {
           className="min-h-[180px] whitespace-pre-wrap text-sm leading-relaxed text-neutral-100"
         >
           {status === "idle" && answer === "" ? (
-            <span className="text-neutral-500">
+            <span className="text-neutral-400">
               Grounded answers with [n] citations land here.
             </span>
           ) : null}
@@ -141,7 +141,7 @@ export function ChatPanel() {
         </div>
         {docs.length > 0 && !error ? (
           <div className="mt-4 border-t border-neutral-800 pt-3">
-            <div className="mb-2 text-[10px] uppercase tracking-widest text-neutral-500">
+            <div className="mb-2 text-[10px] uppercase tracking-widest text-neutral-400">
               Citations
             </div>
             <ul className="space-y-1 text-xs text-neutral-400">

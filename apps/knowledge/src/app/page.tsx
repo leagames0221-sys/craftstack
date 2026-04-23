@@ -21,7 +21,7 @@ export default function Home() {
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 via-indigo-500 to-cyan-500" />
             <div>
               <h1 className="text-lg font-semibold tracking-tight">Knowlex</h1>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-neutral-400">
                 grounded RAG · text-embedding-004 · Gemini 2.0 Flash
               </p>
             </div>
@@ -52,7 +52,10 @@ export default function Home() {
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-neutral-400">
             Knowlex chunks whatever you paste in{" "}
-            <Link href="/kb" className="text-indigo-300 hover:text-indigo-200">
+            <Link
+              href="/kb"
+              className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
+            >
               Corpus
             </Link>
             , embeds each chunk with text-embedding-004, stores the 768-dim
