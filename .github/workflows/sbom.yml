@@ -1,0 +1,59 @@
+name: SBOM
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+# Software Bill of Materials in CycloneDX 1.5 format. Generated from the
+# pnpm lockfile for both apps; attached to the GitHub Release that
+# triggered the run. Zero external cost — GitHub Actions for public
+# repos is free, and the @cyclonedx/cdxgen generator is MIT.
+
+permissions:
+  contents: write
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install cdxgen
+        run: pnpm dlx @cyclonedx/cdxgen@11 --help >/dev/null 2>&1 || true
+
+      - name: Generate SBOM (collab)
+        run: |
+          pnpm dlx @cyclonedx/cdxgen@11 -o sbom-collab.cdx.json --spec-version 1.5 -t pnpm apps/collab
+      - name: Generate SBOM (knowledge)
+        run: |
+          pnpm dlx @cyclonedx/cdxgen@11 -o sbom-knowledge.cdx.json --spec-version 1.5 -t pnpm apps/knowledge
+      - name: Generate SBOM (root)
+        run: |
+          pnpm dlx @cyclonedx/cdxgen@11 -o sbom-root.cdx.json --spec-version 1.5 -t pnpm .
+
+      - name: Upload SBOMs as workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom-*.cdx.json
+          retention-days: 90
+
+      - name: Attach SBOMs to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${GITHUB_REF_NAME}" sbom-collab.cdx.json sbom-knowledge.cdx.json sbom-root.cdx.json --clobber

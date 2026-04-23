@@ -38,6 +38,8 @@ export const authEdgeConfig = {
       if (pathname.startsWith("/invite")) return true;
       // Public playground demo for recruiters; no auth required.
       if (pathname.startsWith("/playground")) return true;
+      // Public API reference.
+      if (pathname.startsWith("/docs")) return true;
       return !!auth?.user;
     },
     session: async ({ session, token }) => {

@@ -299,15 +299,13 @@ export default async function Home() {
             >
               ADRs
             </a>
-            <a
-              href="https://editor.swagger.io/?url=https%3A%2F%2Fcraftstack-collab.vercel.app%2Fapi%2Fopenapi.json"
-              target="_blank"
-              rel="noreferrer"
+            <Link
+              href="/docs/api"
               className="hover:text-neutral-300"
-              title="Boardly OpenAPI 3.1 spec viewed in Swagger Editor"
+              title="Interactive API reference (OpenAPI 3.1)"
             >
               API Reference
-            </a>
+            </Link>
             <a
               href="https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on"
               target="_blank"
