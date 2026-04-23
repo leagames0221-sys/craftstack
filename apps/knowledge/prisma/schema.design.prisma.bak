@@ -1,0 +1,441 @@
+// Knowlex - Multi-tenant AI knowledge retrieval SaaS
+// Design bible: docs/design/04_knowlex_design.md
+// Schema detail: docs/design/05_prisma_schemas.md
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [pgvector(map: "vector"), pg_trgm]
+}
+
+// ============================================================
+//  Enums
+// ============================================================
+
+enum Role {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum Theme {
+  SYSTEM
+  LIGHT
+  DARK
+}
+
+enum Plan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum SourceType {
+  PDF
+  MARKDOWN
+  DOCX
+  TEXT
+  URL
+  HTML
+}
+
+enum DocumentStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum Visibility {
+  TENANT
+  FOLDER
+  PRIVATE
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum FeedbackRating {
+  UP
+  DOWN
+}
+
+enum AuditAction {
+  TENANT_CREATED
+  MEMBER_INVITED
+  MEMBER_JOINED
+  DOCUMENT_UPLOADED
+  DOCUMENT_INDEXED
+  DOCUMENT_DELETED
+  SEARCH_PERFORMED
+  MESSAGE_CREATED
+  FEEDBACK_SUBMITTED
+  API_KEY_ISSUED
+  API_KEY_REVOKED
+  WEBHOOK_CREATED
+  WEBHOOK_DELETED
+  EXPORT_REQUESTED
+}
+
+// ============================================================
+//  Auth.js v5 adapter tables
+// ============================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ============================================================
+//  Core: User / Tenant / Membership
+// ============================================================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  locale        String    @default("ja")
+  theme         Theme     @default(SYSTEM)
+  createdAt     DateTime  @default(now())
+
+  accounts        Account[]
+  sessions        Session[]
+  memberships     TenantMember[]
+  ownedDocuments  Document[]         @relation("DocumentOwner")
+  conversations   Conversation[]
+  feedbacks       Feedback[]
+  auditLogs       AuditLog[]
+  sentInvitations TenantInvitation[] @relation("TenantInvitationSender")
+
+  @@index([email])
+}
+
+model Tenant {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  logoUrl   String?
+  plan      Plan      @default(FREE)
+  settings  Json      @default("{}")
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  members       TenantMember[]
+  invitations   TenantInvitation[]
+  folders       Folder[]
+  documents     Document[]
+  conversations Conversation[]
+  apiKeys       ApiKey[]
+  webhooks      Webhook[]
+  auditLogs     AuditLog[]
+  usages        Usage[]
+
+  @@index([deletedAt])
+}
+
+model TenantMember {
+  id       String   @id @default(cuid())
+  userId   String
+  tenantId String
+  role     Role     @default(EDITOR)
+  joinedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([tenantId, role])
+}
+
+model TenantInvitation {
+  id         String    @id @default(cuid())
+  tenantId   String
+  inviterId  String?
+  email      String
+  tokenHash  String    @unique
+  role       Role      @default(EDITOR)
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  tenant  Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  inviter User?  @relation("TenantInvitationSender", fields: [inviterId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, email])
+  @@index([tokenHash])
+}
+
+// ============================================================
+//  Documents & Chunks (pgvector separate)
+// ============================================================
+
+model Folder {
+  id         String     @id @default(cuid())
+  tenantId   String
+  parentId   String?
+  name       String
+  visibility Visibility @default(TENANT)
+  createdAt  DateTime   @default(now())
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  parent    Folder?    @relation("FolderTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Folder[]   @relation("FolderTree")
+  documents Document[]
+
+  @@index([tenantId, parentId])
+}
+
+model Document {
+  id         String         @id @default(cuid())
+  tenantId   String
+  folderId   String?
+  ownerId    String
+  title      String
+  sourceType SourceType
+  sourceUri  String?
+  status     DocumentStatus @default(PENDING)
+  meta       Json           @default("{}")
+  deletedAt  DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  folder   Folder?           @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  owner    User              @relation("DocumentOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  versions DocumentVersion[]
+
+  @@index([tenantId, status])
+  @@index([folderId])
+  @@index([ownerId])
+  @@index([deletedAt])
+}
+
+model DocumentVersion {
+  id         String   @id @default(cuid())
+  documentId String
+  version    Int
+  r2Key      String   @unique
+  bytes      Int
+  checksum   String
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunks   Chunk[]
+
+  @@unique([documentId, version])
+  @@index([documentId])
+}
+
+model Chunk {
+  id                String   @id @default(cuid())
+  documentVersionId String
+  ordinal           Int
+  content           String
+  meta              Json     @default("{}")
+  tokenCount        Int
+  createdAt         DateTime @default(now())
+
+  documentVersion DocumentVersion @relation(fields: [documentVersionId], references: [id], onDelete: Cascade)
+  embedding       Embedding?
+  citations       Citation[]
+
+  @@unique([documentVersionId, ordinal])
+  @@index([documentVersionId])
+}
+
+model Embedding {
+  chunkId   String   @id
+  model     String
+  dim       Int
+  createdAt DateTime @default(now())
+
+  chunk Chunk @relation(fields: [chunkId], references: [id], onDelete: Cascade)
+
+  @@index([model])
+}
+
+// ============================================================
+//  Conversations & RAG
+// ============================================================
+
+model Conversation {
+  id        String    @id @default(cuid())
+  tenantId  String
+  userId    String?
+  title     String
+  pinned    Boolean   @default(false)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@index([tenantId, userId, updatedAt(sort: Desc)])
+  @@index([pinned])
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String
+  role           MessageRole
+  content        String
+  toolCalls      Json?
+  promptId       String?
+  promptHash     String?
+  tokensInput    Int         @default(0)
+  tokensOutput   Int         @default(0)
+  costUsd        Decimal     @default(0) @db.Decimal(10, 6)
+  latencyMs      Int?
+  model          String?
+  createdAt      DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  citations    Citation[]
+  feedbacks    Feedback[]
+
+  @@index([conversationId, createdAt])
+}
+
+model Citation {
+  id             String @id @default(cuid())
+  messageId      String
+  chunkId        String
+  score          Float
+  orderInMessage Int
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  chunk   Chunk   @relation(fields: [chunkId], references: [id], onDelete: Restrict)
+
+  @@unique([messageId, orderInMessage])
+  @@index([chunkId])
+}
+
+model Feedback {
+  id        String         @id @default(cuid())
+  messageId String
+  userId    String?
+  rating    FeedbackRating
+  reason    String?
+  createdAt DateTime       @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([messageId, userId])
+  @@index([rating])
+}
+
+// ============================================================
+//  API Keys / Webhooks / Audit / Usage
+// ============================================================
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  tenantId   String
+  label      String
+  hashedKey  String    @unique
+  prefix     String
+  scopes     String[]
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, revokedAt])
+}
+
+model Webhook {
+  id        String   @id @default(cuid())
+  tenantId  String
+  url       String
+  events    String[]
+  secret    String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, active])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  tenantId   String
+  actorId    String?
+  action     AuditAction
+  entityType String?
+  entityId   String?
+  payload    Json        @default("{}")
+  createdAt  DateTime    @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor  User?  @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([actorId])
+  @@index([action])
+}
+
+model Usage {
+  id           String   @id @default(cuid())
+  tenantId     String
+  day          DateTime @db.Date
+  searchCount  Int      @default(0)
+  messageCount Int      @default(0)
+  tokensIn     Int      @default(0)
+  tokensOut    Int      @default(0)
+  costUsd      Decimal  @default(0) @db.Decimal(10, 6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, day])
+  @@index([day])
+}

@@ -110,10 +110,10 @@ export default async function Home() {
         </div>
 
         <div className="mt-12 grid grid-cols-2 gap-6 text-xs text-neutral-500 md:grid-cols-4">
-          <Stat label="Vitest cases" value="160" />
-          <Stat label="Playwright smoke" value="14" />
-          <Stat label="Next routes" value="34" />
-          <Stat label="ADRs" value="37" />
+          <Stat label="Vitest cases" value="169" />
+          <Stat label="Playwright smoke" value="32" />
+          <Stat label="Next routes" value="41" />
+          <Stat label="ADRs" value="39" />
           <Stat label="Security Headers" value="A+" />
           <Stat label="Monthly infra" value="$0" />
           <Stat label="Prisma models" value="15 / 17" />
@@ -146,22 +146,22 @@ export default async function Home() {
 
           <AppCard
             gradient="from-violet-500/40 via-cyan-500/30 to-transparent"
-            badge="Live slice · no signup"
+            badge="MVP · own Next app"
             title="Knowlex"
-            tagline="Multi-tenant AI knowledge retrieval"
+            tagline="Grounded AI knowledge retrieval"
             bullets={[
-              "Streaming grounded RAG answers from Gemini 2.0 Flash via Vercel AI SDK",
-              "Env-guarded and rate-limited — no key? Clean demo-mode fallback with the same streaming UX",
-              "Public playground works without signup; full tenanted app sits in apps/knowledge",
-              "Prisma schema with 17 models including Tenant / Document / Chunk / Embedding / Conversation",
+              "Paste text → chunked + embedded (text-embedding-004, 768-dim) → stored in pgvector",
+              "Ask a question → cosine-kNN retrieval → streamed Gemini 2.0 Flash answer with numbered citations",
+              "Env-guarded: missing GEMINI_API_KEY returns a clean 503, never a crash — corpus stays intact",
+              "Standalone apps/knowledge Next app, own Prisma migration, own Vitest. Ready for a second Vercel project",
             ]}
             primary={{
               href: "/playground",
-              label: "Try the playground",
+              label: "Try demo slice on collab",
             }}
             secondary={{
               href: "https://github.com/leagames0221-sys/craftstack/tree/main/apps/knowledge",
-              label: "Source on GitHub →",
+              label: "apps/knowledge source →",
             }}
           />
         </div>
