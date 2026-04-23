@@ -16,6 +16,7 @@
     "demo:auth": "playwright test --config=playwright.demo.config.ts --project=setup",
     "demo:record": "playwright test --config=playwright.demo.config.ts --project=record",
     "db:seed": "tsx prisma/seed.ts",
+    "generate:api-types": "tsx scripts/generate-api-types.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -53,6 +54,7 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
+    "openapi-typescript": "^7.13.0",
     "prisma": "^7.7.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
