@@ -93,7 +93,7 @@ export function PlaygroundClient() {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div className="flex flex-col gap-2">
-        <label className="text-[11px] uppercase tracking-wider text-neutral-500">
+        <label className="text-[11px] uppercase tracking-wider text-neutral-400">
           Context
         </label>
         <textarea
@@ -105,7 +105,7 @@ export function PlaygroundClient() {
           className="min-h-[280px] rounded-lg border border-neutral-800 bg-neutral-900/60 p-3 text-sm text-neutral-100 placeholder:text-neutral-600 focus:border-indigo-500 focus:outline-none"
           placeholder="Paste the text the model should answer from…"
         />
-        <div className="flex items-center justify-between text-[10px] text-neutral-500">
+        <div className="flex items-center justify-between text-[10px] text-neutral-400">
           <span>{context.length.toLocaleString()} / 12,000 chars</span>
           <button
             type="button"
@@ -119,7 +119,7 @@ export function PlaygroundClient() {
           </button>
         </div>
 
-        <label className="mt-3 text-[11px] uppercase tracking-wider text-neutral-500">
+        <label className="mt-3 text-[11px] uppercase tracking-wider text-neutral-400">
           Question
         </label>
         <input
@@ -154,7 +154,7 @@ export function PlaygroundClient() {
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <label className="text-[11px] uppercase tracking-wider text-neutral-500">
+          <label className="text-[11px] uppercase tracking-wider text-neutral-400">
             Answer
           </label>
           {mode ? (
@@ -179,7 +179,7 @@ export function PlaygroundClient() {
           className="min-h-[340px] whitespace-pre-wrap rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 text-sm leading-relaxed text-neutral-100"
         >
           {status === "idle" && answer === "" ? (
-            <span className="text-neutral-500">
+            <span className="text-neutral-400">
               The streamed answer will appear here.
             </span>
           ) : null}
@@ -245,7 +245,7 @@ export function PlaygroundClient() {
             />
           ) : null}
         </div>
-        <p className="text-[10px] text-neutral-600">
+        <p className="text-[10px] text-neutral-400">
           Answers are grounded only in the context above. If the context
           doesn&apos;t cover the question, the model will say so.
         </p>

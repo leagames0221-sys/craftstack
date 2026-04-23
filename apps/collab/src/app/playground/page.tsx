@@ -26,7 +26,7 @@ export default function PlaygroundPage() {
               <h1 className="text-lg font-semibold tracking-tight">
                 Knowlex Playground
               </h1>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-neutral-400">
                 Grounded RAG scratchpad · Gemini 2.0 Flash · streaming
               </p>
             </div>
