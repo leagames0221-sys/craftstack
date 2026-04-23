@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { embedMany, embed as embedOne } from "ai";
+import { embedMany } from "ai";
 
 /**
  * Gemini plumbing for the Knowlex MVP.
@@ -8,8 +8,8 @@ import { embedMany, embed as embedOne } from "ai";
  *   `text-embedding-004` on the `v1beta` endpoint that the AI SDK uses,
  *   and `gemini-embedding-001` is the current stable replacement. It
  *   natively produces 3072-dim vectors; we truncate to 768 via the
- *   `outputDimensionality` provider option so the existing pgvector
- *   schema (Embedding.vector(768)) stays compatible without a
+ *   `outputDimensionality` provider option so the stored column
+ *   (`Embedding.embedding vector(768)`) stays compatible without a
  *   re-migration.
  * - Generator: `gemini-2.5-flash` (free tier).
  *
@@ -29,27 +29,31 @@ export async function embedTexts(
   texts: string[],
 ): Promise<number[][]> {
   if (texts.length === 0) return [];
+
+  // Always go through `embedMany` even for a single value. The AI-SDK's
+  // single-value `embed()` and batch `embedMany()` have historically
+  // diverged in how they thread `providerOptions` to the underlying
+  // Google endpoint; sticking to one path keeps dimensionality
+  // guarantees consistent between ingest (batch) and retrieve (single).
   const g = getGemini(apiKey);
-  const model = g.textEmbeddingModel(EMBEDDING_MODEL);
-  // Request 768-dim output so the stored vectors match the pgvector
-  // column. Google's REST param name is `outputDimensionality`; the AI
-  // SDK forwards provider-specific options via `providerOptions`.
-  const providerOptions = {
-    google: { outputDimensionality: EMBEDDING_DIM },
-  };
-  if (texts.length === 1) {
-    const { embedding } = await embedOne({
-      model,
-      value: texts[0],
-      providerOptions,
-    });
-    return [embedding];
-  }
   const { embeddings } = await embedMany({
-    model,
+    model: g.textEmbeddingModel(EMBEDDING_MODEL),
     values: texts,
-    providerOptions,
+    providerOptions: {
+      google: { outputDimensionality: EMBEDDING_DIM },
+    },
   });
+
+  // Defend the downstream pgvector column against silent dim drift:
+  // if the SDK ever fails to forward `outputDimensionality`, surface it
+  // here rather than 0-row retrieves or index corruption.
+  for (const v of embeddings) {
+    if (v.length !== EMBEDDING_DIM) {
+      throw new Error(
+        `EMBEDDING_DIM_UNEXPECTED: got ${v.length}, expected ${EMBEDDING_DIM}`,
+      );
+    }
+  }
   return embeddings;
 }
 

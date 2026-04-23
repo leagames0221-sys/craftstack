@@ -39,7 +39,7 @@ Invitations, attachments, and the Knowlex RAG experience land in later milestone
 | App                           | Description                                                 | Tech highlights                                                                                             | Status               |
 | ----------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------- |
 | [**Boardly**](apps/collab)    | Collaborative kanban with drag-and-drop and realtime fanout | Next.js 16 · Auth.js v5 · Prisma 7 · PostgreSQL · LexoRank · Optimistic lock · `@dnd-kit` · Pusher Channels | v0.1.0 — live deploy |
-| [**Knowlex**](apps/knowledge) | Multi-tenant AI knowledge retrieval SaaS                    | Next.js 16 · pgvector · BullMQ · Gemini API · Cohere Rerank · RLS · HyDE · Faithfulness check (all planned) | Schema ready         |
+| [**Knowlex**](apps/knowledge) | Multi-tenant AI knowledge retrieval SaaS                    | Next.js · pgvector (HNSW) · Gemini Embeddings · Gemini 2.0 Flash streaming · Prisma                         | MVP live deploy      |
 
 ## Monorepo layout
 
@@ -59,7 +59,7 @@ craftstack/
 │   └── docker/              # docker-compose + init scripts
 ├── docs/
 │   ├── design/              # 13-part design bible (see docs/design/README.md)
-│   ├── adr/                 # Architecture Decision Records (22 entries)
+│   ├── adr/                 # Architecture Decision Records (41 entries)
 │   ├── api/                 # OpenAPI specs
 │   ├── architecture/        # System diagrams
 │   ├── compliance/          # Data retention policy

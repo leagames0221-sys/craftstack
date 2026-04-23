@@ -68,7 +68,7 @@ The `retrieve.ts` SQL is unchanged — the query uses the standard `ORDER BY <=>
 
 Positive:
 
-- **kNN works at every corpus size.** HNSW traverses a navigable-small-world graph with no probe cutoff, so 2 rows and 2 million rows both return meaningful results. Cold-start latency on Neon for a 768-dim / `k=6` query against a small corpus is sub-10 ms.
+- **kNN works at every corpus size.** HNSW traverses a navigable-small-world graph with no `probes`-style cutoff, so whether the table holds 2 rows or 2 million rows the query returns meaningful results. (Latency under load is unmeasured at this stage; a `pnpm --filter knowledge bench` script is a planned follow-up before the corpus grows past ~10k chunks.)
 - Eliminates a class of silent-empty-result bugs that are nearly impossible to detect from application code without schema-aware integration tests.
 - Modern default. pgvector's own docs now recommend HNSW over ivfflat for "most workloads where recall matters more than index build time."
 - The migration is forward-compatible: future scale tuning can adjust `m` / `ef_construction` or add `ef_search` at query time without another DDL round.
@@ -87,5 +87,10 @@ Negative:
 ## Follow-ups (not blocking this ADR)
 
 - Add an integration test that seeds ≥ 3 documents and asserts `retrieveTopK` returns the expected chunk — the test that, had it existed, would have caught the ivfflat failure before production.
-- Add `/api/kb/stats` returning `{ documents, chunks, embeddings, orphanEmbeddings, indexType }` as a standing operational probe.
-- Document the HNSW → tuned-HNSW scaling path in the Knowlex design note once the corpus crosses 10k chunks.
+- Document the HNSW → tuned-HNSW scaling path (raise `m` / `ef_construction`, add runtime `ef_search`) in the Knowlex design note once the corpus crosses 10k chunks, with a `pnpm --filter knowledge bench` script to measure p50/p99 latency and recall against a held-out golden set.
+
+## Shipped alongside this ADR
+
+- `GET /api/kb/stats` — operational probe returning `{ documents, chunks, embeddings, orphanEmbeddings, storedDim, expectedDim, embeddingModel, indexType }`. Had this existed, diagnosing the ivfflat failure would have been a single `curl` instead of four diagnostic commits.
+- `ingestDocument` wrapped in `prisma.$transaction` so a DB failure mid-ingest no longer leaves partial Document/Chunk/Embedding state. (The previous JSDoc claimed this; the code didn't.)
+- `gemini.ts::embedTexts` unified onto `embedMany` for every call (single- and multi-value) with a post-hoc dimensionality assert, removing a class of silent bugs where `embed()` and `embedMany()` could have diverged on `providerOptions` handling.

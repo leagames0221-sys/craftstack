@@ -54,17 +54,16 @@ export async function POST(req: Request) {
       question: parsed.data.question,
       k: parsed.data.k,
     });
-    console.log(
-      `[kb-ask] retrieved ${hits.length} chunks for question (len=${parsed.data.question.length})`,
-    );
   } catch (err) {
+    // Log details server-side only; never leak stack / message shape
+    // to the caller. The client renders a generic failure banner.
     console.error("[kb-ask] retrieveTopK failed:", err);
-    return new Response(
-      `[debug] retrieveTopK threw: ${(err as Error).message}`,
+    return Response.json(
       {
-        status: 500,
-        headers: { "content-type": "text/plain; charset=utf-8" },
+        code: "RETRIEVAL_FAILED",
+        message: "Could not search the corpus. Please retry.",
       },
+      { status: 500 },
     );
   }
 

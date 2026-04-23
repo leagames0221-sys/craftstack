@@ -54,8 +54,11 @@ model Chunk {
 }
 
 // -------------------------------------------------------------------
-//  Embeddings — pgvector 768-dim cosine.
-//  (text-embedding-004 produces 768-dim, fits under pgvector's 2000-dim cap.)
+//  Embeddings — pgvector 768-dim cosine over an HNSW index.
+//  Vectors come from `gemini-embedding-001` with the AI-SDK
+//  `providerOptions.google.outputDimensionality = 768` knob, so the
+//  native 3072-dim output is truncated to fit this column without a
+//  re-migration. Index type and rationale: see docs/adr/0041.
 // -------------------------------------------------------------------
 model Embedding {
   chunkId String @id
