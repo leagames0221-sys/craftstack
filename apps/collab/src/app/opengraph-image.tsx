@@ -88,7 +88,7 @@ export default function OpenGraphImage() {
           "Auth.js v5",
           "Pusher",
           "Gemini Flash",
-          "A+ Security",
+          "A Security",
           "169 tests",
         ].map((t) => (
           <div

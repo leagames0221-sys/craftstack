@@ -48,6 +48,7 @@ Once Accepted, an ADR is immutable — later decisions supersede, they do not re
 | [0037](0037-cost-attack-hardening-layered-budgets.md)           | Layered cost-attack hardening with in-code budgets          | Accepted |
 | [0038](0038-e2e-credentials-provider-implementation.md)         | E2E credentials provider implementation + authed Playwright | Accepted |
 | [0039](0039-knowlex-mvp-scope.md)                               | Knowlex MVP — ship vertical slice, defer tenancy            | Accepted |
+| [0040](0040-csp-rollback-to-static-unsafe-inline.md)            | Roll back nonce CSP; accept A grade for a working site      | Accepted |
 
 ## Implementation-phase addendum (0023–0032)
 

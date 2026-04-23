@@ -51,7 +51,6 @@ export async function POST(req: Request) {
     return Response.json(result, { status: 201 });
   } catch (err) {
     const code = (err as Error).message || "INGEST_FAILED";
-    // eslint-disable-next-line no-console
     console.error("[ingest] failed", err);
     return Response.json(
       { code, message: `Ingest failed: ${code}` },

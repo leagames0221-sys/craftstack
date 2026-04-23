@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 export const metadata = {
   title: "craftstack · Full-stack monorepo portfolio",
   description:
-    "Two production-grade SaaS built from schema to deploy: Boardly (realtime collaborative kanban) and Knowlex (multi-tenant AI knowledge retrieval). A+ security headers, 145 tests, zero-dollar infra.",
+    "Two production-grade SaaS built from schema to deploy: Boardly (realtime collaborative kanban) and Knowlex (multi-tenant AI knowledge retrieval). A security headers, 169 tests, zero-dollar infra.",
 };
 
 /**
@@ -113,8 +113,8 @@ export default async function Home() {
           <Stat label="Vitest cases" value="169" />
           <Stat label="Playwright smoke" value="32" />
           <Stat label="Next routes" value="41" />
-          <Stat label="ADRs" value="39" />
-          <Stat label="Security Headers" value="A+" />
+          <Stat label="ADRs" value="40" />
+          <Stat label="Security Headers" value="A" />
           <Stat label="Monthly infra" value="$0" />
           <Stat label="Prisma models" value="15 / 17" />
           <Stat label="Architecture docs" value="180+ pages" />
@@ -319,7 +319,7 @@ export default async function Home() {
               rel="noreferrer"
               className="hover:text-neutral-300"
             >
-              Security A+
+              Security A
             </a>
           </div>
         </div>

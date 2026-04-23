@@ -55,7 +55,6 @@ export function ChatPanel() {
         return;
       }
       const decoder = new TextDecoder();
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
