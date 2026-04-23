@@ -108,7 +108,7 @@ export async function POST(req: Request) {
   }
 
   const google = createGoogleGenerativeAI({ apiKey });
-  const model = google("gemini-2.0-flash");
+  const model = google("gemini-2.5-flash");
 
   const result = streamText({
     model,
@@ -121,6 +121,10 @@ export async function POST(req: Request) {
     ],
     temperature: 0.2,
     maxOutputTokens: 600,
+    onError: ({ error }) => {
+      // eslint-disable-next-line no-console
+      console.error("[kb-ask] streamText error:", error);
+    },
   });
 
   return result.toTextStreamResponse({
