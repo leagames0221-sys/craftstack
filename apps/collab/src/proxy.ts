@@ -25,14 +25,18 @@ function buildCsp(nonce: string): string {
     "object-src 'none'",
     "frame-ancestors 'none'",
     "form-action 'self'",
-    // W3C CSP spec: when a nonce is present, modern browsers IGNORE
-    // 'unsafe-inline'. Listing it here is a deliberate fallback so
-    // legacy browsers (and edge cases where platform-injected inline
-    // scripts — Vercel Analytics, Speed Insights — don't carry the
-    // nonce) still execute. Security grade on nonce-aware browsers is
-    // unchanged; on non-nonce-aware browsers it degrades gracefully
-    // rather than breaking every interactive page.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline'`,
+    // Dropped `'strict-dynamic'` — it disables ALL other allowlists
+    // (including `'self'`, host names, and `'unsafe-inline'`) and only
+    // permits nonced scripts + their transitive loads. That's the
+    // ideal A+ stance, but Vercel's platform-injected scripts (Speed
+    // Insights, preview toolbar) don't carry our per-request nonce,
+    // so hydration silently failed on every interactive page. The
+    // pragmatic policy below keeps `'nonce-XXX'` for Next's own
+    // scripts, explicitly allowlists the Vercel platform origins, and
+    // permits `'unsafe-inline'` as a last-ditch fallback for scripts
+    // the edge platform inserts out of our proxy's reach. Security
+    // grade drops one notch from A+ to A; functional site wins.
+    `script-src 'self' 'nonce-${nonce}' 'unsafe-inline' https://vercel.live https://*.vercel-insights.com https://*.vercel-scripts.com`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://avatars.githubusercontent.com https://lh3.googleusercontent.com",
     "font-src 'self' data:",
