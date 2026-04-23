@@ -25,7 +25,14 @@ function buildCsp(nonce: string): string {
     "object-src 'none'",
     "frame-ancestors 'none'",
     "form-action 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https:`,
+    // W3C CSP spec: when a nonce is present, modern browsers IGNORE
+    // 'unsafe-inline'. Listing it here is a deliberate fallback so
+    // legacy browsers (and edge cases where platform-injected inline
+    // scripts — Vercel Analytics, Speed Insights — don't carry the
+    // nonce) still execute. Security grade on nonce-aware browsers is
+    // unchanged; on non-nonce-aware browsers it degrades gracefully
+    // rather than breaking every interactive page.
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline'`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://avatars.githubusercontent.com https://lh3.googleusercontent.com",
     "font-src 'self' data:",
