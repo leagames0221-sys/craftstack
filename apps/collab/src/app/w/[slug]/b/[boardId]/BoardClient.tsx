@@ -38,6 +38,14 @@ import {
   type ClientLabel,
   type ClientList,
 } from "./dnd-helpers";
+import {
+  emptyHistory,
+  popRedo,
+  popUndo,
+  pushMove,
+  type MoveEndpoint,
+  type MoveHistory,
+} from "./move-history";
 
 export type { ClientCard, ClientList };
 
@@ -63,6 +71,7 @@ export function BoardClient({
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const snapshotRef = useRef<ClientList[] | null>(null);
+  const historyRef = useRef<MoveHistory>(emptyHistory());
 
   // Keep local state in sync with props whenever the server re-renders
   // (e.g. after revalidatePath or a Pusher-triggered refresh).
@@ -225,6 +234,13 @@ export function BoardClient({
         return;
       }
 
+      // Snapshot the card's original neighbors BEFORE the local state is
+      // mutated by applyMove — this becomes the `from` endpoint we replay
+      // during Ctrl-Z.
+      const sourceList = lists.find((l) => l.id === sourceIdx.listId)!;
+      const fromBeforeId = sourceList.cards[sourceIdx.index - 1]?.id ?? null;
+      const fromAfterId = sourceList.cards[sourceIdx.index + 1]?.id ?? null;
+
       const next = applyMove(lists, cardId, destListId, destIndex);
       setLists(next);
 
@@ -234,25 +250,38 @@ export function BoardClient({
       const afterId = destList.cards[newIndex + 1]?.id ?? null;
 
       const movedCard = destList.cards[newIndex];
-      void submitMove({
-        cardId,
-        version: movedCard.version,
-        listId: destListId,
-        beforeId,
-        afterId,
-      });
+      void submitMove(
+        {
+          cardId,
+          version: movedCard.version,
+          listId: destListId,
+          beforeId,
+          afterId,
+        },
+        {
+          from: {
+            listId: sourceIdx.listId,
+            beforeId: fromBeforeId,
+            afterId: fromAfterId,
+          },
+          to: { listId: destListId, beforeId, afterId },
+        },
+      );
     },
     [canWrite, lists],
   );
 
   const submitMove = useCallback(
-    async (payload: {
-      cardId: string;
-      version: number;
-      listId: string;
-      beforeId: string | null;
-      afterId: string | null;
-    }) => {
+    async (
+      payload: {
+        cardId: string;
+        version: number;
+        listId: string;
+        beforeId: string | null;
+        afterId: string | null;
+      },
+      historyEntry?: { from: MoveEndpoint; to: MoveEndpoint },
+    ): Promise<boolean> => {
       const snapshot = snapshotRef.current;
       try {
         const res = await fetch(`/api/cards/${payload.cardId}/move`, {
@@ -277,7 +306,7 @@ export function BoardClient({
           }
           if (snapshot) setLists(snapshot);
           router.refresh();
-          return;
+          return false;
         }
         // Success: authoritative state will land via router.refresh(); bump
         // the local version eagerly so repeat drags don't stale-conflict.
@@ -295,14 +324,124 @@ export function BoardClient({
                 },
           ),
         );
+        if (historyEntry) {
+          historyRef.current = pushMove(historyRef.current, {
+            cardId: payload.cardId,
+            from: historyEntry.from,
+            to: historyEntry.to,
+          });
+        }
         router.refresh();
+        return true;
       } catch {
         setToast("Network error — reverting.");
         if (snapshot) setLists(snapshot);
+        return false;
       }
     },
     [router],
   );
+
+  /**
+   * Apply an endpoint (targetList + neighbors) to the current local state
+   * and submit the move. Used by Ctrl-Z / Ctrl-Shift-Z replay — the
+   * caller has already moved entries between the undo/redo stacks, so we
+   * intentionally do NOT push history here.
+   */
+  const replayMove = useCallback(
+    async (cardId: string, target: MoveEndpoint): Promise<boolean> => {
+      const loc = findCardLocation(lists, cardId);
+      if (!loc) return false;
+      const card = lists
+        .find((l) => l.id === loc.listId)!
+        .cards.find((c) => c.id === cardId)!;
+
+      const destList = lists.find((l) => l.id === target.listId);
+      if (!destList) return false;
+      const candidates = destList.cards.filter((c) => c.id !== cardId);
+
+      // Resolve the desired insertion index against the CURRENT neighbor
+      // ids. If neither neighbor is still in the list, fall back to append
+      // — that's the least-surprising behavior when the surrounding cards
+      // were moved or deleted in the meantime.
+      let destIndex: number;
+      if (target.beforeId) {
+        const idx = candidates.findIndex((c) => c.id === target.beforeId);
+        destIndex = idx >= 0 ? idx + 1 : candidates.length;
+      } else if (target.afterId) {
+        const idx = candidates.findIndex((c) => c.id === target.afterId);
+        destIndex = idx >= 0 ? idx : 0;
+      } else {
+        destIndex = candidates.length;
+      }
+
+      snapshotRef.current = lists;
+      const next = applyMove(lists, cardId, target.listId, destIndex);
+      setLists(next);
+
+      const destListNext = next.find((l) => l.id === target.listId)!;
+      const newIndex = destListNext.cards.findIndex((c) => c.id === cardId);
+      const beforeId = destListNext.cards[newIndex - 1]?.id ?? null;
+      const afterId = destListNext.cards[newIndex + 1]?.id ?? null;
+
+      return submitMove({
+        cardId,
+        version: card.version,
+        listId: target.listId,
+        beforeId,
+        afterId,
+      });
+    },
+    [lists, submitMove],
+  );
+
+  const undoMove = useCallback(async () => {
+    const r = popUndo(historyRef.current);
+    if (!r) {
+      setToast("Nothing to undo");
+      return;
+    }
+    historyRef.current = r.next;
+    const ok = await replayMove(r.entry.cardId, r.entry.from);
+    if (ok) setToast("Move undone (⌘/Ctrl-Shift-Z to redo)");
+  }, [replayMove]);
+
+  const redoMove = useCallback(async () => {
+    const r = popRedo(historyRef.current);
+    if (!r) {
+      setToast("Nothing to redo");
+      return;
+    }
+    historyRef.current = r.next;
+    const ok = await replayMove(r.entry.cardId, r.entry.to);
+    if (ok) setToast("Move redone");
+  }, [replayMove]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod) return;
+      if (e.key !== "z" && e.key !== "Z") return;
+      // Don't hijack Ctrl-Z while typing into an input or contenteditable.
+      const t = e.target as HTMLElement | null;
+      if (t) {
+        const tag = t.tagName.toLowerCase();
+        if (
+          tag === "input" ||
+          tag === "textarea" ||
+          tag === "select" ||
+          t.isContentEditable
+        ) {
+          return;
+        }
+      }
+      e.preventDefault();
+      if (e.shiftKey) void redoMove();
+      else void undoMove();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [undoMove, redoMove]);
 
   return (
     <>

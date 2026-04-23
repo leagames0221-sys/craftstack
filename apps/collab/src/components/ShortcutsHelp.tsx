@@ -30,6 +30,13 @@ const GROUPS: Group[] = [
       { keys: [">"], description: "Switch to action mode" },
     ],
   },
+  {
+    title: "Board view",
+    shortcuts: [
+      { keys: ["⌘/Ctrl", "Z"], description: "Undo the last card move" },
+      { keys: ["⌘/Ctrl", "⇧", "Z"], description: "Redo the last undone move" },
+    ],
+  },
 ];
 
 /**

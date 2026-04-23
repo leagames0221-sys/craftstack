@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml/badge.svg)](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml)
 [![Security Headers: A+](https://img.shields.io/badge/Security%20Headers-A%2B-brightgreen)](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on)
-[![Tests: 141 Vitest + 11 Playwright](https://img.shields.io/badge/tests-141%20%2B%2011-success)](./apps/collab)
+[![Tests: 151 Vitest + 14 Playwright](https://img.shields.io/badge/tests-151%20%2B%2014-success)](./apps/collab)
 [![Infra: $0/mo](https://img.shields.io/badge/infra-%240%2Fmo-blue)](#tech-stack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-20-brightgreen)](./.nvmrc)
@@ -96,6 +96,7 @@ craftstack/
 - **Accessibility** — axe-core runs against every public page (`/`, `/signin`, `/playground`) in the Playwright smoke layer. Zero `serious` or `critical` WCAG 2.1 AA violations is a gate on every PR (see [ADR-0034](docs/adr/0034-axe-core-a11y-in-playwright-smoke.md))
 - **Bundle analyzer** via `@next/bundle-analyzer` — `pnpm --filter collab analyze` spits out a client / server / edge bundle report at `apps/collab/.next/analyze/` for at-a-glance chunk-size regressions
 - **OpenAPI 3.1 contract** at [`apps/collab/src/openapi.ts`](apps/collab/src/openapi.ts), served as JSON at <https://craftstack-collab.vercel.app/api/openapi.json> and browsable in [Swagger Editor](https://editor.swagger.io/?url=https%3A%2F%2Fcraftstack-collab.vercel.app%2Fapi%2Fopenapi.json). Hand-written so the spec **is** the contract — see [ADR-0035](docs/adr/0035-hand-written-openapi-as-the-contract.md)
+- **Undo / redo on card moves** — `Ctrl-Z` / `⌘-Z` reverses the last drag, `Ctrl-Shift-Z` / `⌘-Shift-Z` re-applies it. Bounded 25-entry LIFO stack, replays against the existing optimistic-lock-protected `/api/cards/:id/move` endpoint so concurrent-edit rejection behaves exactly like a fresh drag. Pure state-machine module (6 Vitest cases) in [ADR-0036](docs/adr/0036-move-undo-redo-client-only.md)
 - **Demo video pipeline** (`pnpm demo:tts && pnpm demo:compose`): capture a silent screen recording once, and an ffmpeg+TTS toolchain overlays a fully synthesized Japanese narration. Pluggable providers — **VOICEVOX** (local, $0) or **Azure Neural TTS** (500k chars/mo free). Script lives as JSON; editing the story is two commands away from a new mp4. See [scripts/demo/README.md](scripts/demo/README.md)
 
 ### Planned (see [Roadmap](#roadmap))
