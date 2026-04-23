@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { loadWorkspaceForMember } from "@/server/workspace-detail";
 import { MembersSection } from "./MembersSection";
 import { ActivityFeed } from "./ActivityFeed";
+import { CommandPalette } from "@/components/CommandPalette";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
 export async function generateMetadata({
@@ -48,6 +49,7 @@ export default async function WorkspacePage({
             </div>
           </div>
           <div className="flex items-center gap-3 text-sm">
+            <CommandPalette ctx={{ workspaceSlug: ws.slug }} />
             <NotificationsBell />
             <Link
               href="/dashboard"

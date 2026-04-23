@@ -8,6 +8,7 @@ import { CommentsPanel } from "./CommentsPanel";
 import { LabelsPicker } from "./LabelsPicker";
 import { AssigneesPicker } from "./AssigneesPicker";
 import { CardActivity } from "./CardActivity";
+import { CommandPalette } from "@/components/CommandPalette";
 import { NotificationsBell } from "@/components/NotificationsBell";
 
 export async function generateMetadata({
@@ -146,6 +147,7 @@ export default async function BoardPage({
               {board.lists.length} list{board.lists.length === 1 ? "" : "s"} ·
               role {role}
             </span>
+            <CommandPalette ctx={{ workspaceSlug: slug, boardId }} />
             <NotificationsBell />
           </div>
         </div>
