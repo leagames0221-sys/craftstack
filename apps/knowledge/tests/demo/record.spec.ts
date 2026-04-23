@@ -51,14 +51,14 @@ test("knowlex walkthrough", async ({ page }) => {
   // Line 1 ("KnowlexはRAG...") plays over this idle dwell.
   await page.waitForTimeout(2500);
 
-  const titleField = page.getByLabel(/title/i);
-  const contentField = page.getByLabel(/content|body|text/i).first();
-  if (await titleField.isVisible().catch(() => false)) {
-    await titleField.fill(DEMO_DOC.title);
-  }
-  if (await contentField.isVisible().catch(() => false)) {
-    await contentField.fill(DEMO_DOC.content);
-  }
+  // The /kb form uses visual <label> elements that aren't tied to the
+  // inputs via htmlFor+id, so `getByLabel` doesn't resolve them.
+  // Placeholder text is the most stable anchor; if those placeholders
+  // change in CorpusClient.tsx, update the regexes below.
+  const titleField = page.getByPlaceholder(/Boardly overview|title/i);
+  const contentField = page.getByPlaceholder(/paste a passage|chunked/i);
+  await titleField.fill(DEMO_DOC.title);
+  await contentField.fill(DEMO_DOC.content);
 
   // ---- 6.0-12.0 s : click Ingest, let line 2 ("チャンク化...") play ----
   const ingestBtn = page
