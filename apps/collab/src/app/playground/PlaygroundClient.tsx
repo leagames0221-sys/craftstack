@@ -16,12 +16,14 @@ vector-retrieval layer are still being built.`;
 const SAMPLE_QUESTION = "How many Vitest cases does Boardly have?";
 
 type Status = "idle" | "streaming" | "done" | "error";
+type Mode = "live" | "demo" | null;
 
 export function PlaygroundClient() {
   const [context, setContext] = useState(SAMPLE_CONTEXT);
   const [question, setQuestion] = useState(SAMPLE_QUESTION);
   const [answer, setAnswer] = useState("");
   const [status, setStatus] = useState<Status>("idle");
+  const [mode, setMode] = useState<Mode>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -34,6 +36,7 @@ export function PlaygroundClient() {
 
     setAnswer("");
     setError(null);
+    setMode(null);
     setStatus("streaming");
 
     try {
@@ -52,6 +55,11 @@ export function PlaygroundClient() {
         setStatus("error");
         return;
       }
+
+      const headerMode = res.headers.get("x-playground-mode");
+      setMode(
+        headerMode === "live" || headerMode === "demo" ? headerMode : null,
+      );
 
       const reader = res.body?.getReader();
       if (!reader) {
@@ -144,9 +152,27 @@ export function PlaygroundClient() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-[11px] uppercase tracking-wider text-neutral-500">
-          Answer
-        </label>
+        <div className="flex items-center justify-between">
+          <label className="text-[11px] uppercase tracking-wider text-neutral-500">
+            Answer
+          </label>
+          {mode ? (
+            <span
+              className={
+                mode === "live"
+                  ? "rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300"
+                  : "rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300"
+              }
+              title={
+                mode === "live"
+                  ? "Streaming from Gemini 2.0 Flash"
+                  : "GEMINI_API_KEY not set on this deploy — deterministic demo fallback. Plumbing, streaming, rate limiting, abort are all real."
+              }
+            >
+              {mode === "live" ? "● Live · Gemini 2.0 Flash" : "● Demo mode"}
+            </span>
+          ) : null}
+        </div>
         <div
           aria-live="polite"
           className="min-h-[340px] whitespace-pre-wrap rounded-lg border border-neutral-800 bg-neutral-900/40 p-4 text-sm leading-relaxed text-neutral-100"

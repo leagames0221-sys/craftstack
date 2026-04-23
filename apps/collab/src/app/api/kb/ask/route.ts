@@ -2,6 +2,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { streamText } from "ai";
 import { z } from "zod";
 
+import { buildDemoAnswer, streamStringAsResponse } from "@/lib/kb-demo";
 import { checkAndIncrement } from "@/lib/kb-rate-limit";
 
 /**
@@ -41,16 +42,6 @@ using inline quotes ("like this") rather than block quotes.`;
 
 export async function POST(req: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return Response.json(
-      {
-        code: "GEMINI_NOT_CONFIGURED",
-        message:
-          "GEMINI_API_KEY is not set. Get a free key at https://aistudio.google.com/app/apikey and add it to the environment.",
-      },
-      { status: 503 },
-    );
-  }
 
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
@@ -86,6 +77,14 @@ export async function POST(req: Request) {
     );
   }
 
+  if (!apiKey) {
+    // Demo mode: stream a deterministic canned answer so the playground
+    // UX is fully demonstrable without a Gemini key. See lib/kb-demo.
+    return streamStringAsResponse(
+      buildDemoAnswer(parsed.data.context, parsed.data.question),
+    );
+  }
+
   const google = createGoogleGenerativeAI({ apiKey });
   const model = google("gemini-2.0-flash");
 
@@ -102,5 +101,7 @@ export async function POST(req: Request) {
     maxOutputTokens: 600,
   });
 
-  return result.toTextStreamResponse();
+  return result.toTextStreamResponse({
+    headers: { "x-playground-mode": "live" },
+  });
 }
