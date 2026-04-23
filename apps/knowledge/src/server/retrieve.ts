@@ -47,6 +47,17 @@ export async function retrieveTopK(opts: {
     `[retrieve] Embedding table: count=${storedRows[0] ? Number(storedRows[0].count) : 0}, stored_dim=${storedRows[0]?.any_dim ?? "?"}`,
   );
 
+  const fkSample = await prisma.$queryRawUnsafe<
+    Array<{ embChunkId: string; chunkHit: string | null }>
+  >(
+    `SELECT e."chunkId" AS "embChunkId",
+            c."id"      AS "chunkHit"
+       FROM "Embedding" e
+       LEFT JOIN "Chunk" c ON c."id" = e."chunkId"
+       LIMIT 4`,
+  );
+  console.log(`[retrieve] FK sample:`, JSON.stringify(fkSample));
+
   // Inline both the vector literal and LIMIT rather than binding via
   // `$1`/`$2`. Prisma's `$queryRawUnsafe` positional binding was
   // silently returning 0 rows despite count=2 and matching dims; inlining
