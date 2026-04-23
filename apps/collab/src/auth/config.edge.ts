@@ -33,6 +33,7 @@ export const authEdgeConfig = {
       // Unauthenticated pages that still flow through the proxy so they
       // get the nonce-based CSP header. Returning true here short-circuits
       // the auth gate without changing page-level RBAC.
+      if (pathname === "/") return true;
       if (pathname.startsWith("/signin")) return true;
       if (pathname.startsWith("/invite")) return true;
       // Public playground demo for recruiters; no auth required.

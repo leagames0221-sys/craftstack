@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 const SAMPLE_CONTEXT = `craftstack is a production-grade monorepo containing two apps:
 Boardly, a realtime-collaborative kanban, and Knowlex, a multi-tenant
@@ -184,9 +185,59 @@ export function PlaygroundClient() {
           ) : null}
           {error ? (
             <span className="text-red-400">Error · {error}</span>
-          ) : (
-            answer
-          )}
+          ) : answer ? (
+            <div className="prose-playground">
+              <ReactMarkdown
+                components={{
+                  p: (p) => <p className="mb-3 last:mb-0">{p.children}</p>,
+                  strong: (p) => (
+                    <strong className="font-semibold text-white">
+                      {p.children}
+                    </strong>
+                  ),
+                  em: (p) => <em className="italic">{p.children}</em>,
+                  ul: (p) => (
+                    <ul className="mb-3 ml-5 list-disc space-y-1">
+                      {p.children}
+                    </ul>
+                  ),
+                  ol: (p) => (
+                    <ol className="mb-3 ml-5 list-decimal space-y-1">
+                      {p.children}
+                    </ol>
+                  ),
+                  li: (p) => <li>{p.children}</li>,
+                  code: (p) => (
+                    <code className="rounded bg-neutral-800 px-1 py-0.5 font-mono text-[12px] text-amber-200">
+                      {p.children}
+                    </code>
+                  ),
+                  pre: (p) => (
+                    <pre className="mb-3 overflow-x-auto rounded-md bg-neutral-950/70 p-3 font-mono text-[12px] leading-relaxed text-neutral-200">
+                      {p.children}
+                    </pre>
+                  ),
+                  a: (p) => (
+                    <a
+                      href={p.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-indigo-300 underline underline-offset-2 hover:text-indigo-200"
+                    >
+                      {p.children}
+                    </a>
+                  ),
+                  blockquote: (p) => (
+                    <blockquote className="mb-3 border-l-2 border-indigo-500/40 pl-3 text-neutral-300">
+                      {p.children}
+                    </blockquote>
+                  ),
+                }}
+              >
+                {answer}
+              </ReactMarkdown>
+            </div>
+          ) : null}
           {streaming ? (
             <span
               aria-hidden

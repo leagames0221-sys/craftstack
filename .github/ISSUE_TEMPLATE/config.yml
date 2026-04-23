@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/leagames0221-sys/craftstack/security/policy
+    about: Do not file security issues publicly — follow the disclosure process in SECURITY.md.
