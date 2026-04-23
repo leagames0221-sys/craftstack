@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml/badge.svg)](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml)
 [![Security Headers: A](https://img.shields.io/badge/Security%20Headers-A-brightgreen)](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on)
-[![Tests: 169 Vitest + 32 Playwright](https://img.shields.io/badge/tests-169%20%2B%2032-success)](./apps/collab)
+[![Tests: 178 Vitest + 35 Playwright](https://img.shields.io/badge/tests-178%20%2B%2035-success)](./apps/collab)
 [![Infra: $0/mo](https://img.shields.io/badge/infra-%240%2Fmo-blue)](#tech-stack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-20-brightgreen)](./.nvmrc)
@@ -108,7 +108,7 @@ craftstack/
 │   └── docker/              # docker-compose + init scripts
 ├── docs/
 │   ├── design/              # 13-part design bible (see docs/design/README.md)
-│   ├── adr/                 # Architecture Decision Records (44 entries)
+│   ├── adr/                 # Architecture Decision Records (45 entries)
 │   ├── api/                 # OpenAPI specs
 │   ├── architecture/        # System diagrams
 │   ├── compliance/          # Data retention policy
@@ -129,7 +129,7 @@ craftstack/
 - **Auth**: Auth.js v5 with JWT session strategy · Google + GitHub OAuth · PrismaAdapter
 - **Deploy**: Vercel Hobby · GitHub Actions CI (lint / typecheck / test / build)
 - **Security headers** — scored **A** on [securityheaders.com](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on). Layers: Content-Security-Policy with explicit Vercel-platform allowlists + `'unsafe-inline'` (W3C-spec rollback from the earlier A+ nonce + `'strict-dynamic'` stance — platform-injected scripts couldn't carry our per-request nonce and hydration broke; see ADR-0040), HSTS 2y preload, X-Frame-Options DENY, Cross-Origin-Opener-Policy same-origin, Cross-Origin-Resource-Policy same-origin, Permissions-Policy denying every unused sensor / media / power API, and Referrer-Policy strict-origin-when-cross-origin
-- **Testing**: Vitest (130 unit cases) · Playwright (11 smoke scenarios, run with `pnpm --filter collab test:e2e`) · k6 scenario
+- **Testing**: Vitest (**178** unit cases across both apps) · Playwright (**~35** scenarios — smoke, authed E2E, a11y, live-URL, run with `pnpm --filter collab test:e2e` / `pnpm --filter knowledge test:e2e`) · Knowlex retrieve integration test against a real `pgvector` service container via `docker compose` (`pnpm --filter knowledge test:integration`) · k6 scenario
 - **Drag & drop**: `@dnd-kit` sortable cards with LexoRank positions + optimistic UI + `VERSION_MISMATCH` rollback
 - **Realtime**: Pusher Channels (free tier) — `board-<id>` fanout for card/list mutations; no-op locally when unconfigured
 - **Invitations**: Token-hashed invitation flow (ADMIN+ creates, accept page binds membership). Resend-backed email delivery with graceful fallback to console log when `RESEND_API_KEY` is unset
@@ -151,15 +151,18 @@ craftstack/
 - **OpenAPI 3.1 contract** at [`apps/collab/src/openapi.ts`](apps/collab/src/openapi.ts). Browsable in-app at <https://craftstack-collab.vercel.app/docs/api> (server-rendered, inside the strict CSP, zero external CDN), served as raw JSON at <https://craftstack-collab.vercel.app/api/openapi.json>. Hand-written so the spec **is** the contract ([ADR-0035](docs/adr/0035-hand-written-openapi-as-the-contract.md)). `pnpm --filter collab generate:api-types` emits a fully-typed `paths` interface into [`src/openapi-types.ts`](apps/collab/src/openapi-types.ts) via `openapi-typescript`
 - **Release hygiene** — human-readable [CHANGELOG.md](CHANGELOG.md) per Keep-a-Changelog, signed tags, GitHub Releases, and a **CycloneDX 1.5 SBOM** auto-generated and attached to every `v*` release (see [`.github/workflows/sbom.yml`](.github/workflows/sbom.yml)) for supply-chain inspection
 - **Undo / redo on card moves** — `Ctrl-Z` / `⌘-Z` reverses the last drag, `Ctrl-Shift-Z` / `⌘-Shift-Z` re-applies it. Bounded 25-entry LIFO stack, replays against the existing optimistic-lock-protected `/api/cards/:id/move` endpoint so concurrent-edit rejection behaves exactly like a fresh drag. Pure state-machine module (6 Vitest cases) in [ADR-0036](docs/adr/0036-move-undo-redo-client-only.md)
-- **Cost safety by construction** — every service the project touches (Vercel, Neon, Gemini via AI Studio, Pusher, Resend, GitHub Actions) is on a free tier that **caps out to zero cost** rather than auto-scaling to the attacker's credit card. In-code defense-in-depth: per-IP + global daily/monthly budget on `/api/kb/ask`, per-user rate limits on authenticated reads, three-layer cap on invitation emails. Full threat model in [`COST_SAFETY.md`](COST_SAFETY.md)
+- **Cost safety by construction** — every service the project touches (Vercel, Neon, Gemini via AI Studio, Pusher, Resend, GitHub Actions, Upstash, Sentry) is on a free tier that **caps out to zero cost** rather than auto-scaling to the attacker's credit card. In-code defense-in-depth: per-IP + global daily/monthly budget on `/api/kb/ask` **and** `/api/kb/ingest` (Knowlex parity, see [ADR-0043](docs/adr/0043-knowlex-ops-cost-ci-eval.md)), per-user rate limits on authenticated reads, three-layer cap on invitation emails. Full threat model in [`COST_SAFETY.md`](COST_SAFETY.md); credit-card-free signup walk-through in [`docs/FREE_TIER_ONBOARDING.md`](docs/FREE_TIER_ONBOARDING.md)
+- **Error-capture pipeline with demo mode** — both apps boot `@sentry/nextjs` via Next's `instrumentation.ts` + `instrumentation-client.ts` hooks; server and browser errors, unhandled rejections, and every `error.tsx` boundary flow through a unified `lib/observability.ts` seam. When `SENTRY_DSN` is configured the captures ship upstream; when it's not, they land in an in-memory ring buffer surfaced at `/api/observability/captures`, so a reviewer can prove the pipeline works end-to-end **without signing up for Sentry**. Rationale in [ADR-0044](docs/adr/0044-knowlex-openapi-a11y-sentry-v0.4.0.md) (wiring) and [ADR-0045](docs/adr/0045-observability-demo-mode.md) (demo-mode dual-backend)
+- **Knowlex RAG regression stack** — `retrieve.integration.test.ts` exercises the real pgvector kNN path against a `pgvector/pgvector:pg16` service container in CI, asserting "returns every row when `k ≥ corpus size`" — the exact regression a misconfigured ivfflat(lists, probes) silently produces ([ADR-0041](docs/adr/0041-knowlex-ivfflat-to-hnsw.md) documents the production diagnosis). `scripts/bench-retrieve.ts` reports min / p50 / p95 / p99 / max latency over N=1000 / M=100 probes. `scripts/eval.ts` seeds a self-contained 3-doc / 10-question golden set (factual / reasoning / adversarial) and scores substring-faithfulness + citation-coverage + refusal correctness against the live deploy — full measurement methodology in [ADR-0042](docs/adr/0042-knowlex-test-observability-stack.md) / [ADR-0043](docs/adr/0043-knowlex-ops-cost-ci-eval.md) and [`docs/eval/README.md`](docs/eval/README.md)
+- **Live deploy smoke, scheduled** — [`.github/workflows/smoke.yml`](.github/workflows/smoke.yml) runs Playwright against both production URLs every 6 h (plus on `workflow_dispatch` and on main pushes after a 90-second Vercel-settle sleep). Knowlex smoke asserts `indexType === "hnsw"` so an accidental ivfflat rollback trips the workflow, not production users
 - **Demo video pipeline** (`pnpm demo:tts && pnpm demo:compose`): capture a silent screen recording once, and an ffmpeg+TTS toolchain overlays a fully synthesized Japanese narration. Pluggable providers — **VOICEVOX** (local, $0) or **Azure Neural TTS** (500k chars/mo free). Script lives as JSON; editing the story is two commands away from a new mp4. See [scripts/demo/README.md](scripts/demo/README.md)
 
 ### Planned (see [Roadmap](#roadmap))
 
 - Storage: Vercel Blob (free tier)
-- Observability: Sentry · Better Stack · UptimeRobot · pino · Web Vitals
-- AI (Knowlex): Gemini Flash · Cohere Rerank · HyDE · Faithfulness check · pgvector + BM25 hybrid
-- E2E + a11y + load: Playwright (10 scenarios) · axe-core · k6 (200 VU)
+- Observability: Sentry webpack-plugin source-map upload (SDK + capture already shipped) · Better Stack · UptimeRobot · pino · Web Vitals
+- AI (Knowlex): pgvector HNSW + streamed Gemini 2.0 Flash with citations **already shipped** in v0.4.0; planned extensions — Cohere Rerank · HyDE · BM25 hybrid · LLM-as-judge faithfulness scoring in `scripts/eval.ts`
+- Load: k6 (200 VU)
 
 All production services are targeted to run within free-tier quotas (**$0/month**).
 

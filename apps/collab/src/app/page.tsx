@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 export const metadata = {
   title: "craftstack · Full-stack monorepo portfolio",
   description:
-    "Two production-grade SaaS built from schema to deploy: Boardly (realtime collaborative kanban) and Knowlex (multi-tenant AI knowledge retrieval). A security headers, 169 tests, zero-dollar infra.",
+    "Two production-grade SaaS built from schema to deploy: Boardly (realtime collaborative kanban) and Knowlex (AI knowledge retrieval with pgvector + HNSW). A security headers, 178 tests, zero-dollar infra.",
 };
 
 /**
@@ -110,10 +110,10 @@ export default async function Home() {
         </div>
 
         <div className="mt-12 grid grid-cols-2 gap-6 text-xs text-neutral-500 md:grid-cols-4">
-          <Stat label="Vitest cases" value="169" />
-          <Stat label="Playwright smoke" value="32" />
+          <Stat label="Vitest cases" value="178" />
+          <Stat label="Playwright" value="35+" />
           <Stat label="Next routes" value="41" />
-          <Stat label="ADRs" value="40" />
+          <Stat label="ADRs" value="45" />
           <Stat label="Security Headers" value="A" />
           <Stat label="Monthly infra" value="$0" />
           <Stat label="Prisma models" value="15 / 17" />
