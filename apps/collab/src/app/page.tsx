@@ -146,18 +146,18 @@ export default async function Home() {
 
           <AppCard
             gradient="from-violet-500/40 via-cyan-500/30 to-transparent"
-            badge="MVP · own Next app"
+            badge="Live · own Vercel deploy"
             title="Knowlex"
             tagline="Grounded AI knowledge retrieval"
             bullets={[
               "Paste text → chunked + embedded (text-embedding-004, 768-dim) → stored in pgvector",
-              "Ask a question → cosine-kNN retrieval → streamed Gemini 2.0 Flash answer with numbered citations",
+              "Ask a question → cosine-kNN retrieval → Gemini 2.0 Flash answer with numbered citations",
               "Env-guarded: missing GEMINI_API_KEY returns a clean 503, never a crash — corpus stays intact",
-              "Standalone apps/knowledge Next app, own Prisma migration, own Vitest. Ready for a second Vercel project",
+              "Standalone apps/knowledge Next app, own Prisma migration, own Vitest, own Vercel project",
             ]}
             primary={{
-              href: "/playground",
-              label: "Try demo slice on collab",
+              href: "https://craftstack-knowledge.vercel.app",
+              label: "Open live Knowlex ↗",
             }}
             secondary={{
               href: "https://github.com/leagames0221-sys/craftstack/tree/main/apps/knowledge",

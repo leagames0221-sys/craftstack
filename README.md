@@ -24,7 +24,9 @@ Covers DnD, labels, assignees, @mentions + notifications bell, invitations with 
 
 **Boardly**: <https://craftstack-collab.vercel.app>
 
-**Knowlex Playground (no signup)**: <https://craftstack-collab.vercel.app/playground> — paste any passage, ask a question, watch a streamed Gemini 2.0 Flash answer that stays grounded in your pasted context.
+**Knowlex** (grounded RAG, own Vercel deploy): <https://craftstack-knowledge.vercel.app> — add documents at [`/kb`](https://craftstack-knowledge.vercel.app/kb), then ask questions at [`/`](https://craftstack-knowledge.vercel.app/). Chunked via a 512-char paragraph-aware splitter, embedded with `text-embedding-004` into pgvector, retrieved by cosine kNN, answered by Gemini 2.0 Flash with numbered citations.
+
+**Knowlex Playground (bring-your-own-context)**: <https://craftstack-collab.vercel.app/playground> — same Gemini pipeline but you paste the context inline instead of ingesting.
 
 Sign in to reach the authenticated dashboard. Workspace + board creation flows are wired end-to-end against Neon Postgres (Singapore) and Upstash Redis (Tokyo).
 
