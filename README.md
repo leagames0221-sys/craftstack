@@ -1,6 +1,9 @@
 # craftstack
 
 [![CI](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml/badge.svg)](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml)
+[![Security Headers: A+](https://img.shields.io/badge/Security%20Headers-A%2B-brightgreen)](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on)
+[![Tests: 141 Vitest + 11 Playwright](https://img.shields.io/badge/tests-141%20%2B%2011-success)](./apps/collab)
+[![Infra: $0/mo](https://img.shields.io/badge/infra-%240%2Fmo-blue)](#tech-stack)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Node](https://img.shields.io/badge/node-20-brightgreen)](./.nvmrc)
 [![pnpm](https://img.shields.io/badge/pnpm-9.15-F69220)](./package.json)
@@ -20,6 +23,8 @@ Covers DnD, labels, assignees, @mentions + notifications bell, invitations with 
 ## 🌐 Live demo
 
 **Boardly**: <https://craftstack-collab.vercel.app>
+
+**Knowlex Playground (no signup)**: <https://craftstack-collab.vercel.app/playground> — paste any passage, ask a question, watch a streamed Gemini 2.0 Flash answer that stays grounded in your pasted context.
 
 Sign in to reach the authenticated dashboard. Workspace + board creation flows are wired end-to-end against Neon Postgres (Singapore) and Upstash Redis (Tokyo).
 
@@ -86,6 +91,7 @@ craftstack/
 - **Board label filter**: URL-driven (`?labels=id1,id2`) chip bar above the board — shareable, survives refresh, union semantics (card shown if it has **any** active label)
 - **WIP limits per list** (ADMIN+): inline `⚙` editor on list headers, amber header at-limit, red border + ring when over, back-end validates positive integer or null
 - **Command palette (⌘K / Ctrl-K)**: global overlay with dark glassmorphism, fuzzy cross-workspace search of workspaces / boards / cards (all membership-scoped server-side via `/api/search`), plus a `>`-prefix action mode for "New workspace" / "New board" / "Sign out". Mounted on every authenticated header; empty query also renders recent workspaces + boards so it doubles as a jump-to navigator
+- **Knowlex playground** at `/playground` (public, no signup): paste any passage + ask a question → streamed Gemini 2.0 Flash answer grounded only in the pasted context. Vercel AI SDK (`ai` + `@ai-sdk/google`) for the provider, `fetch` + `ReadableStream` on the client, abort-controllable. Env-guarded: missing `GEMINI_API_KEY` returns a 503 with a clear message, and a per-IP sliding-window rate limit (10 req / 60s) stops drive-by quota drain. Free end-to-end — Gemini Flash is on Google AI Studio's free tier, no credit card required
 - **Demo video pipeline** (`pnpm demo:tts && pnpm demo:compose`): capture a silent screen recording once, and an ffmpeg+TTS toolchain overlays a fully synthesized Japanese narration. Pluggable providers — **VOICEVOX** (local, $0) or **Azure Neural TTS** (500k chars/mo free). Script lives as JSON; editing the story is two commands away from a new mp4. See [scripts/demo/README.md](scripts/demo/README.md)
 
 ### Planned (see [Roadmap](#roadmap))
