@@ -20,10 +20,9 @@ test.describe("Board view (authed)", () => {
     await expect(page.getByText("E2E card 1")).not.toBeVisible();
   });
 
-  test("REST: /api/cards/:id/move accepts a valid move", async ({
+  test("REST: /api/cards/:id/move rejects under-specified body with 400", async ({
     request,
   }) => {
-    // Fetch the board state via a search to get card ids.
     const searchRes = await request.get(
       `/api/search?q=${encodeURIComponent("E2E card 3")}`,
     );
@@ -33,15 +32,10 @@ test.describe("Board view (authed)", () => {
     const card = search.cards.find((c) => c.boardId === "seed-e2e-board");
     expect(card, "found E2E card 3 via search").toBeTruthy();
 
-    // Optimistic-lock PATCH requires expectedVersion; fetch current.
-    const cardRes = await request.get(`/api/cards/${card!.id}`);
-    const currentCard = (await cardRes.json()) as { version: number };
-    expect(currentCard.version).toBeGreaterThanOrEqual(1);
-    // Move is a POST; passing the current version should succeed.
-    // We don't know the list ids here — just assert the endpoint
-    // exists and rejects an obviously bad body with 400 (shape check).
+    // Move body requires version + listId (+ optional beforeId/afterId).
+    // Empty body must produce a 400 shape error, not a 500 crash.
     const bad = await request.post(`/api/cards/${card!.id}/move`, {
-      data: { version: currentCard.version },
+      data: {},
     });
     expect(bad.status()).toBe(400);
   });

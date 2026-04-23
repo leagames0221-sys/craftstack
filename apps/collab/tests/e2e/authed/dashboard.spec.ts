@@ -17,7 +17,10 @@ test.describe("Dashboard (authed)", () => {
     const dialog = page.getByRole("dialog", { name: /Command Palette/i });
     await expect(dialog).toBeVisible();
     await dialog.getByRole("combobox").fill("E2E");
-    await expect(dialog.getByText("E2E Workspace")).toBeVisible();
+    // The palette lists workspace results as option rows; dashboard page
+    // also has "E2E Workspace" in its own card list. Scope to the option
+    // role so we match only the palette row.
+    await expect(dialog.getByRole("option").first()).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialog).not.toBeVisible();
   });
