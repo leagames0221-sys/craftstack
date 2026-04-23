@@ -1,5 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { streamText } from "ai";
+import { generateText, streamText } from "ai";
 import { z } from "zod";
 
 import { checkAndIncrementGlobalBudget } from "@/lib/global-budget";
@@ -108,26 +108,54 @@ export async function POST(req: Request) {
   }
 
   const google = createGoogleGenerativeAI({ apiKey });
+  // Diagnostic: use generateText (non-streaming) and return the result
+  // as a plain text response. If streamText on Vercel silently drops
+  // chunks, this path still surfaces the full answer so we can confirm
+  // the Gemini call itself works. Will flip back to streamText once
+  // the underlying issue is pinpointed.
   const model = google("gemini-2.5-flash");
 
-  const result = streamText({
-    model,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: `<context>\n${parsed.data.context}\n</context>\n\nQuestion: ${parsed.data.question}`,
-      },
-    ],
-    temperature: 0.2,
-    maxOutputTokens: 600,
-    onError: ({ error }) => {
-      // eslint-disable-next-line no-console
-      console.error("[kb-ask] streamText error:", error);
-    },
-  });
+  try {
+    const result = await generateText({
+      model,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `<context>\n${parsed.data.context}\n</context>\n\nQuestion: ${parsed.data.question}`,
+        },
+      ],
+      temperature: 0.2,
+      maxOutputTokens: 600,
+    });
 
-  return result.toTextStreamResponse({
-    headers: { "x-playground-mode": "live" },
-  });
+    const body =
+      typeof result.text === "string" && result.text.length > 0
+        ? result.text
+        : `[debug] Gemini returned no text. finishReason=${result.finishReason ?? "?"} usage=${JSON.stringify(result.usage ?? {})}`;
+
+    return new Response(body, {
+      status: 200,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "x-playground-mode": "live",
+      },
+    });
+  } catch (err) {
+    const message = (err as Error).message ?? "unknown";
+    // eslint-disable-next-line no-console
+    console.error("[kb-ask] Gemini call failed:", err);
+    return new Response(`[debug] Gemini call failed: ${message}`, {
+      status: 200,
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "x-playground-mode": "error",
+      },
+    });
+  }
+
+  // Unreachable for now — keep the original streaming import alive so
+  // the diagnostic diff is easy to revert once we know the root cause.
+  // eslint-disable-next-line no-unreachable
+  streamText;
 }
