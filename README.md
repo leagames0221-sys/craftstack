@@ -64,7 +64,7 @@ flowchart LR
     B_APP -.-> RESEND
 
     SMOKE -.->|"E2E_BASE_URL"| K_APP
-    CI -->|"service: pgvector"| CI
+    CI -.->|"pgvector service container"| K_DB
 ```
 
 All production services are free-tier, no credit-card-on-file. Full cost model in [`COST_SAFETY.md`](COST_SAFETY.md).
@@ -108,7 +108,7 @@ craftstack/
 │   └── docker/              # docker-compose + init scripts
 ├── docs/
 │   ├── design/              # 13-part design bible (see docs/design/README.md)
-│   ├── adr/                 # Architecture Decision Records (41 entries)
+│   ├── adr/                 # Architecture Decision Records (44 entries)
 │   ├── api/                 # OpenAPI specs
 │   ├── architecture/        # System diagrams
 │   ├── compliance/          # Data retention policy

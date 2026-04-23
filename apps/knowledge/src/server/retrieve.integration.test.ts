@@ -25,18 +25,29 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
  * Skipped by default `pnpm test` so CI runs without docker.
  */
 
-/** L2-normalised deterministic 768-dim vector from a seed string. */
-function seededVector(seed: string): number[] {
-  let h = 0;
-  for (const c of seed) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0;
-  const v = new Array<number>(768);
-  for (let i = 0; i < 768; i++) {
-    h = (Math.imul(h, 1103515245) + 12345) >>> 0;
-    v[i] = ((h & 0xffff) / 0xffff) * 2 - 1;
+// `vi.hoisted` is the canonical way to share a helper between the
+// factory passed to `vi.mock` (which Vitest hoists above every import)
+// and the rest of the test body. Without it, referencing a top-level
+// function from inside the factory is brittle: Vitest's hoisting
+// moves the `vi.mock` call to module top, and if the referenced
+// symbol is declared lexically below it, future Vitest internals
+// could trip over the temporal dead-zone. `vi.hoisted` guarantees
+// the helper is available by the time the factory runs.
+const { seededVector } = vi.hoisted(() => {
+  /** L2-normalised deterministic 768-dim vector from a seed string. */
+  function seededVector(seed: string): number[] {
+    let h = 0;
+    for (const c of seed) h = (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0;
+    const v = new Array<number>(768);
+    for (let i = 0; i < 768; i++) {
+      h = (Math.imul(h, 1103515245) + 12345) >>> 0;
+      v[i] = ((h & 0xffff) / 0xffff) * 2 - 1;
+    }
+    const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
+    return v.map((x) => x / norm);
   }
-  const norm = Math.sqrt(v.reduce((s, x) => s + x * x, 0));
-  return v.map((x) => x / norm);
-}
+  return { seededVector };
+});
 
 // Mock the embedder so retrieveTopK runs without hitting Gemini.
 // Vitest hoists `vi.mock` above all static imports, so the real

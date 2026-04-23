@@ -60,7 +60,7 @@ export async function GET() {
     documents,
     chunks,
     embeddings,
-    orphanEmbeddings: Number(orphanRow?.count ?? 0n),
+    orphanEmbeddings: orphanRow ? Number(orphanRow.count) : 0,
     storedDim: dimRow?.stored_dim ?? null,
     expectedDim: EMBEDDING_DIM,
     embeddingModel: EMBEDDING_MODEL,

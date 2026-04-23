@@ -36,8 +36,9 @@
  */
 
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
+import { fileURLToPath } from "node:url";
 
 type CorpusEntry = { title: string; content: string };
 type Question =
@@ -94,7 +95,11 @@ function percentile(sorted: number[], p: number): number {
 }
 
 function loadGolden(): GoldenSet {
-  const path = resolve(process.cwd(), "../../docs/eval/golden_qa.json");
+  // Resolve relative to this file, not to cwd, so the script works
+  // regardless of where pnpm / tsx is invoked from (monorepo root,
+  // apps/knowledge, or an absolute path).
+  const hereDir = dirname(fileURLToPath(import.meta.url));
+  const path = resolve(hereDir, "../../../docs/eval/golden_qa.json");
   const body = readFileSync(path, "utf8");
   return JSON.parse(body) as GoldenSet;
 }

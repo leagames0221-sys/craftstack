@@ -12,7 +12,7 @@ import { expect, test } from "@playwright/test";
  * baseline.
  */
 
-const PUBLIC_ROUTES = ["/", "/kb"];
+const PUBLIC_ROUTES = ["/", "/kb", "/docs/api"];
 
 for (const route of PUBLIC_ROUTES) {
   test(`${route} has no serious or critical a11y violations`, async ({

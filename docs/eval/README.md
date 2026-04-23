@@ -20,7 +20,7 @@ Exit code:
 
 ## What is explicitly NOT measured yet
 
-- **LLM-as-judge faithfulness.** Substring check catches the coarsest failures (answer invents a model name, cites the wrong doc) but not subtle hallucinations. A follow-up pass using `gemini-2.5-pro` as a rubric judge is tracked in ADR-0042's follow-ups.
+- **LLM-as-judge faithfulness.** Substring check catches the coarsest failures (answer invents a model name, cites the wrong doc) but not subtle hallucinations. A follow-up pass using `gemini-2.5-pro` as a rubric judge is tracked in ADR-0043's follow-ups.
 - **Context precision / recall over multi-chunk corpora.** Today the golden set has 3 hand-written documents; precision/recall only stops being trivial once the corpus is large enough for retrieval to make real ranking calls.
 - **Multilingual evaluation.** Corpus is English-only. The `expectedSubstrings` check would need per-locale transforms.
 
