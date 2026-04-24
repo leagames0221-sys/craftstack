@@ -110,7 +110,7 @@ craftstack/
 │   └── docker/              # docker-compose + init scripts
 ├── docs/
 │   ├── design/              # 13-part design bible (see docs/design/README.md)
-│   ├── adr/                 # Architecture Decision Records (45 entries)
+│   ├── adr/                 # Architecture Decision Records (48 entries)
 │   ├── api/                 # OpenAPI specs
 │   ├── architecture/        # System diagrams
 │   ├── compliance/          # Data retention policy
