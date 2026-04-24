@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed — stale counts + broken cross-repo link
+
+Audit pass after v0.4.5 surfaced stale numeric counts on several portfolio surfaces plus one broken link in ADR-0047. All corrections are cosmetic / documentary — no runtime behaviour changes.
+
+- **Vitest total count synced 178 → 195** on every user-facing surface: `README.md` badge (shields.io URL), `README.md` § Tech stack testing bullet (now additionally discloses the collab 166 / knowledge 29 split), `apps/collab/src/app/page.tsx` `<metadata>` description (used by OG / SEO), `apps/collab/src/app/page.tsx` hero `<Stat label="Vitest cases">` value, and `apps/collab/src/app/opengraph-image.tsx` tag list (the social-share preview). The 195 figure matches `pnpm --filter collab test` + `pnpm --filter knowledge test` run at session-close.
+- **ADR count synced 45 → 48** on the Boardly landing hero `<Stat label="ADRs">` — ADR-0046 (v0.4.1), ADR-0047 (v0.4.3), ADR-0048 (v0.4.3) were added after the 45 value was originally written.
+- **ADR-0047 § Context broken link removed.** The earlier draft linked to `../../memory/craftstack/37_hiring_sim_run_2_2026-04-24.md` — a path that only exists in the session's private notes directory, never shipped in this repo. Rewritten as prose that describes the session-internal artefact without claiming a resolvable URL.
+
+The Vercel live URLs will pick up the three user-facing changes on the next deploy (Vercel Hobby's 24-hour rate limit from 2026-04-24's four-tag day clears ~2026-04-25 afternoon JST). The source repo already matches the correct counts at merge-time, so a reviewer cloning or scrolling the repo sees consistent numbers; live-URL catchup is the only residual window.
+
 ## [0.4.5] — 2026-04-24
 
 ### Changed — RAG eval nightly cron live
