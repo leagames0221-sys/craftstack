@@ -83,7 +83,7 @@ Sign in to reach the authenticated dashboard. Workspace + board creation flows a
 
 > **Reviewers**: **Continue with GitHub** is the recommended button — it works for any GitHub account out of the box. The Google OAuth app is still in Google's "Testing" status, so Google sign-in will only succeed for email addresses already registered as test users inside the Google Cloud consent screen. Publishing the Google app requires verification review and is deferred until the app is feature-complete.
 
-Invitations, attachments, and the Knowlex RAG experience land in later milestones — see the roadmap below.
+Invitations (token-hashed, email-bound, three-layer rate-limited per [ADR-0026](docs/adr/0026-token-hashed-invitations.md) / [ADR-0027](docs/adr/0027-three-layer-invitation-rate-limit.md)) and the Knowlex RAG experience (pgvector HNSW + streamed Gemini 2.0 Flash with numbered citations per [ADR-0039](docs/adr/0039-knowlex-mvp-scope.md) / [ADR-0041](docs/adr/0041-knowlex-ivfflat-to-hnsw.md)) are both shipped and live. Attachments (Cloudflare R2 per [ADR-0008](docs/adr/0008-cloudflare-r2.md)) are schema-ready at the Prisma layer; UI wiring is a follow-up.
 
 ## Apps
 
