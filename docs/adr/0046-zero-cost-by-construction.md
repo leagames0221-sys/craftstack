@@ -69,10 +69,14 @@ Gemini work and return HTTP 503 with `{ code: "EMERGENCY_STOP" }` and
 
 Env is read per-request so a Vercel env change plus a redeploy (or Instant
 Rollback) takes effect on the next inbound request, not on the next cold
-start. Read endpoints (`/api/kb/stats`, `/api/kb/budget`,
-`/api/openapi.json`, `/api/health`) stay live by design so operators can still
-observe state during a pause. `docs/ops/runbook.md § 9` carries the full
-activate / observe / restore procedure.
+start. Read endpoints (`/api/kb/stats`, `/api/openapi.json`, `/api/health`,
+and `/api/kb/budget` when `ENABLE_OBSERVABILITY_API=1` — see § Trade-offs)
+stay live by design so operators can still observe state during a pause.
+`docs/ops/runbook.md § 9` carries the full activate / observe / restore
+procedure.
+
+Scope is deliberately narrow — this flag stops Gemini-consuming traffic
+specifically, not every write endpoint in the repo. See § Trade-offs.
 
 ### 3. `/api/kb/budget` observability surface + `C-01..C-06` in STRIDE
 
@@ -80,8 +84,9 @@ activate / observe / restore procedure.
 that returns `{ day: { used, cap, resetInSeconds }, month: {...} }` without
 mutating. A new `GET /api/kb/budget` route exposes both namespaces
 (`kb-ask`, `kb-ingest`) and the current emergency-stop flag, mirroring the
-`/api/kb/stats` shape. Cheap, no auth, no Gemini calls — safe for UptimeRobot
-and smoke tests.
+`/api/kb/stats` shape. The endpoint is dev-open / prod-gated — see
+§ Trade-offs for why the default production stance is closed and how
+operators open it for UptimeRobot / dashboard probes.
 
 `docs/security/threat-model.md` gains a new **Cost exhaustion** section with
 threats `C-01..C-06` and their concrete mitigations, so the zero-cost stance
@@ -97,7 +102,8 @@ prose.
 - The kill switch is demonstrable: a reviewer can set `EMERGENCY_STOP=1`
   locally, `curl -X POST /api/kb/ask`, and watch the 503.
 - `/api/kb/budget` makes the container's current usage visible without needing
-  log access — same shape pattern as `/api/kb/stats`.
+  log access — same shape pattern as `/api/kb/stats`, gated in production to
+  avoid leaking tactical attack intelligence (see § Trade-offs).
 - The STRIDE model now has first-class coverage of the attack shape this
   portfolio is most exposed to (free-tier bleed).
 
