@@ -21,10 +21,15 @@ Exit code:
 ## What is explicitly NOT measured yet
 
 - **LLM-as-judge faithfulness.** Substring check catches the coarsest failures (answer invents a model name, cites the wrong doc) but not subtle hallucinations. A follow-up pass using `gemini-2.5-pro` as a rubric judge is tracked in ADR-0043's follow-ups.
-- **Context precision / recall over multi-chunk corpora.** Today the golden set has 3 hand-written documents; precision/recall only stops being trivial once the corpus is large enough for retrieval to make real ranking calls.
 - **Multilingual evaluation.** Corpus is English-only. The `expectedSubstrings` check would need per-locale transforms.
 
-Numbers from earlier ADRs that reference `contextPrecision ≥ 0.80` and `faithfulness ≥ 0.85` are **targets for the deeper harness**, not the substring check shipped today.
+Numbers from earlier ADRs that reference `contextPrecision ≥ 0.80` and `faithfulness ≥ 0.85` are **targets for the deeper (LLM-as-judge) harness**, not the substring check shipped today.
+
+### v3 corpus — portfolio-as-domain
+
+As of v3 (2026-04-24, v0.4.3 arc), the golden set expanded from **3 hand-written documents / 10 questions** to **10 documents / 30 questions**. The corpus is deliberately self-referential: every document describes a real architectural decision or subsystem in the monorepo (Knowlex RAG architecture, Boardly realtime, security posture, cost-safety regime, undo/redo semantics, workspace tenancy, LexoRank ordering, token-hashed invitations, deployment topology, observability pipeline). A cold reviewer pointing `/kb/ask` at questions from this set exercises exactly the surface a hiring conversation would probe — "how does Boardly handle concurrent edits?", "which ADR introduces the free-tier compliance gate?", "what hash algorithm does the invitation system use?".
+
+This shape unlocks context-precision signal that was trivially-passing under the 3-doc set: with 10 docs and 30 questions across factual / reasoning / adversarial categories, retrieval now has to make real ranking calls, and `x-knowlex-docs` citation correctness becomes a meaningful metric.
 
 ## Layout
 
@@ -57,6 +62,6 @@ Prefer questions where the expected answer contains distinctive, low-ambiguity s
 
 ## Follow-ups
 
-- Wire `pnpm --filter knowledge eval` into a nightly GitHub Actions workflow against the live deploy; alert on regressions.
-- Commit JSON reports into `docs/eval/reports/YYYY-MM-DD.json` from the nightly run so trend visualisation becomes possible.
-- Add an optional `--judge` flag that posts answers to `gemini-2.5-pro` with a rubric prompt for true faithfulness scoring, and makes the flag a separate env-gated CI job so the default eval stays zero-cost-on-free-tier.
+- **Nightly GitHub Actions workflow (Session 256-B target)**. `.github/workflows/eval.yml` wires `pnpm --filter knowledge eval` into a scheduled run against the live Knowlex deploy. The workflow commits JSON reports into `docs/eval/reports/YYYY-MM-DD.json` and opens an issue on regression (pass-rate drop ≥ 5 points day-over-day). Requires a `GEMINI_API_KEY` GitHub secret; workflow ships as `workflow_dispatch` only until the secret is present, then the cron trigger is enabled in a follow-up.
+- **Measured numbers on the README badge**. Once the nightly workflow has produced at least three report files, the main `README.md` gains an eval badge showing `contextPrecision / faithfulness / p95` from the latest report. Turns the `hire` → `strong hire` probe (measured eval numbers) into a repo-visible answer.
+- **LLM-as-judge `--judge` flag**. Optional post-processing pass that posts answers to `gemini-2.5-pro` with a rubric prompt for true faithfulness scoring. Gated as a separate env-toggled CI job so the default eval stays zero-cost-on-free-tier.
