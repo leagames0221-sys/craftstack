@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.4] — 2026-04-24
+
+### Added — eval workflow scaffold + ADR-0048 primitive
+
+Third ratchet-model arc of the day. Two independent additions that progress the Session 256 arc without runtime risk or secret dependencies at merge time.
+
+- **`.github/workflows/eval.yml`** — nightly RAG regression eval, shipped as `workflow_dispatch` only. Loads `docs/eval/golden_qa.json` (v3: 10 corpus / 30 questions), seeds the corpus into the target Knowlex deploy via `/api/kb/ingest`, fires each question through `/api/kb/ask`, and scores against the substring + citation + latency-p95 thresholds. The `schedule: "0 4 * * *"` block is committed as a comment so the flip-to-nightly is a one-line edit once `GEMINI_API_KEY` lands as a repo secret. Manual runs pick up the secret from the environment and are runnable today against any target URL.
+- **`move-history.ts` — `markStale` + `removeByCardId` pure primitives** implementing ADR-0048 Rule 1 and Rule 3. New optional fields `stale?: boolean` and `stalenessReason?: "concurrent-move" | "deletion" | "card-updated"` on `MoveEntry` — type-compatible with every v0.4.3 caller. `markStale(h, cardId, reason)` flips every matching entry in both undo and redo stacks while preserving length and order; `removeByCardId(h, cardId)` strips entries entirely for the `card.deleted` branch (entry dropped after the toast rather than kept as a permanent tombstone). Re-calling `markStale` upgrades the recorded reason — a card moved then deleted by the same or another user ends up marked `deletion` (the more severe state).
+- **Vitest: +6 cases** in `move-history.test.ts` covering markStale no-op / single-match / multi-match-across-stacks / reason-upgrade, removeByCardId strip / no-op. Suite is now 12 / 12 passing on the module; collab typecheck is green.
+- **BoardClient UI wiring is explicitly out of scope for this arc.** The primitive is tested in isolation and callable; hooking the Pusher `card.moved` / `card.deleted` handlers into `markStale` / `removeByCardId`, adding the stale-skipping toast copy, and rendering the history indicator stale-count are tracked as the next `v0.4.5` arc so the UI surface gets its own PR review.
+
+All ten CI checks green on the merge. `pnpm check:free-tier` still passes. Eval workflow appears in the Actions tab alongside CI / CodeQL / E2E / Live smoke / SBOM.
+
 ## [0.4.3] — 2026-04-24
 
 ### Added — eval maturity + undo/redo contract + tenancy plan
