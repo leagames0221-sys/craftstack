@@ -1,5 +1,7 @@
 ﻿# Demo video storyboards
 
+> ⚠️ **Design-phase aspirational storyboards** — the shots below describe the _eventual_ demo-video target (multi-tenant isolation, file upload, API key issuance, eval-dashboard numbers, etc.). The **actual recorded Loom demos** are the two short walkthroughs linked from the main [README](../../README.md): Boardly 45 s and Knowlex 33 s. Any shot on this page that references multi-tenant switches, PDF ingest, or an API-key terminal is not in the shipped MVP — see [ADR-0039](../adr/0039-knowlex-mvp-scope.md) for the scope decision.
+
 Two 45-second screen captures. Intended to load fast enough for a recruiter to watch both in under 2 minutes.
 
 ## Boardly (90 s)

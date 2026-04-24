@@ -17,9 +17,11 @@ Trello's simultaneous-edit experience rebuilt with first-class permissions, audi
 
 [Live demo](#) · [Source](https://github.com/leagames0221-sys/craftstack/tree/main/apps/collab) · [Architecture](../architecture/system-overview.md)
 
-## 🟠 Knowlex — Multi-tenant AI knowledge SaaS
+## 🟠 Knowlex — Single-tenant RAG demo (multi-tenant evolution deferred)
 
-A RAG-backed Q&A product for internal documents with enterprise-grade tenant isolation.
+> ⚠️ **Design-phase aspirational copy** — this section describes the original design-phase ambition for Knowlex. The **shipped MVP** is scoped down per [ADR-0039](../adr/0039-knowlex-mvp-scope.md): single-tenant, paragraph-aware chunking, pgvector HNSW cosine kNN, streamed Gemini 2.0 Flash with numbered citations. The bullets below are the next-arc target, not the current state. Current status + measured numbers live in the main [README](../../README.md) and [`docs/eval/README.md`](../eval/README.md).
+
+Target state (per design-phase ADRs 0011–0015, not yet shipped):
 
 - PostgreSQL Row-Level Security + query-layer `withTenant()` wrapper
 - Hybrid retrieval: pgvector (HNSW) + BM25, fused via Reciprocal Rank Fusion
@@ -27,7 +29,7 @@ A RAG-backed Q&A product for internal documents with enterprise-grade tenant iso
 - HyDE + Faithfulness check — hallucinated sentences are flagged, not hidden
 - 50-sample golden QA running in CI with Context Precision ≥ 0.80 gate
 
-[Live demo](#) · [Source](https://github.com/leagames0221-sys/craftstack/tree/main/apps/knowledge) · [Eval report](../eval/README.md)
+[Live demo](https://craftstack-knowledge.vercel.app) · [Source](https://github.com/leagames0221-sys/craftstack/tree/main/apps/knowledge) · [Eval report](../eval/README.md) · [ADR-0039](../adr/0039-knowlex-mvp-scope.md)
 
 ## What this portfolio demonstrates
 

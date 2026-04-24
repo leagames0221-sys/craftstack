@@ -4,15 +4,17 @@ import { useCallback, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 
 const SAMPLE_CONTEXT = `craftstack is a production-grade monorepo containing two apps:
-Boardly, a realtime-collaborative kanban, and Knowlex, a multi-tenant
-AI knowledge retrieval SaaS. Boardly has 31 routes, 137 Vitest cases,
-a nonce-based Content-Security-Policy that scored A+ on
+Boardly, a realtime-collaborative kanban with multi-tenant workspaces,
+and Knowlex, a single-tenant RAG demo (workspace tenancy is deferred
+per ADR-0039 and is the next arc). Boardly has 31 routes, 137 Vitest
+cases, a nonce-based Content-Security-Policy that scored A+ on
 securityheaders.com, and a command palette bound to Cmd-K. It uses
 PostgreSQL via Prisma, Auth.js v5 with JWT sessions, and Pusher
 Channels for realtime fanout with a best-effort side-effect policy.
-Knowlex shares the same monorepo but is earlier-stage: the Prisma
-schema (17 models) is complete, but the ingestion pipeline and
-vector-retrieval layer are still being built.`;
+Knowlex runs in the same monorepo on its own Vercel deploy: ingest
+chunks paragraph-aware at ~512 chars, embeds with gemini-embedding-001
+at 768 dims, stores in pgvector with an HNSW cosine index, and streams
+Gemini 2.0 Flash with numbered citations.`;
 
 const SAMPLE_QUESTION = "How many Vitest cases does Boardly have?";
 

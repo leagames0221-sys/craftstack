@@ -79,9 +79,11 @@ export default async function Home() {
         <p className="mt-6 max-w-2xl text-lg text-neutral-400">
           <span className="text-neutral-200">Boardly</span>, a realtime
           collaborative kanban with DnD, optimistic locking, and a nonce-based
-          CSP. <span className="text-neutral-200">Knowlex</span>, a multi-tenant
-          AI knowledge-retrieval surface streaming Gemini 2.0 Flash. Both in one
-          Turborepo, deployed on Vercel Hobby, zero dollars per month.
+          CSP. <span className="text-neutral-200">Knowlex</span>, a
+          single-tenant RAG demo over pgvector HNSW with streamed Gemini 2.0
+          Flash and numbered citations (workspace tenancy is the next arc — see
+          ADR-0039). Both in one Turborepo, deployed on Vercel Hobby, zero
+          dollars per month.
         </p>
 
         <div className="mt-10 flex flex-wrap gap-3">

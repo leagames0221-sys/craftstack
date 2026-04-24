@@ -11,7 +11,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)](https://www.typescriptlang.org)
 
-> Full-stack portfolio monorepo — **Boardly** (realtime collaborative kanban with drag-and-drop) + **Knowlex** (multi-tenant AI knowledge SaaS).
+> Full-stack portfolio monorepo — **Boardly** (realtime collaborative kanban with drag-and-drop, multi-tenant workspaces) + **Knowlex** (single-tenant RAG demo on pgvector HNSW + Gemini; workspace tenancy deferred per [ADR-0039](docs/adr/0039-knowlex-mvp-scope.md)).
 
 Two production-grade SaaS applications designed and built from schema to deploy, as a solo developer, to demonstrate full-stack × from-scratch engineering capability.
 
@@ -87,10 +87,10 @@ Invitations, attachments, and the Knowlex RAG experience land in later milestone
 
 ## Apps
 
-| App                           | Description                                                 | Tech highlights                                                                                             | Status               |
-| ----------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------- |
-| [**Boardly**](apps/collab)    | Collaborative kanban with drag-and-drop and realtime fanout | Next.js 16 · Auth.js v5 · Prisma 7 · PostgreSQL · LexoRank · Optimistic lock · `@dnd-kit` · Pusher Channels | v0.1.0 — live deploy |
-| [**Knowlex**](apps/knowledge) | Multi-tenant AI knowledge retrieval SaaS                    | Next.js · pgvector (HNSW) · Gemini Embeddings · Gemini 2.0 Flash streaming · Prisma                         | MVP live deploy      |
+| App                           | Description                                                                                                                                                                                 | Tech highlights                                                                                             | Status               |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------- |
+| [**Boardly**](apps/collab)    | Collaborative kanban with drag-and-drop and realtime fanout                                                                                                                                 | Next.js 16 · Auth.js v5 · Prisma 7 · PostgreSQL · LexoRank · Optimistic lock · `@dnd-kit` · Pusher Channels | v0.1.0 — live deploy |
+| [**Knowlex**](apps/knowledge) | Single-tenant RAG demo — pgvector HNSW kNN + streamed Gemini with numbered citations. Workspace tenancy is deferred per [ADR-0039](docs/adr/0039-knowlex-mvp-scope.md) and is the next arc. | Next.js · pgvector (HNSW) · Gemini Embeddings · Gemini 2.0 Flash streaming · Prisma                         | MVP live deploy      |
 
 ## Monorepo layout
 

@@ -79,7 +79,11 @@ This portfolio is two production-grade SaaS apps I designed and shipped.
 
 ---
 
-## 🟠 Knowlex — Multi-tenant AI knowledge SaaS
+## 🟠 Knowlex — Single-tenant RAG demo(多租户は次アーク)
+
+> ⚠️ **Design-phase aspirational copy** — 以下は設計フェーズで書いた目標値。**shipped MVP** は [ADR-0039](../adr/0039-knowlex-mvp-scope.md) で scope down 済(single-tenant / 段落 aware chunking / pgvector HNSW cosine kNN / streamed Gemini 2.0 Flash + numbered citations)。測定済の数値と現状は [main README](../../README.md) と [`docs/eval/README.md`](../eval/README.md) を参照。
+
+Target state(design-phase ADRs 0011-0015、未 ship):
 
 - RLS + クエリ層の二重防御で tenant 分離
 - Hybrid 検索(pgvector + BM25 + RRF) + Cohere Rerank で Context Precision 0.89
@@ -88,7 +92,7 @@ This portfolio is two production-grade SaaS apps I designed and shipped.
 
 **Stack:** Next.js 15 · Gemini API · pgvector · BullMQ · Prisma · Fly.io · Vercel
 
-[Live](https://knowlex.app) · [Code](https://github.com/.../knowlex) · [Demo 90s](...) · [Eval Report](...)
+[Live](https://craftstack-knowledge.vercel.app) · [Code](https://github.com/leagames0221-sys/craftstack/tree/main/apps/knowledge) · [Demo 33s](https://www.loom.com/share/acff991e3da94d5aa4e98dcee0b100e2) · [ADR-0039](../adr/0039-knowlex-mvp-scope.md)
 
 ---
 
