@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.3] — 2026-04-24
+
+### Added — eval maturity + undo/redo contract + tenancy plan
+
+Second ratchet-model arc of the day, landing two new ADRs and the expanded eval golden set that Session 255 run #2 probe Q2 (eval maturity) and probe Q3 (undo/redo × optimistic locking) directly targeted. Doc-only; no schema, no route handler, no CI workflow changes.
+
+- **ADR-0047 `Proposed`** — Knowlex workspace tenancy plan. Ports Boardly's four-tier RBAC (ADR-0023) and cross-workspace guards (ADR-0029) into `apps/knowledge` behind a `TENANCY_ENABLED` feature flag. Two-step forward-compat migration (additive column with backfill → tighten `NOT NULL`) keeps `main` reviewer-ready throughout implementation. Scope is minimum-viable tenancy: no invitations, no API keys, no folders — the design-phase schema.bak stays deferred. Implementation tracked as Session 256-A.
+- **ADR-0048 `Accepted`** — the stitch that was missing between ADR-0007/0024 (optimistic lock + 409 `VERSION_MISMATCH`) and ADR-0036 (client-only 25-entry undo stack). Three rules under Pusher broadcast:
+  1. Staleness is proactive. `card.moved` or `card.deleted` arriving for card X marks every undo and redo entry with that `cardId` as `stale: true` _before_ the local view updates — no race where `Ctrl-Z` could fire between broadcast arrival and state rewrite.
+  2. Staleness surfaces in UI. `Ctrl-Z` against a stale entry shows a scoped toast (_"Your last move was modified by another user. Skipping to the previous undo-able action."_) and continues popping until a non-stale entry is found. If the whole stack is stale, a single _"No un-modified moves to undo"_ toast fires and nothing replays.
+  3. `card.updated` (title / labels / assignees) is the narrow exception and does **not** mark stale. Undo is scoped to moves — _"undo my last drag"_, not _"revert all changes to this card"_.
+- **Golden set v2 → v3**. `docs/eval/golden_qa.json` expanded from 3 corpus documents / 10 questions to **10 documents / 30 questions**. The corpus is deliberately self-referential: every document describes a real ADR or subsystem (cost-safety regime, undo/redo semantics, workspace tenancy + RBAC, LexoRank ordering, token-hashed invitations, deployment topology, observability pipeline), so pointing `/kb/ask` at the questions exercises exactly the surface a hiring conversation probes. Unlocks real context-precision signal that was trivially passing under the 3-doc set.
+- **`docs/eval/README.md` § v3 corpus — portfolio-as-domain + § Follow-ups** — documents the new set shape and names the Session 256-B nightly `eval.yml` workflow as the gate between "aspirational target numbers" and "README badge with measured numbers." `workflow_dispatch` only until `GEMINI_API_KEY` lands as a repo secret; cron enabled thereafter.
+
+All ten CI checks green on the merge. `pnpm check:free-tier` still passes. Eval script accepts the expanded set without code changes (version bumped to 3 on the manifest).
+
 ## [0.4.2] — 2026-04-24
 
 ### Changed — claim-reality alignment
