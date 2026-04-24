@@ -24,11 +24,31 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import process from "node:process";
 
 const root = process.cwd();
+const here = dirname(fileURLToPath(import.meta.url));
 const violations = [];
+
+// Load the billable-SDK blocklist from the neighbouring JSON. Keeping
+// it externalised means adding a new paid SDK to the deny list is a
+// one-line JSON edit, not a script edit + diff review.
+const blocklistPath = join(here, "billable-sdks.json");
+let BILLABLE_SDKS = [];
+try {
+  const blocklist = JSON.parse(readFileSync(blocklistPath, "utf8"));
+  BILLABLE_SDKS = blocklist.blockedPackages;
+  if (!Array.isArray(BILLABLE_SDKS) || BILLABLE_SDKS.length === 0) {
+    throw new Error("blockedPackages must be a non-empty array");
+  }
+} catch (err) {
+  console.error(
+    `Failed to load ${relative(root, blocklistPath).replace(/\\/g, "/")}: ${err.message}`,
+  );
+  process.exit(2);
+}
 
 function read(p) {
   const abs = join(root, p);
@@ -57,24 +77,11 @@ for (const p of vercelCandidates) {
 // ---------------------------------------------------------------------------
 // 2. Billable SDK blocklist
 // ---------------------------------------------------------------------------
-// Each entry is a dep name or prefix. These SDKs cannot be used on
-// Hobby / free tiers without a credit card on file.
-const BILLABLE_SDKS = [
-  "stripe",
-  "@stripe/",
-  "twilio",
-  "@twilio/",
-  "@sendgrid/mail", // free tier hard-gated by CC as of 2025
-  "@vercel/kv", // paid tier only
-  "@vercel/postgres", // paid tier only
-  "@vercel/blob", // limited free but CC-gated for any volume
-  "mongodb-atlas", // Atlas requires CC for all deploy targets used by this stack
-];
-
+// Blocklist loaded from scripts/billable-sdks.json. Each entry is an
+// exact package name or a prefix (e.g. `@stripe/` catches every
+// scoped package under the Stripe namespace).
 function isBillable(dep) {
-  return BILLABLE_SDKS.some(
-    (entry) => dep === entry || dep.startsWith(entry),
-  );
+  return BILLABLE_SDKS.some((entry) => dep === entry || dep.startsWith(entry));
 }
 
 const pkgCandidates = [
@@ -151,8 +158,8 @@ if (violations.length > 0) {
 }
 
 console.log("Free-tier compliance check passed.");
+console.log("  - No paid Vercel plan declared in any vercel.json");
 console.log(
-  "  - No paid Vercel plan declared in any vercel.json",
+  `  - No billable SDKs (${BILLABLE_SDKS.length} entries in blocklist) in ${pkgCandidates.length} package.json files`,
 );
-console.log(`  - No billable SDKs in ${pkgCandidates.length} package.json files`);
 console.log("  - No leaked secrets in .env.example files");

@@ -109,12 +109,45 @@ prose.
   attempt to close that gap.
 - The blocklist is conservative on purpose. It won't catch every possible
   billable SDK (e.g. a new OpenAI paid-tier wrapper, a direct `fetch` to an
-  unbounded paid API). The static check is a safety net, not a replacement
-  for review.
+  unbounded paid API). The blocklist is externalised to
+  `scripts/billable-sdks.json` so additions are a one-line JSON edit, but the
+  static check is a safety net, not a replacement for review.
 - `EMERGENCY_STOP=1` needs an operator to flip it; there is no automatic
   trigger (e.g. "stop if `/api/kb/budget` shows `used > 0.9 * cap`"). Auto-trip
   is intentionally deferred — an auto-trip that misfires during a legitimate
   traffic spike would itself be an incident.
+- **`EMERGENCY_STOP` is scoped to Gemini-consuming routes only**
+  (`/api/kb/{ask,ingest}` on knowledge; `/api/kb/ask` on collab playground).
+  It is _not_ a full write-freeze — Boardly's 20+ non-AI write endpoints
+  (cards, lists, comments, invitations, workspaces) continue to accept
+  traffic when the flag is set. Rationale: those routes don't spend Gemini
+  quota. They're bounded by their own cost layers (Resend 3-tier invitation
+  cap, Neon free-tier compute auto-suspend, Vercel function-hour refuse), and
+  a full write freeze during a Gemini-key abuse event would be collateral
+  damage. The DB-outage scenario that _does_ need a write freeze uses
+  `READ_ONLY=1` — a distinct flag documented in runbook § 1. If the two
+  controls ever need to be unified, a future ADR can promote them; this ADR
+  deliberately keeps them separate.
+- **`/api/kb/budget` is gated behind `ENABLE_OBSERVABILITY_API=1` in
+  production** (same pattern as `/api/observability/captures`). The
+  `used / cap` ratio is tactical attack intelligence — an unauthenticated
+  reader who sees `day.used: 795/800` knows five more calls will tip the
+  container into the 429 state for the remainder of the day. Dev / preview
+  keeps the endpoint open for debuggability; production closes it by default
+  and operators opt in on their Vercel project env when they want an
+  external dashboard or UptimeRobot probe. The dev-open / prod-gated split
+  matches the existing observability-captures pattern so the policy surface
+  stays consistent.
+- **Enforcement pressure produced a second ADR-adjacent decision** that
+  lives in `apps/collab/eslint.config.mjs` rather than in its own ADR:
+  the Next 16 `react-hooks/*` react-compiler rule family
+  (`immutability`, `refs`, `preserve-manual-memoization`,
+  `set-state-in-effect`) is downgraded from `error` to `warn` for BoardClient
+  (DnD + optimistic locking) and CommandPalette. Those sites ship in
+  v0.4.0 and run without user-visible issue but would fail the stricter
+  default; the downgrade lets the build ship while keeping the warnings
+  visible as tracked debt. A proper per-rule refactor is a deliberate
+  follow-up, not an emergency.
 
 **What this unblocks**
 

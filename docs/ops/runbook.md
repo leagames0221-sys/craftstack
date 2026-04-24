@@ -165,10 +165,21 @@ Incident playbook for production services. Every section follows the same shape:
 
 ## 9. Emergency stop (`EMERGENCY_STOP=1`)
 
-The nuclear option. Setting `EMERGENCY_STOP=1` in a deployment's env
-disables every write and AI-consuming endpoint on the next request;
-read-only observability endpoints (`/api/kb/stats`, `/api/kb/budget`,
-`/api/health`) stay live so operators can still see what's happening.
+The nuclear option _for Gemini-consuming routes specifically_. Setting
+`EMERGENCY_STOP=1` in a deployment's env disables `/api/kb/ask` +
+`/api/kb/ingest` (knowledge) and `/api/kb/ask` (collab playground) on
+the next request; read-only observability endpoints (`/api/kb/stats`,
+`/api/kb/budget` when `ENABLE_OBSERVABILITY_API=1`, `/api/health`)
+stay live so operators can still see what's happening.
+
+**Scope (read this before reaching for it)**: emergency stop does
+**not** freeze Boardly's non-AI write endpoints (cards, lists,
+comments, invitations, workspaces). Those continue to accept traffic
+because they don't spend Gemini quota; a Gemini-key abuse event
+shouldn't collaterally lock users out of their own boards. For a
+full write freeze during a DB outage or data-corruption incident,
+use `READ_ONLY=1` (see §1 Neon Postgres down). ADR-0046 § Trade-offs
+explains why the two controls stay separate.
 
 **When to reach for it**
 

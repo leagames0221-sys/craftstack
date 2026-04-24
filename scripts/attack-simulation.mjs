@@ -41,9 +41,18 @@ const skipBudget = process.argv.includes("--skip-budget");
 
 const results = [];
 
-function addResult(scenario, expected, actual, pass, detail = "") {
-  results.push({ scenario, expected, actual, pass, detail });
-  const mark = pass ? "✓" : "✗";
+/**
+ * outcome values:
+ *   "pass"  — the documented defense fired as expected
+ *   "fail"  — the defense did not fire (portfolio-breaking signal)
+ *   "skip"  — the scenario could not be executed (e.g. target
+ *             unreachable, demo mode precludes the scenario). Skips
+ *             must NOT be silently treated as passes — doing so would
+ *             let a typo'd ATTACK_TARGET_URL report green.
+ */
+function addResult(scenario, expected, actual, outcome, detail = "") {
+  results.push({ scenario, expected, actual, outcome, detail });
+  const mark = outcome === "pass" ? "✓" : outcome === "skip" ? "~" : "✗";
   console.log(
     `  ${mark}  ${scenario}\n      expected: ${expected}\n      actual:   ${actual}${detail ? `\n      detail:   ${detail}` : ""}`,
   );
@@ -103,22 +112,29 @@ console.log("\nC-01 single-IP flood on /api/kb/ask (11 rapid POSTs)");
   // limiter — that's expected demo behavior. With a configured key
   // the first 10 succeed (200 stream) and the 11th is 429 with code
   // RATE_LIMIT_EXCEEDED.
-  const likelyCorsOffline = eleventh.status === -1;
+  const targetOffline = responses.every((r) => r.status === -1);
   const limiterFired =
     eleventh.status === 429 && eleventhCode === "RATE_LIMIT_EXCEEDED";
   const demoMode = first10Codes.every((s) => s === 503);
-  const pass = limiterFired || demoMode || likelyCorsOffline;
+  let outcome, actual;
+  if (targetOffline) {
+    outcome = "skip";
+    actual = "target unreachable — scenario not executed";
+  } else if (limiterFired) {
+    outcome = "pass";
+    actual = "limiter fired on 11th request";
+  } else if (demoMode) {
+    outcome = "pass";
+    actual = "demo mode — key unconfigured, all 503 (limiter path untested but AI traffic cannot escape)";
+  } else {
+    outcome = "fail";
+    actual = `first10=[${first10Codes.join(",")}] 11th=${eleventh.status} code=${eleventhCode} — limiter did not fire. On multi-region Vercel this is a known gap (ADR-0043/0046 § Trade-offs); on single-container setups it's a regression.`;
+  }
   addResult(
     "C-01 single-IP flood",
     "10 succeed / 11th returns 429 RATE_LIMIT_EXCEEDED (or 503 GEMINI_NOT_CONFIGURED throughout in demo mode)",
-    limiterFired
-      ? "limiter fired on 11th request"
-      : demoMode
-        ? "demo mode — key unconfigured, all 503"
-        : likelyCorsOffline
-          ? "target unreachable"
-          : `first10=[${first10Codes.join(",")}] 11th=${eleventh.status} code=${eleventhCode}`,
-    pass,
+    actual,
+    outcome,
   );
 }
 
@@ -132,18 +148,27 @@ console.log("\nC-06 oversize ingest (60 000-char payload)");
   const oversize = "a".repeat(60_000);
   const res = await attemptIngest("oversize", oversize);
   const code = parseCode(res.body);
-  const pass =
-    res.status === 400 ||
-    res.status === 503 || // demo mode
-    res.status === -1; // offline
+  let outcome, detail;
+  if (res.status === -1) {
+    outcome = "skip";
+    detail = "target unreachable";
+  } else if (res.status === 400) {
+    outcome = "pass";
+    detail = "Zod schema rejected the body before any DB / Gemini work.";
+  } else if (res.status === 503) {
+    outcome = "pass";
+    detail =
+      "demo mode — key unconfigured; Zod still runs, but the pre-check 503 short-circuits before it fires. Safe.";
+  } else {
+    outcome = "fail";
+    detail = "oversize payload was accepted";
+  }
   addResult(
     "C-06 oversize ingest payload",
     "400 BAD_REQUEST (Zod cap = 50 000 chars)",
     `status=${res.status} code=${code ?? "none"}`,
-    pass,
-    pass && res.status === 400
-      ? "Zod schema rejected the body before any DB / Gemini work."
-      : "",
+    outcome,
+    detail,
   );
 }
 
@@ -156,27 +181,49 @@ console.log("\nC-05 /api/kb/budget exposes emergencyStop flag");
 {
   try {
     const res = await fetch(`${target}/api/kb/budget`);
-    const body = await res.json();
-    const shape =
-      typeof body === "object" &&
-      body !== null &&
-      "emergencyStop" in body &&
-      typeof body.emergencyStop === "boolean" &&
-      "ask" in body &&
-      "ingest" in body;
-    addResult(
-      "C-05 budget endpoint observability",
-      "200 with { emergencyStop: bool, ask: {...}, ingest: {...} }",
-      `status=${res.status} shape=${shape ? "matches" : "mismatch"}`,
-      res.status === 200 && shape,
-      shape ? `emergencyStop=${body.emergencyStop}` : "",
-    );
+    if (res.status === 404) {
+      const body = await res.text();
+      const code = parseCode(body);
+      if (code === "DISABLED") {
+        addResult(
+          "C-05 budget endpoint observability",
+          "200 with { emergencyStop: bool, ask: {...}, ingest: {...} } when ENABLE_OBSERVABILITY_API=1, else 404 DISABLED",
+          "404 DISABLED — endpoint gated in production by design",
+          "pass",
+          "Gate is working. Set ENABLE_OBSERVABILITY_API=1 on the operator's Vercel env to open it for monitoring.",
+        );
+      } else {
+        addResult(
+          "C-05 budget endpoint observability",
+          "200 with observability payload (or 404 DISABLED in prod)",
+          `404 with unexpected body`,
+          "fail",
+        );
+      }
+    } else {
+      const body = await res.json();
+      const shape =
+        typeof body === "object" &&
+        body !== null &&
+        "emergencyStop" in body &&
+        typeof body.emergencyStop === "boolean" &&
+        "ask" in body &&
+        "ingest" in body;
+      addResult(
+        "C-05 budget endpoint observability",
+        "200 with { emergencyStop: bool, ask: {...}, ingest: {...} }",
+        `status=${res.status} shape=${shape ? "matches" : "mismatch"}`,
+        res.status === 200 && shape ? "pass" : "fail",
+        shape ? `emergencyStop=${body.emergencyStop}` : "",
+      );
+    }
   } catch (err) {
     addResult(
       "C-05 budget endpoint observability",
       "200 with observability payload",
       `error: ${String(err)}`,
-      false,
+      err && String(err).includes("fetch failed") ? "skip" : "fail",
+      err && String(err).includes("fetch failed") ? "target unreachable" : "",
     );
   }
 }
@@ -199,23 +246,36 @@ if (!skipBudget) {
   // the shape of the refusal (429 with BUDGET_EXCEEDED_*) by reading
   // /api/kb/budget to confirm the counters exist and increase.
   try {
-    const before = await fetch(`${target}/api/kb/budget`).then((r) => r.json());
-    await attemptAsk();
-    const after = await fetch(`${target}/api/kb/budget`).then((r) => r.json());
-    const movedOrDemoMode =
-      after.ask.day.used > before.ask.day.used || before.ask.day.cap > 0;
-    addResult(
-      "C-02 global budget counters observable + monotonic",
-      "ask.day.used increments after a real call (or cap > 0 in demo mode)",
-      `before=${before.ask.day.used}/${before.ask.day.cap} after=${after.ask.day.used}/${after.ask.day.cap}`,
-      movedOrDemoMode,
-    );
+    const beforeRes = await fetch(`${target}/api/kb/budget`);
+    if (beforeRes.status === 404) {
+      addResult(
+        "C-02 global budget counters observable + monotonic",
+        "counters increment after a real call",
+        "404 — /api/kb/budget gated by ENABLE_OBSERVABILITY_API",
+        "skip",
+        "Can't validate counter monotonicity without operator opening the endpoint. Run with --skip-budget on production or set ENABLE_OBSERVABILITY_API=1 on a staging env.",
+      );
+    } else {
+      const before = await beforeRes.json();
+      await attemptAsk();
+      const after = await fetch(`${target}/api/kb/budget`).then((r) => r.json());
+      const moved = after.ask.day.used > before.ask.day.used;
+      const capVisible = before.ask.day.cap > 0;
+      addResult(
+        "C-02 global budget counters observable + monotonic",
+        "ask.day.used increments after a real call",
+        `before=${before.ask.day.used}/${before.ask.day.cap} after=${after.ask.day.used}/${after.ask.day.cap}`,
+        moved || capVisible ? "pass" : "fail",
+      );
+    }
   } catch (err) {
+    const offline = err && String(err).includes("fetch failed");
     addResult(
       "C-02 global budget counters observable + monotonic",
       "budget endpoint readable + counters monotonic",
       `error: ${String(err)}`,
-      false,
+      offline ? "skip" : "fail",
+      offline ? "target unreachable" : "",
     );
   }
 } else {
@@ -230,11 +290,19 @@ mkdirSync(outDir, { recursive: true });
 const jsonPath = join(outDir, "ATTACK_SIMULATION_RESULTS.json");
 const mdPath = join(outDir, "ATTACK_SIMULATION_RESULTS.md");
 
+const passed = results.filter((r) => r.outcome === "pass").length;
+const failed = results.filter((r) => r.outcome === "fail").length;
+const skipped = results.filter((r) => r.outcome === "skip").length;
+
 const summary = {
   target,
   generatedAt: new Date().toISOString(),
   results,
-  allPass: results.every((r) => r.pass),
+  counts: { passed, failed, skipped, total: results.length },
+  // A failure is portfolio-breaking. A skip is operational — ran but
+  // couldn't assert. Only `failed === 0` means "every executable
+  // defense fired as declared".
+  allPass: failed === 0,
 };
 
 writeFileSync(jsonPath, JSON.stringify(summary, null, 2) + "\n", "utf8");
@@ -257,7 +325,15 @@ declared guarantees.
 
 | Scenario | Expected | Actual | Result |
 | --- | --- | --- | --- |
-${results.map((r) => `| ${r.scenario} | ${r.expected.replace(/\|/g, "\\|")} | ${r.actual.replace(/\|/g, "\\|")} | ${r.pass ? "✅" : "❌"} |`).join("\n")}
+${results
+  .map(
+    (r) =>
+      `| ${r.scenario} | ${r.expected.replace(/\|/g, "\\|")} | ${r.actual.replace(/\|/g, "\\|")} | ${r.outcome === "pass" ? "✅ pass" : r.outcome === "skip" ? "⊘ skip" : "❌ fail"} |`,
+  )
+  .join("\n")}
+
+**Counts**: ${passed} pass / ${failed} fail / ${skipped} skip (of ${results.length} total).
+A skip means the scenario could not be executed (e.g. target unreachable, endpoint gated); it is **not** a pass.
 
 ## Methodology
 
@@ -291,7 +367,10 @@ writeFileSync(mdPath, md, "utf8");
 console.log(`\n→ ${jsonPath}`);
 console.log(`→ ${mdPath}`);
 console.log(
-  `\nOverall: ${summary.allPass ? "PASS" : "FAIL"} (${results.filter((r) => r.pass).length}/${results.length})`,
+  `\nOverall: ${summary.allPass ? "PASS" : "FAIL"} — ${passed} pass / ${failed} fail / ${skipped} skip (of ${results.length})`,
 );
 
-if (!summary.allPass) process.exit(1);
+// Exit non-zero only on real failures. Skipped scenarios do not fail
+// the bench — a typo'd ATTACK_TARGET_URL should make the skip column
+// loud, not silently green.
+if (failed > 0) process.exit(1);

@@ -1,11 +1,16 @@
 /**
  * Emergency stop — mirror of apps/knowledge/src/lib/emergency-stop.ts.
  *
- * Wired into the collab playground's `/api/kb/ask` so a single
- * `EMERGENCY_STOP=1` env flag disables AI traffic across both apps
- * without a redeploy. Stays as a copy (not a shared package) per
- * ADR-0043's "copy-don't-package-yet" stance; promotion happens when a
- * third caller appears.
+ * Wired into the collab playground's `/api/kb/ask` only. Does NOT
+ * cover the rest of the collab write surface (cards, lists, comments,
+ * invitations, workspaces) — see ADR-0046 § Trade-offs for the
+ * deliberate scope narrowing. For a DB-outage write freeze, use
+ * `READ_ONLY=1` (runbook § 1).
+ *
+ * A single `EMERGENCY_STOP=1` env flag disables the Gemini-consuming
+ * paths across both apps without a redeploy. Stays as a copy (not a
+ * shared package) per ADR-0043's "copy-don't-package-yet" stance;
+ * promotion happens when a third caller appears.
  */
 
 const FLAG = "EMERGENCY_STOP";
