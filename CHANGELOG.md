@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.5] — 2026-04-24
+
+### Changed — RAG eval nightly cron live
+
+Fourth ratchet-model arc of the day. Small workflow change, big behavioural shift: the RAG eval runs on its own schedule now.
+
+- **`eval.yml` nightly schedule active.** `cron: "0 4 * * *"` alongside the existing `workflow_dispatch`. First report lands 2026-04-25 04:00 UTC; three reports accumulate by 2026-04-27 night, enough nightly signal to put a measured `contextPrecision / faithfulness / p95` badge on the main README (tracked as the v0.5.1 target).
+- **Stale `GEMINI_API_KEY` env forwarding removed.** Verified via `grep -n "GEMINI_API_KEY\|process\.env"` on `apps/knowledge/scripts/eval.ts`: the script reads only `E2E_BASE_URL`. The Gemini round-trip is server-side inside the target Knowlex deploy's Route Handler, which reads from its own Vercel env. No GitHub `GEMINI_API_KEY` secret is required for this workflow to run green against the live deploy. Workflow comment now documents the rationale explicitly.
+- **Production dependency sanity check recorded.** `curl -X POST /api/kb/ask` returns HTTP 200 with `X-Knowlex-Hits: 3` and `X-Knowlex-Docs` populated — independent proof that the live deploy's Gemini chain is healthy today.
+
+### Notes
+
+- Vercel preview builds on PR #17 hit the Hobby tier's 24-hour deployment rate limit, not a code failure. All seven GitHub Actions checks (CI / CodeQL / free-tier / a11y / pgvector integration / authed Playwright / lint-typecheck-test-build) pass. The PR modifies only `.github/workflows/eval.yml` — zero app code touched — so the Vercel preview outcome has no bearing on live-URL behaviour, which stays identical to v0.4.4. Rate limit resets in ~24 hours.
+- The Hobby rate-limit event is itself a data point for the `$0/mo` design axis: the portfolio genuinely operates inside the free tier's build-quantity bounds, and today's four tags (v0.4.2 → v0.4.3 → v0.4.4 → v0.4.5) stretched it enough to hit the ceiling. A note to the Session 256 ratchet cadence plan: cluster tags within a 24-hour window vs. spacing them out is a real trade-off on Hobby.
+
 ## [0.4.4] — 2026-04-24
 
 ### Added — eval workflow scaffold + ADR-0048 primitive
