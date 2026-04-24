@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.2] — 2026-04-24
+
+### Changed — claim-reality alignment
+
+Landed in response to the Session 255 hiring-sim run #2 verdict of `hire` (not `strong hire`). Two honesty gaps closed without schema or code churn:
+
+- **Knowlex "multi-tenant" claim softened everywhere it is user-facing** to match ADR-0039's shipped scope (single-tenant RAG demo; workspace tenancy is the next arc). Surfaces touched: `README.md` sub-header + Apps table, `package.json` description, Boardly landing hero (`apps/collab/src/app/page.tsx`), and the playground `SAMPLE_CONTEXT` string used by `/playground` answers. The three design-phase aspirational docs (`docs/hiring/portfolio-lp.md`, `docs/design/11_hiring_materials.md`, `docs/hiring/demo-storyboard.md`) keep their design-phase copy but gain a prominent "design-phase aspirational" banner linking to ADR-0039, so reviewers opening those files know the numbers and shots are targets, not shipped state.
+- **ADR-0046 § Context now names the arc as self-driven, not incident-driven.** One paragraph added before the "Three gaps:" list explaining that no Gemini key had leaked, no budget had spiked — the enforcement-loop gap was self-named via ADR-0043's own Trade-offs caveat. The regime: close the enforcement loop before an incident forces it, so the `$0/mo` guarantee survives the next unreviewed commit and the next leaked key equally. This pre-empts the interview probe "was this reactive or regime-level thinking?" by writing the answer into the repo.
+
+No schema, no route handler, no CI workflow touched. `pnpm check:free-tier` still passes. All ten CI checks (CI / CodeQL / authed Playwright / free-tier / a11y / pgvector integration / Vercel ×3 / preview comments) green on the merge.
+
+## [0.4.1] — 2026-04-24
+
 ### Added (post-v0.4.0)
 
 #### Cost-safety enforcement (ADR-0046)
