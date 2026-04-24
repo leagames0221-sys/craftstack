@@ -34,15 +34,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install cdxgen
-        run: pnpm dlx @cyclonedx/cdxgen@11 --help >/dev/null 2>&1 || true
+      # cdxgen has a native sqlite3 transitive dep (@appthreat/sqlite3)
+      # whose build script pnpm 9 blocks by default under its new
+      # allowlist policy. Switching from `pnpm dlx` to `npx` avoids
+      # the ERR_PNPM_IGNORED_BUILDS failure without loosening local
+      # dev's pnpm security posture. Warm the cache once so the three
+      # generate steps below don't re-download the tarball.
+      - name: Warm cdxgen cache
+        run: npx -y @cyclonedx/cdxgen@11 --help >/dev/null 2>&1 || true
 
       - name: Generate SBOM (collab)
-        run: pnpm dlx @cyclonedx/cdxgen@11 -o sbom-collab.cdx.json --spec-version 1.5 -t pnpm apps/collab
+        run: npx -y @cyclonedx/cdxgen@11 -o sbom-collab.cdx.json --spec-version 1.5 -t pnpm apps/collab
       - name: Generate SBOM (knowledge)
-        run: pnpm dlx @cyclonedx/cdxgen@11 -o sbom-knowledge.cdx.json --spec-version 1.5 -t pnpm apps/knowledge
+        run: npx -y @cyclonedx/cdxgen@11 -o sbom-knowledge.cdx.json --spec-version 1.5 -t pnpm apps/knowledge
       - name: Generate SBOM (root)
-        run: pnpm dlx @cyclonedx/cdxgen@11 -o sbom-root.cdx.json --spec-version 1.5 -t pnpm .
+        run: npx -y @cyclonedx/cdxgen@11 -o sbom-root.cdx.json --spec-version 1.5 -t pnpm .
 
       - name: Upload SBOMs as workflow artifacts
         uses: actions/upload-artifact@v4
