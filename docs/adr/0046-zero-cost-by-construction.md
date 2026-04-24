@@ -12,7 +12,19 @@ services. ADR-0043 added cost-guard parity across both apps and a scheduled
 smoke workflow. The STRIDE model in `docs/security/threat-model.md` covered the
 usual six categories.
 
-What was still missing was **the enforcement loop**. Three gaps:
+What was still missing was **the enforcement loop**.
+
+This arc was _not_ incident-driven. No Gemini key had leaked, no budget counter
+had spiked, no live bleed had been observed. The gap was self-named:
+ADR-0043's own Trade-offs section admitted that parts of the cost posture
+required manual invocation "until secrets gating is configured," and that
+caveat implied the same class of weakness in the cost-safety claim itself —
+a claim enforced by prose in `COST_SAFETY.md` and by reviewer vigilance, not
+by the CI system. The regime this ADR establishes is: close the enforcement
+loop before an incident forces it, so the `$0/mo` guarantee survives the next
+unreviewed commit and the next leaked key equally.
+
+Three gaps:
 
 1. **Claim-vs-reality drift risk.** Nothing in CI prevented a future commit
    from introducing `stripe`, `@vercel/kv`, or a `"plan": "pro"` line into a

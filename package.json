@@ -2,7 +2,7 @@
   "name": "craftstack",
   "version": "0.1.0",
   "private": true,
-  "description": "Full-stack portfolio monorepo: Boardly (realtime kanban) + Knowlex (multi-tenant AI knowledge SaaS)",
+  "description": "Full-stack portfolio monorepo: Boardly (realtime multi-tenant kanban) + Knowlex (single-tenant RAG demo; tenancy deferred per ADR-0039)",
   "packageManager": "pnpm@9.15.0",
   "engines": {
     "node": ">=20.0.0",
