@@ -3,43 +3,52 @@ name: RAG eval
 # Nightly Knowlex RAG regression eval against the live Vercel deploy.
 #
 # Triggers:
-#   - workflow_dispatch: manual run from the Actions tab. This is the
-#     only trigger in effect at land-time. Once the `GEMINI_API_KEY`
-#     secret is configured in the repo, a follow-up PR flips the
-#     commented `schedule` block on and the cron starts firing nightly.
-#   - schedule (commented out): 04:00 UTC nightly. Matches the Vercel
-#     hobby low-traffic window and gives the eval two full cron cycles
-#     to complete before any human looks at the result in the morning.
+#   - schedule: 04:00 UTC nightly. Matches the Vercel Hobby low-traffic
+#     window and gives the eval two full cron cycles to complete before
+#     any human looks at the result in the morning.
+#   - workflow_dispatch: manual run from the Actions tab against any
+#     target URL (defaults to the live Knowlex deploy).
 #
-# The job runs `pnpm --filter knowledge eval` which loads
-# docs/eval/golden_qa.json (v3: 10 corpus documents / 30 questions),
-# seeds the corpus into the live Knowlex deploy via /api/kb/ingest,
-# fires each question through /api/kb/ask, and scores answers against
-# expectedSubstrings + expectedDocumentTitle + latency-p95 thresholds.
-# The script exits non-zero on pass-rate or latency regression, so the
-# workflow failure is the regression signal.
+# Why no `GEMINI_API_KEY` GitHub secret is required: the eval script
+# (`apps/knowledge/scripts/eval.ts`) reads only `E2E_BASE_URL` and
+# makes plain HTTP calls to `/api/kb/ingest` + `/api/kb/ask` on the
+# target Knowlex deploy. The Gemini round-trip is server-side inside
+# the target's own Route Handler, using that server's existing Vercel
+# env (already set when Knowlex went live). The workflow never sees
+# or forwards the key.
+#
+# The job loads `docs/eval/golden_qa.json` (v3: 10 corpus documents /
+# 30 questions), seeds the corpus into the target deploy via
+# /api/kb/ingest (duplicates tolerated — the retriever ranks by
+# distance, not recency), fires each question through /api/kb/ask,
+# and scores answers against the expectedSubstrings +
+# expectedDocumentTitle + latency-p95 thresholds declared in the
+# golden-set manifest. The script exits non-zero on pass-rate or
+# latency regression, so the workflow failure is the regression
+# signal.
 #
 # Failure protocol:
-#   - Non-zero exit is treated as a regression. A follow-up improvement
-#     will auto-open a GitHub issue with the artifact attached.
+#   - Non-zero exit is treated as a regression. A follow-up
+#     improvement will auto-open a GitHub issue with the artifact
+#     attached.
 #   - Report JSON is written to docs/eval/reports/YYYY-MM-DD.json and
 #     uploaded as a workflow artifact. A follow-up improvement will
 #     commit passing reports back to main so trend visualisation
 #     becomes possible.
 #
 # See docs/eval/README.md for the eval methodology, threshold
-# semantics, and the Session 256-B roadmap that tracks the cron-on
-# flip and the report-commit automation.
+# semantics, and the Session 256-B roadmap that tracks the
+# report-commit automation.
 
 on:
+  schedule:
+    - cron: "0 4 * * *"
   workflow_dispatch:
     inputs:
       base_url:
         description: "Target Knowlex URL (default: live)"
         required: false
         default: "https://craftstack-knowledge.vercel.app"
-  # schedule:
-  #   - cron: "0 4 * * *"
 
 concurrency:
   group: rag-eval
@@ -76,12 +85,10 @@ jobs:
 
       - name: Run Knowlex RAG eval
         env:
-          # GEMINI_API_KEY is required only for the live endpoint's own
-          # ingest + ask handlers to succeed; the eval script itself is
-          # Node-only with no Gemini dependency. If the secret is not
-          # configured, the live endpoint returns 503 on ingest/ask and
-          # the eval exits non-zero, which is the correct signal.
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # E2E_BASE_URL points at the live Knowlex deploy by default;
+          # workflow_dispatch can override via inputs.base_url. The
+          # eval script makes HTTP calls only — no Gemini SDK usage
+          # inside this job, so no GEMINI_API_KEY forwarding required.
           E2E_BASE_URL: ${{ inputs.base_url || 'https://craftstack-knowledge.vercel.app' }}
         run: pnpm --filter knowledge eval
 
