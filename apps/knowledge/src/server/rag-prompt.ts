@@ -6,7 +6,7 @@ passages below. If the passages don't contain the answer, say so plainly —
 don't guess, don't fall back on outside knowledge.
 
 When you cite, use bracketed numbers that refer to the passage index:
-  "Boardly has 160 Vitest cases [1]."
+  "Boardly uses LexoRank for O(1) card reorders [1]."
 
 Be concise. Prefer 1–4 short paragraphs. Quote short phrases in
 "double quotes" rather than pasting whole passages.`.trim();

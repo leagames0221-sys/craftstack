@@ -7,6 +7,8 @@ updated: 2026-04-22
 originSessionId: Session248
 ---
 
+> ⚠️ **Pre-implementation design bible — historical.** The files under `docs/design/` capture the design-phase target for the portfolio at the time each was written. Numbers (test counts, ADR counts, model counts) inside these documents reflect design-time plans rather than current shipped state. The authoritative state of the repo lives in the main [README](../../README.md), the [CHANGELOG](../../CHANGELOG.md), the numbered files under [`docs/adr/`](../adr/), and the live URLs. Use the design docs for rationale and architecture intent; use the README + CHANGELOG for "what the portfolio looks like today."
+
 # 🛡️ 独立 PJ 宣言(最優先)
 
 **本プロジェクトは UE5 ゲーム開発(ZenithNexus = ZN)とは完全に別物**。

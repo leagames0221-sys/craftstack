@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown";
 const SAMPLE_CONTEXT = `craftstack is a production-grade monorepo containing two apps:
 Boardly, a realtime-collaborative kanban with multi-tenant workspaces,
 and Knowlex, a single-tenant RAG demo (workspace tenancy is deferred
-per ADR-0039 and is the next arc). Boardly has 31 routes, 137 Vitest
+per ADR-0039 and is the next arc). Boardly has 41 routes, 166 Vitest
 cases, a nonce-based Content-Security-Policy that scored A+ on
 securityheaders.com, and a command palette bound to Cmd-K. It uses
 PostgreSQL via Prisma, Auth.js v5 with JWT sessions, and Pusher

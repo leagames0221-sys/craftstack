@@ -17,10 +17,10 @@ The cost of that call, six sessions later, is a **claim-reality drift on the
 portfolio surface**. README sub-header and `docs/hiring/portfolio-lp.md` both
 advertised Knowlex as a "multi-tenant AI knowledge SaaS" because the
 design-phase ADRs 0011–0015 envisaged it that way. A cold hiring-manager
-review ([Session 255 / run #2](../../memory/craftstack/37_hiring_sim_run_2_2026-04-24.md))
-pushed on exactly that gap: reviewer Q2 asked why measured eval numbers were
-absent, and a distinct weak signal called out the "Multi-tenant" claim
-against the tenantless reality.
+review (session-internal; the calibration artefact lives in the session
+notes, not in the public repo) pushed on exactly that gap: one probe
+asked why measured eval numbers were absent, and a distinct weak signal
+called out the "Multi-tenant" claim against the tenantless reality.
 
 Short-term, v0.4.2 softened the claim text (README tagline edit, `SAMPLE_CONTEXT`
 rewrite, "design-phase aspirational" banner on hiring docs). Long-term, the

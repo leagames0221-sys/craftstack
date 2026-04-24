@@ -33,7 +33,7 @@ Target state (per design-phase ADRs 0011–0015, not yet shipped):
 
 ## What this portfolio demonstrates
 
-**Full-stack delivery from scratch.** Schema, API, realtime, UI, CI, observability — no starter template was cloned. Every subsystem is justified in [22 ADRs](../adr/).
+**Full-stack delivery from scratch.** Schema, API, realtime, UI, CI, observability — no starter template was cloned. Every subsystem is justified in [48 ADRs](../adr/).
 
 **Production discipline.** Security headers, [STRIDE threat model](../security/threat-model.md), [incident runbook](../ops/runbook.md), [rate limits](../api/rate-limits.md), [data-retention policy](../compliance/data-retention.md). RAG quality regressions are caught by an [Eval CI gate](../adr/0015-eval-in-ci.md).
 
