@@ -17,15 +17,18 @@ jobs:
   sbom:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
+      # Don't pin a pnpm version here — package.json's `packageManager`
+      # field is the single source of truth. pnpm/action-setup@v6 errors
+      # out ("Multiple versions of pnpm specified") when both are set,
+      # which is how a previous v0.4.x sbom run silently failed. Keep
+      # this block minimal so the lockfile stays authoritative.
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
           cache: pnpm
 
       - name: Install dependencies
@@ -35,14 +38,11 @@ jobs:
         run: pnpm dlx @cyclonedx/cdxgen@11 --help >/dev/null 2>&1 || true
 
       - name: Generate SBOM (collab)
-        run: |
-          pnpm dlx @cyclonedx/cdxgen@11 -o sbom-collab.cdx.json --spec-version 1.5 -t pnpm apps/collab
+        run: pnpm dlx @cyclonedx/cdxgen@11 -o sbom-collab.cdx.json --spec-version 1.5 -t pnpm apps/collab
       - name: Generate SBOM (knowledge)
-        run: |
-          pnpm dlx @cyclonedx/cdxgen@11 -o sbom-knowledge.cdx.json --spec-version 1.5 -t pnpm apps/knowledge
+        run: pnpm dlx @cyclonedx/cdxgen@11 -o sbom-knowledge.cdx.json --spec-version 1.5 -t pnpm apps/knowledge
       - name: Generate SBOM (root)
-        run: |
-          pnpm dlx @cyclonedx/cdxgen@11 -o sbom-root.cdx.json --spec-version 1.5 -t pnpm .
+        run: pnpm dlx @cyclonedx/cdxgen@11 -o sbom-root.cdx.json --spec-version 1.5 -t pnpm .
 
       - name: Upload SBOMs as workflow artifacts
         uses: actions/upload-artifact@v4
@@ -51,9 +51,25 @@ jobs:
           path: sbom-*.cdx.json
           retention-days: 90
 
+      # On a tag push, ensure the release exists (create it if not) and
+      # then attach the three SBOMs. `gh release create` is idempotent
+      # enough here: we use `|| true` on create so an already-existing
+      # release doesn't fail the job, and `--clobber` on upload so a
+      # re-run overwrites stale artefacts. This fixes the previous
+      # behaviour where the tag fired but no release had been created,
+      # making `gh release upload` fail with a 404.
       - name: Attach SBOMs to the release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "${GITHUB_REF_NAME}" sbom-collab.cdx.json sbom-knowledge.cdx.json sbom-root.cdx.json --clobber
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag \
+            || echo "release ${GITHUB_REF_NAME} already exists, skipping create"
+          gh release upload "${GITHUB_REF_NAME}" \
+            sbom-collab.cdx.json \
+            sbom-knowledge.cdx.json \
+            sbom-root.cdx.json \
+            --clobber
