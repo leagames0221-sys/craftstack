@@ -52,6 +52,16 @@ export type RetryOptions = {
    * CI log without parsing the URL.
    */
   label?: string;
+  /**
+   * Cap on the wait time honoured from a 429 `Retry-After` header.
+   * Knowlex's per-IP limiter (kb-rate-limit.ts: 10 req / 60 s sliding
+   * window) returns `Retry-After` values up to ~60 seconds. This cap
+   * protects against pathological values (Vercel routing, CDN cache,
+   * future limiter changes) that could push the workflow past
+   * `timeout-minutes: 15`. Default 90 s — generous enough for a full
+   * window roll, tight enough to leave headroom in the 15-min budget.
+   */
+  maxRetryAfterMs?: number;
 };
 
 const TRANSIENT_HTTP_STATUSES = new Set([500, 502, 503, 504]);
@@ -70,8 +80,13 @@ const TRANSIENT_BODY_MARKERS = [
  * decide whether the failure is the retry-eligible class. Body-marker
  * detection lets us catch the Prisma-cold-start signature even when
  * the wrapped status is an opaque 500.
+ *
+ * 429 is a special case — see `parseRetryAfterMs`. The retryable check
+ * returns `true` for 429 here (so the loop enters the retry path), and
+ * the caller separately reads `Retry-After` to choose the wait time.
  */
 async function isRetryableResponse(res: Response): Promise<boolean> {
+  if (res.status === 429) return true;
   if (TRANSIENT_HTTP_STATUSES.has(res.status)) return true;
   // Cheap clone + read so the caller can still consume the body of the
   // last (returned) attempt. clone() is safe because Response is
@@ -85,6 +100,30 @@ async function isRetryableResponse(res: Response): Promise<boolean> {
     }
   }
   return false;
+}
+
+/**
+ * Parse the `Retry-After` header. RFC 7231 § 7.1.3 allows either an
+ * HTTP-date or a delta-seconds non-negative integer. Knowlex's
+ * limiter returns delta-seconds (kb-rate-limit.ts emits
+ * `Math.ceil((existing.resetAt - now) / 1000)`), so the integer path
+ * is the realistic one. Returns null if the header is absent or
+ * unparseable so the caller can fall back to the default backoff
+ * schedule.
+ */
+function parseRetryAfterMs(res: Response): number | null {
+  const raw = res.headers.get("retry-after");
+  if (!raw) return null;
+  const seconds = Number.parseInt(raw, 10);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return seconds * 1000;
+  }
+  // HTTP-date path: parse and return the delta from now.
+  const dateMs = Date.parse(raw);
+  if (!Number.isNaN(dateMs)) {
+    return Math.max(0, dateMs - Date.now());
+  }
+  return null;
 }
 
 /**
@@ -104,6 +143,7 @@ export async function retryFetch(
 ): Promise<Response> {
   const attempts = options.attempts ?? 3;
   const backoffMs = options.backoffMs ?? [2000, 4000];
+  const maxRetryAfterMs = options.maxRetryAfterMs ?? 90_000;
   const sleep =
     options.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
   const log = options.log ?? ((m: string) => console.warn(m));
@@ -124,10 +164,31 @@ export async function retryFetch(
       }
 
       lastRes = res;
-      const wait = backoffMs[i] ?? backoffMs[backoffMs.length - 1];
+
+      // 429 path: honour the server's `Retry-After` header when present
+      // (Knowlex's per-IP limiter sets it to the seconds-until-window-
+      // resets value). Cap at `maxRetryAfterMs` so a pathological header
+      // value can't push the run past `timeout-minutes: 15`. When
+      // `Retry-After` is absent or unparseable, fall back to the default
+      // backoff schedule so the limiter gets at least some breathing room.
+      let wait: number;
+      let reason: string;
+      if (res.status === 429) {
+        const headerMs = parseRetryAfterMs(res);
+        if (headerMs !== null) {
+          wait = Math.min(headerMs, maxRetryAfterMs);
+          reason = "rate-limit, honouring Retry-After header";
+        } else {
+          wait = backoffMs[i] ?? backoffMs[backoffMs.length - 1];
+          reason = "rate-limit, no Retry-After header — using default backoff";
+        }
+      } else {
+        wait = backoffMs[i] ?? backoffMs[backoffMs.length - 1];
+        reason = "Neon cold-start suspected";
+      }
       log(
         `[retryFetch]${label} attempt ${i + 1}/${attempts} got ${res.status}; ` +
-          `retrying in ${wait}ms (Neon cold-start suspected)`,
+          `retrying in ${wait}ms (${reason})`,
       );
       await sleep(wait);
     } catch (err) {

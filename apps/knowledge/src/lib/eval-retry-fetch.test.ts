@@ -137,6 +137,105 @@ describe("retryFetch", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
 
+  it("retries on 429 honouring the Retry-After header (delta-seconds form)", async () => {
+    // Knowlex's per-IP limiter (kb-rate-limit.ts) emits Retry-After
+    // as integer seconds — the realistic shape for ADR-0049.
+    const fetchImpl = vi
+      .fn<FetchLike>()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            code: "RATE_LIMIT_EXCEEDED",
+            message: "Too many questions from this address.",
+          }),
+          {
+            status: 429,
+            headers: {
+              "content-type": "application/json",
+              "retry-after": "12",
+            },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true }));
+
+    const sleeps: number[] = [];
+    const log = vi.fn();
+    const res = await retryFetch(fetchImpl, "http://x", undefined, {
+      attempts: 3,
+      backoffMs: [1, 1],
+      sleep: (ms) => {
+        sleeps.push(ms);
+        return Promise.resolve();
+      },
+      log,
+    });
+
+    expect(res.status).toBe(200);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    // The wait should be the header value (12 s = 12000 ms), not the
+    // default `backoffMs[0]` of 1.
+    expect(sleeps).toEqual([12_000]);
+    const breadcrumb = log.mock.calls[0][0] as string;
+    expect(breadcrumb).toContain("429");
+    expect(breadcrumb).toContain("12000ms");
+    expect(breadcrumb).toContain("Retry-After header");
+  });
+
+  it("caps an excessive Retry-After at maxRetryAfterMs", async () => {
+    // A pathological 600-second Retry-After header (e.g. CDN
+    // misroute) should be capped — the workflow's `timeout-minutes:
+    // 15` means we can't afford 10-minute single-call waits.
+    const fetchImpl = vi
+      .fn<FetchLike>()
+      .mockResolvedValueOnce(
+        new Response("ratelimited", {
+          status: 429,
+          headers: { "retry-after": "600" },
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true }));
+
+    const sleeps: number[] = [];
+    const res = await retryFetch(fetchImpl, "http://x", undefined, {
+      attempts: 3,
+      backoffMs: [1, 1],
+      maxRetryAfterMs: 90_000,
+      sleep: (ms) => {
+        sleeps.push(ms);
+        return Promise.resolve();
+      },
+      log: silentLog,
+    });
+
+    expect(res.status).toBe(200);
+    expect(sleeps).toEqual([90_000]);
+  });
+
+  it("falls back to default backoff when 429 has no Retry-After header", async () => {
+    const fetchImpl = vi
+      .fn<FetchLike>()
+      .mockResolvedValueOnce(new Response("ratelimited", { status: 429 }))
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true }));
+
+    const sleeps: number[] = [];
+    const log = vi.fn();
+    const res = await retryFetch(fetchImpl, "http://x", undefined, {
+      attempts: 3,
+      backoffMs: [333, 666],
+      sleep: (ms) => {
+        sleeps.push(ms);
+        return Promise.resolve();
+      },
+      log,
+    });
+
+    expect(res.status).toBe(200);
+    expect(sleeps).toEqual([333]);
+    const breadcrumb = log.mock.calls[0][0] as string;
+    expect(breadcrumb).toContain("no Retry-After header");
+  });
+
   it("emits a log breadcrumb for each retry, including the label and status", async () => {
     const fetchImpl = vi
       .fn<FetchLike>()
