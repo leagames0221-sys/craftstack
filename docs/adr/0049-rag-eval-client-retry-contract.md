@@ -256,6 +256,105 @@ This 4th arc closes the eval-reliability story for the v0.5.1 ship:
 Run 5 (the post-fix verification dispatch) is the next test of the
 combined regime.
 
+### 5th arc — Gemini RECITATION mitigation (added 2026-04-25 — fifth arc same day)
+
+After ADR-0050's title-based UPSERT shipped, run 5 (post-cleanup, clean
+10-doc corpus, all earlier failure modes addressed) failed exactly the
+same way as run 4: 30 questions completed, latency healthy, but **only
+1/30 passed** with empty bodies. `/api/kb/stats` confirmed clean state:
+`documents: 10, chunks: 20, embeddings: 20`. Direct curl reproduced
+the empty-body symptom against the clean corpus, so the duplicate-
+corpus root-cause hypothesis from ADR-0050 was disproven as the sole
+cause.
+
+A web-research pass surfaced the actual mechanism: **Gemini Flash's
+RECITATION finishReason** — a documented filter that fires
+_independently of the safety filter_ when the model would generate text
+that resembles training data, including text the user themselves
+submitted as context. Unlike a 429 quota response, the API returns
+HTTP 200 with empty content and `finishReason: "RECITATION"`. The
+failure is probabilistic, with reports across the Google AI Forum,
+Vercel AI SDK issues, and LiveKit Agents of 30–50% first-turn empty-
+response rates on Gemini 2.0 / 2.5 Flash for RAG workloads.
+
+Most-cited mitigations (ranked by reported effectiveness):
+
+1. **Higher temperature** (0 / 0.2 → 0.7) — most effective single
+   change.
+2. **Explicit safety settings** with all categories `BLOCK_NONE` —
+   independent of RECITATION but eliminates the adjacent silent-
+   drop-out path.
+3. **Retry on RECITATION** — same prompt often passes on the second
+   attempt (probabilistic), but requires structural rewrite of the
+   `streamText` flow.
+4. **Streaming responses** — already used; non-streaming was
+   reportedly more aggressive.
+
+Knowlex shipped at `temperature: 0.2` with no explicit
+safetySettings (relying on the SDK's defaults). Both deviate from the
+mitigation guidance.
+
+**Decision** — apply mitigations (1) and (2) immediately;
+defer (3) until observed mitigation rate determines whether retry is
+load-bearing.
+
+`apps/knowledge/src/app/api/kb/ask/route.ts`:
+
+- Bumped `temperature` 0.2 → 0.7. The cited workaround. Output
+  becomes slightly less deterministic but the RAG faithfulness check
+  (substring-AND scoring against the citation document) remains the
+  authority — variance in phrasing is exactly the v0.6.0
+  improvement-headroom item we're tracking under § Measured baseline.
+- Added explicit `providerOptions.google.safetySettings` with
+  `BLOCK_NONE` on the four standard categories
+  (HARASSMENT / HATE_SPEECH / SEXUALLY_EXPLICIT / DANGEROUS_CONTENT).
+  Knowlex's corpus is technical documentation; safety filter trips
+  here are false positives. RECITATION is a separate filter and not
+  bypassed by these settings — the goal is to remove a known
+  adjacent failure mode, not to claim RECITATION is solved.
+- Added `onFinish` callback that invokes `captureError` when text
+  length is 0, with a message naming the finishReason. The breadcrumb
+  surfaces in the `/api/observability/captures` ring buffer (and
+  Sentry when DSN is set), so the next nightly run that fails empty-
+  body is greppable from the live deploy without server-log access.
+
+**Trade-offs admitted**
+
+- **Temperature 0.7 may slightly lower exact-substring pass rate.**
+  The substring-AND scoring is already known to be paraphrase-
+  sensitive (§ Measured baseline). If pass rate drops below the
+  current 19/30 floor, the next ADR moves the eval to LLM-as-judge
+  scoring rather than tuning temperature back down.
+- **`BLOCK_NONE` is an explicit decision, not a default.** Knowlex
+  is a single-tenant technical-docs RAG demo, not a consumer chat
+  product. The risk of bypassing safety filters in this scope is
+  bounded; the same setting on a public chatbot would be wrong.
+- **No server-side retry yet.** `streamText`'s response is already
+  flowing to the client by the time `onFinish` fires, so retry would
+  require buffering the full response server-side and replaying it
+  on RECITATION. Adds latency and tokens. Deferred until run 6+
+  data shows whether the temperature bump alone is enough.
+- **Run 6 is the verification.** If pass rate returns to ~63%
+  (run 3 baseline) or higher, the temperature bump is doing the work
+  and v0.5.1 README badge can ship Monday with measured numbers. If
+  it stays at ~3%, retry becomes the next ADR.
+
+**Web-research sources** (cited in ADR not the ratchet log because
+they're load-bearing for the diagnosis, not just colour):
+
+- Google AI Forum — "No response due to RECITATION finishReason"
+  (3957) — official acknowledgement that retry + temperature are
+  the workarounds.
+- Google AI Forum — "FinishReason::RECITATION issue with my own
+  content via API" (69104) — RECITATION fires on user's own content,
+  no documented bypass.
+- Vercel AI SDK issue 8186 — empty stream from `gemini-2.5-flash`
+  with `streamText`.
+- LiveKit Agents issue 4706 — 50% first-turn empty rate on Gemini
+  2.5 Flash with ~10k token context.
+- fusionchat blog — concrete mitigation tactics (temperature,
+  safety, retry, prompt refactoring, streaming) consolidated.
+
 ### Measurement contract
 
 The eval's `latencyMs` for `/api/kb/ask` is wall-clock from request

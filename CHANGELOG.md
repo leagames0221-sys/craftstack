@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed — Gemini RECITATION mitigation in /api/kb/ask (ADR-0049 § 5th arc)
+
+Run 5 (post-ADR-0050 cleanup, clean 10-doc corpus, all prior failure modes addressed) failed identically to run 4: 1/30 pass with empty bodies. `/api/kb/stats` confirmed `documents: 10, chunks: 20` — the duplicate-corpus root-cause from ADR-0050 was disproven as sole cause. A web-research pass identified the actual mechanism: **Gemini Flash's `finishReason: "RECITATION"` filter** — a documented quirk that returns HTTP 200 with empty stream when the model would generate text resembling training data, including the user's own RAG context. 30–50% first-turn empty-rate is reported on Gemini 2.0 / 2.5 Flash across the Google AI Forum, Vercel AI SDK issues, and LiveKit Agents.
+
+Applied the two highest-cited mitigations:
+
+- **`apps/knowledge/src/app/api/kb/ask/route.ts`** — `temperature: 0.2 → 0.7` (the most-cited single change), explicit `providerOptions.google.safetySettings` with `BLOCK_NONE` on HARASSMENT / HATE_SPEECH / SEXUALLY_EXPLICIT / DANGEROUS_CONTENT (independent of RECITATION but eliminates the adjacent safety drop-out path), and an `onFinish` callback that calls `captureError` with the finishReason when text length is 0 — so the next failure surfaces in the `/api/observability/captures` ring buffer (and Sentry when DSN is set) without needing server-log access.
+- **ADR-0049 § 5th arc** — full web-research summary, decision rationale (apply temperature + safety now, defer server-side retry until run 6+ tells us whether it's needed), explicit trade-offs (variance in exact-substring scoring, `BLOCK_NONE` scope, no server-side retry yet), and the five sources backing the diagnosis.
+
+Run 6 (the next nightly cron at 04:00 UTC 2026-04-26) is the verification. If pass rate returns to the run-3 baseline of 19/30 (63%) or higher, the temperature bump is doing the work and v0.5.1 README badge ships Monday with honest measured numbers. If it stays at 3%, retry becomes the next ADR.
+
 ## [0.4.6] — 2026-04-25
 
 This release is the consolidated post-`v0.4.5` arc — six PRs merged to `main` between 2026-04-25 morning and afternoon, all under one tag because they form a single coherent storyline: the eval-reliability four-arc (cold-start retry → 429 pacing → threshold alignment → corpus dedup), the cosmetic stale-count audit, and the BoardClient UI wiring that closes ADR-0048's contract end-to-end.
