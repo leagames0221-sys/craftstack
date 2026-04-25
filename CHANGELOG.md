@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.6] — 2026-04-25
+
+This release is the consolidated post-`v0.4.5` arc — six PRs merged to `main` between 2026-04-25 morning and afternoon, all under one tag because they form a single coherent storyline: the eval-reliability four-arc (cold-start retry → 429 pacing → threshold alignment → corpus dedup), the cosmetic stale-count audit, and the BoardClient UI wiring that closes ADR-0048's contract end-to-end.
+
 ### Added — BoardClient UI wiring of ADR-0048 undo/redo staleness contract
 
 The pure-function primitives `markStale` + `removeByCardId` (shipped in v0.4.4) are now wired into Boardly's `<BoardClient>` Pusher subscription so the undo/redo contract from ADR-0048 § Rule 2 is observable end-to-end:
