@@ -40,10 +40,13 @@ import {
 } from "./dnd-helpers";
 import {
   emptyHistory,
+  markStale,
   popRedo,
   popUndo,
   pushMove,
+  removeByCardId,
   type MoveEndpoint,
+  type MoveEntry,
   type MoveHistory,
 } from "./move-history";
 
@@ -82,23 +85,57 @@ export function BoardClient({
   // by another client we ask Next.js to re-fetch server state. Our own
   // writes also echo back — they're idempotent so it's fine. Falls back to
   // a no-op when Pusher env vars aren't configured.
+  //
+  // ADR-0048 Rule 1: card.moved / card.deleted broadcasts mark the local
+  // undo/redo stack stale before the local view updates, so Ctrl-Z
+  // hitting an entry whose card was concurrently moved or deleted lands
+  // on a scoped toast instead of replaying against an inconsistent
+  // server state. card.updated (title/labels/assignees) is the narrow
+  // exception per Rule 3 — undo is move-scoped.
   useEffect(() => {
     const client = getPusherClient();
     if (!client) return;
     const channel = client.subscribe(`board-${boardId}`);
-    const handler = () => {
+    const refreshIfIdle = () => {
       if (!activeCardIdRef.current) router.refresh();
     };
+    const onCardMoved = (data: { cardId?: string } | undefined) => {
+      if (data?.cardId) {
+        historyRef.current = markStale(
+          historyRef.current,
+          data.cardId,
+          "concurrent-move",
+        );
+      }
+      refreshIfIdle();
+    };
+    const onCardDeleted = (data: { cardId?: string } | undefined) => {
+      if (data?.cardId) {
+        const had =
+          historyRef.current.undo.some((e) => e.cardId === data.cardId) ||
+          historyRef.current.redo.some((e) => e.cardId === data.cardId);
+        historyRef.current = removeByCardId(historyRef.current, data.cardId);
+        if (had) {
+          setToast(
+            "A card you previously moved was deleted by another user. Its undo entry has been removed.",
+          );
+        }
+      }
+      refreshIfIdle();
+    };
+    // card.updated → no stale-marking per ADR-0048 Rule 3 narrow
+    // exception. Title / label / assignee edits don't invalidate a
+    // move-undo. Just refresh.
+    channel.bind("card.moved", onCardMoved);
+    channel.bind("card.deleted", onCardDeleted);
     for (const evt of [
       "card.created",
       "card.updated",
-      "card.moved",
-      "card.deleted",
       "list.created",
       "list.updated",
       "list.deleted",
     ]) {
-      channel.bind(evt, handler);
+      channel.bind(evt, refreshIfIdle);
     }
     return () => {
       channel.unbind_all();
@@ -395,26 +432,80 @@ export function BoardClient({
     [lists, submitMove],
   );
 
+  // ADR-0048 Rule 2: pop until a non-stale entry surfaces. Stale
+  // entries are dropped silently with a single skip-count; a concrete
+  // toast distinguishes "skipped because another user moved this
+  // card" from "stack empty / all stale". No server round-trip on
+  // stale entries — replay would just hit a 409 and fall back to the
+  // generic toast.
   const undoMove = useCallback(async () => {
-    const r = popUndo(historyRef.current);
-    if (!r) {
-      setToast("Nothing to undo");
+    let history = historyRef.current;
+    let entry: MoveEntry | null = null;
+    let skipped = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const r = popUndo(history);
+      if (!r) {
+        break;
+      }
+      history = r.next;
+      if (!r.entry.stale) {
+        entry = r.entry;
+        break;
+      }
+      skipped += 1;
+    }
+    historyRef.current = history;
+    if (!entry) {
+      setToast(
+        skipped > 0
+          ? "No un-modified moves to undo (concurrent edits invalidated the rest)."
+          : "Nothing to undo",
+      );
       return;
     }
-    historyRef.current = r.next;
-    const ok = await replayMove(r.entry.cardId, r.entry.from);
-    if (ok) setToast("Move undone (⌘/Ctrl-Shift-Z to redo)");
+    if (skipped > 0) {
+      setToast(
+        `Skipped ${skipped} undo ${skipped === 1 ? "entry" : "entries"} modified by another user; replaying the next available move.`,
+      );
+    }
+    const ok = await replayMove(entry.cardId, entry.from);
+    if (ok && skipped === 0) setToast("Move undone (⌘/Ctrl-Shift-Z to redo)");
   }, [replayMove]);
 
   const redoMove = useCallback(async () => {
-    const r = popRedo(historyRef.current);
-    if (!r) {
-      setToast("Nothing to redo");
+    let history = historyRef.current;
+    let entry: MoveEntry | null = null;
+    let skipped = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const r = popRedo(history);
+      if (!r) {
+        break;
+      }
+      history = r.next;
+      if (!r.entry.stale) {
+        entry = r.entry;
+        break;
+      }
+      skipped += 1;
+    }
+    historyRef.current = history;
+    if (!entry) {
+      setToast(
+        skipped > 0
+          ? "No un-modified moves to redo (concurrent edits invalidated the rest)."
+          : "Nothing to redo",
+      );
       return;
     }
-    historyRef.current = r.next;
-    const ok = await replayMove(r.entry.cardId, r.entry.to);
-    if (ok) setToast("Move redone");
+    if (skipped > 0) {
+      setToast(
+        `Skipped ${skipped} redo ${skipped === 1 ? "entry" : "entries"} modified by another user; replaying the next available move.`,
+      );
+    }
+    const ok = await replayMove(entry.cardId, entry.to);
+    if (ok && skipped === 0) setToast("Move redone");
   }, [replayMove]);
 
   useEffect(() => {

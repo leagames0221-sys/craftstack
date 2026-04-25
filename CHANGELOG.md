@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added — BoardClient UI wiring of ADR-0048 undo/redo staleness contract
+
+The pure-function primitives `markStale` + `removeByCardId` (shipped in v0.4.4) are now wired into Boardly's `<BoardClient>` Pusher subscription so the undo/redo contract from ADR-0048 § Rule 2 is observable end-to-end:
+
+- **`apps/collab/src/app/w/[slug]/b/[boardId]/BoardClient.tsx`** — the single `handler = () => router.refresh()` that previously bound to all 7 board events is split per event:
+  - `card.moved` broadcast → `historyRef.current = markStale(history, cardId, "concurrent-move")` runs **before** `router.refresh()`, so a Ctrl-Z fired between broadcast arrival and local view rewrite cannot race against the stale entry.
+  - `card.deleted` broadcast → `removeByCardId(history, cardId)` strips the entry entirely (deletion has no replay target). If the local stack contained any entries for the deleted card, a scoped toast surfaces: _"A card you previously moved was deleted by another user. Its undo entry has been removed."_
+  - `card.updated` broadcast (title / labels / assignees) → no stack change per ADR-0048 Rule 3 narrow exception. Undo is move-scoped.
+  - `card.created` and the three list events route through the existing refresh path unchanged.
+- **`undoMove` / `redoMove`** now skip stale entries until a non-stale entry surfaces, with toast feedback distinguishing the four cases:
+  - non-stale entry replayed cleanly → _"Move undone (⌘/Ctrl-Shift-Z to redo)"_
+  - some stale entries skipped, a non-stale entry replayed → _"Skipped N undo entries modified by another user; replaying the next available move."_
+  - stack drained to empty after skipping stale entries → _"No un-modified moves to undo (concurrent edits invalidated the rest)."_
+  - stack was empty to begin with → _"Nothing to undo"_
+- No server round-trip is fired on stale entries — the staleness signal is already authoritative client-side, and the server's optimistic-lock 409 path remains the safety net for any case where the broadcast was missed (network blip, tab throttled).
+
+The four ADR-0048 trade-offs from the original ADR continue to hold: stale entries stay visible in the stack rather than auto-evicting (silent eviction makes undo non-deterministic), deletion entries do drop after the toast (no permanent tombstones), single-browser assumption preserved (cross-tab sync would reintroduce the server-operation-log complexity ADR-0036 rejected), and `card.updated` keeps its asymmetry with `card.moved`.
+
+`pnpm --filter collab typecheck` passes. `pnpm --filter collab test --run` 166/166 (move-history suite still 12/12 with no regression). `pnpm check:free-tier` passes.
+
 ### Fixed — Knowlex ingest title-based UPSERT (ADR-0050) + corpus cleanup script
 
 After threshold alignment (PR #21), a fourth manual eval dispatch failed structurally — pass rate collapsed from run 3's 19/30 (63%) to **1/30 (3.3%)**. Direct curl observation: `/api/kb/ask` returned HTTP 200 with citation header populated but **`Content-Length: 0` (empty body, even with `curl -N`)**. `/api/kb/stats` showed `documents: 32, chunks: 63` — 3-4 copies of each golden-set document accumulated across runs 1-4 because `POST /api/kb/ingest` was non-deduplicating per the original ADR-0039 stance.
