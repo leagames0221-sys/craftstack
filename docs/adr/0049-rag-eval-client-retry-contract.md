@@ -92,6 +92,69 @@ expected steady-state ceiling — cold-start hits the first request
 heavily and tapers off as Neon stays warm. If the breadcrumb count
 ever exceeds ~5 per run, that's a regression worth investigating.
 
+### Rate-limit-aware contract (added 2026-04-25 same day)
+
+The first manual eval run after the cold-start fix exposed a second
+failure mode: from a single GitHub Actions runner IP, sequencing 10
+ingest calls then 30 ask calls trips Knowlex's per-IP limiter
+(`apps/knowledge/src/lib/kb-rate-limit.ts`: 10 requests / 60 s
+sliding window) at roughly call 11–12. The 429 fallout cascades
+through every remaining question with `RATE_LIMIT_EXCEEDED`. This
+isn't a Knowlex bug — it's the cost-attack defence (ADR-0046
+C-01..C-06) doing its job, and the eval client is the offender from
+the limiter's point of view.
+
+Fixed with two complementary mechanisms — pacing first, retry
+second — so any breach has both prevention and recovery.
+
+**Pacing** (`apps/knowledge/scripts/eval.ts`):
+
+- `INTER_CALL_DELAY_MS = 7000` between consecutive eval HTTP calls.
+  60 / 7 ≈ 8.57 req/min steady-state — well inside the 10/min cap
+  with margin for shoulder load (Live smoke cron, simultaneous
+  manual dispatch). Spans both phases: 9 inter-ingest sleeps +
+  29 inter-ask sleeps.
+- One **bridge sleep** between the ingest phase and the ask phase
+  so the rate-limit window has time to roll between them. Without
+  it, the first ask immediately follows the last ingest as call
+  N+1 in the same window.
+
+**Retry on 429** (`apps/knowledge/src/lib/eval-retry-fetch.ts`):
+
+- 429 added to the retry-eligible status list (alongside 500/502/
+  503/504).
+- New `parseRetryAfterMs(res)` reads the `Retry-After` header
+  (delta-seconds integer form per RFC 7231 § 7.1.3 — what
+  `kb-rate-limit.ts` emits — plus HTTP-date fallback).
+- New `RetryOptions.maxRetryAfterMs` (default 90 s) caps the
+  honoured wait so a pathological header value can't push the run
+  past `timeout-minutes: 15`. 90 s is generous enough for a full
+  60 s window roll plus jitter.
+- Retry breadcrumb distinguishes the two reasons:
+  ```
+  [retryFetch] [ask "..."] attempt 1/3 got 429; retrying in 12000ms (rate-limit, honouring Retry-After header)
+  [retryFetch] [ingest "..."] attempt 1/3 got 500; retrying in 2000ms (Neon cold-start suspected)
+  ```
+
+The pacing should keep 429 off the happy path entirely. The retry
+is the safety net for clock drift, simultaneous Live smoke load, or
+a future limiter policy tightening — and it surfaces the breach in
+the breadcrumb log rather than silently dropping a question.
+
+**Worst-case timing** with full pacing across the 30Q × 10-doc
+v3 golden set:
+
+| Phase       | Calls | Inter-call sleeps | Floor time            |
+| ----------- | ----- | ----------------- | --------------------- |
+| Ingest      | 10    | 9 × 7 s = 63 s    | ~63 s + call latency  |
+| Bridge      | —     | 1 × 7 s = 7 s     | 7 s                   |
+| Ask         | 30    | 29 × 7 s = 203 s  | ~203 s + call latency |
+| Floor total | —     | —                 | **~273 s = 4.55 min** |
+
+With ~2 s avg call latency on top, real-world is ~6–8 min — still
+inside `timeout-minutes: 15` with comfortable headroom for one
+cold-start retry early in the run.
+
 ### Measurement contract
 
 The eval's `latencyMs` for `/api/kb/ask` is wall-clock from request

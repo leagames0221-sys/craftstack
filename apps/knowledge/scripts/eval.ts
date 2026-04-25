@@ -76,6 +76,23 @@ type Outcome = {
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:3001";
 
+/**
+ * Spacing between consecutive eval HTTP calls. Knowlex's per-IP
+ * limiter (apps/knowledge/src/lib/kb-rate-limit.ts) is 10 requests
+ * per 60-second sliding window. From a single GitHub Actions runner
+ * IP, 30 questions + 10 ingests = 40 sequential calls would blow
+ * through that limit in under a minute without pacing. 7 seconds
+ * between calls gives 60 / 7 ≈ 8.57 req/min steady-state — well
+ * inside the 10/min cap with margin for shoulder load from Live
+ * smoke or another simultaneous run. ADR-0049 § Rate-limit-aware
+ * contract documents the regime; the retry layer in
+ * `eval-retry-fetch.ts` is the safety net if pacing alone isn't
+ * enough.
+ */
+const INTER_CALL_DELAY_MS = 7000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 const REFUSAL_MARKERS = [
   "do not contain",
   "does not contain",
@@ -106,7 +123,9 @@ function loadGolden(): GoldenSet {
 }
 
 async function ingestCorpus(corpus: CorpusEntry[]) {
-  for (const doc of corpus) {
+  for (let i = 0; i < corpus.length; i++) {
+    const doc = corpus[i];
+    if (i > 0) await sleep(INTER_CALL_DELAY_MS);
     const res = await retryFetch(
       fetch,
       `${BASE_URL}/api/kb/ingest`,
@@ -197,8 +216,20 @@ async function main() {
   console.log("[eval] seeding corpus...");
   await ingestCorpus(golden.corpus);
 
+  // Bridge sleep between ingest phase and ask phase. Without this, the
+  // first ask follows immediately after the last ingest and counts as
+  // call N+1 inside the same per-IP window. With it, the rate-limit
+  // window has time to roll between phases. ADR-0049 § Rate-limit-aware
+  // contract names this as the phase-boundary spacing.
+  console.log(
+    `[eval] bridging ${INTER_CALL_DELAY_MS}ms before ask phase to respect per-IP window...`,
+  );
+  await sleep(INTER_CALL_DELAY_MS);
+
   const outcomes: Outcome[] = [];
-  for (const q of golden.questions) {
+  for (let qi = 0; qi < golden.questions.length; qi++) {
+    const q = golden.questions[qi];
+    if (qi > 0) await sleep(INTER_CALL_DELAY_MS);
     try {
       const { answer, docs, latencyMs } = await ask(q.question);
       const reasons = scoreQuestion(q, answer, docs);

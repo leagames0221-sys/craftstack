@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed — RAG eval rate-limit-aware client (ADR-0049 § Rate-limit-aware contract)
+
+The first manual eval dispatch after the cold-start fix exposed a second failure mode: sequencing 10 ingest + 30 ask calls from a single GitHub Actions runner IP trips Knowlex's per-IP limiter (`kb-rate-limit.ts`: 10 req / 60 s sliding window) around call 11–12, cascading `RATE_LIMIT_EXCEEDED` through every remaining question. The cost-attack defence (ADR-0046 C-01..C-06) is doing its job — the eval client is the offender. Closed with two complementary mechanisms:
+
+- **Pacing in `apps/knowledge/scripts/eval.ts`** — `INTER_CALL_DELAY_MS = 7000` between consecutive eval HTTP calls (60 / 7 ≈ 8.57 req/min, well inside the 10/min cap), plus a bridge sleep between the ingest phase and the ask phase so the limiter window has time to roll between them. Floor time for the full 30 × 10 v3 golden set: ~273 s = 4.55 min, well inside `timeout-minutes: 15`.
+- **Retry on 429 in `apps/knowledge/src/lib/eval-retry-fetch.ts`** — 429 added to the retry-eligible status list. New `parseRetryAfterMs(res)` honours the `Retry-After` header (delta-seconds and HTTP-date forms per RFC 7231). New `maxRetryAfterMs` option caps honoured waits at 90 s by default to prevent a pathological header from blowing the workflow timeout. Breadcrumbs now distinguish "rate-limit, honouring Retry-After header" from "Neon cold-start suspected."
+- **Vitest +3 cases** — 429 with `Retry-After: 12s` honoured exactly, 429 with `Retry-After: 600s` capped at 90 s, 429 with no `Retry-After` falls back to default backoff. Total `eval-retry-fetch` suite 8 → 11 passing. Knowledge-app suite 37 → 40.
+- **ADR-0049 § Rate-limit-aware contract** — added section documenting the regime: pacing prevents the breach, retry handles the edge cases (clock drift, shoulder load from concurrent Live smoke, future limiter policy tightening), breadcrumbs surface either path in the operator-readable log.
+
 ### Fixed — RAG eval cron robustness against Neon Free cold-start (ADR-0049)
 
 The first scheduled nightly RAG eval (2026-04-25 05:52 UTC) crashed at the very first ingest call with a Prisma `Unable to start a transaction in the given time` 500. Live smoke kept passing on the 6-hourly cron through the same window — the live URLs themselves are healthy. The most plausible cause given the free-tier topology is Neon Free's compute autosuspend leaving the underlying Postgres in a cold-start state when the eval's first heavy request lands.
