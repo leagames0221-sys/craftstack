@@ -39,6 +39,8 @@ import { dirname, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
+import { retryFetch } from "../src/lib/eval-retry-fetch";
+
 type CorpusEntry = { title: string; content: string };
 type Question =
   | {
@@ -105,11 +107,16 @@ function loadGolden(): GoldenSet {
 
 async function ingestCorpus(corpus: CorpusEntry[]) {
   for (const doc of corpus) {
-    const res = await fetch(`${BASE_URL}/api/kb/ingest`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(doc),
-    });
+    const res = await retryFetch(
+      fetch,
+      `${BASE_URL}/api/kb/ingest`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(doc),
+      },
+      { label: `ingest "${doc.title}"` },
+    );
     if (!res.ok) {
       const text = await res.text().catch(() => "");
       throw new Error(
@@ -123,11 +130,22 @@ async function ask(
   question: string,
 ): Promise<{ answer: string; docs: string[]; latencyMs: number }> {
   const t0 = performance.now();
-  const res = await fetch(`${BASE_URL}/api/kb/ask`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ question }),
-  });
+  const res = await retryFetch(
+    fetch,
+    `${BASE_URL}/api/kb/ask`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ question }),
+    },
+    { label: `ask "${question.slice(0, 40)}..."` },
+  );
+  // Wall-clock from request start through final return — includes any
+  // retry+backoff time on cold-start paths. ADR-0049 § Measurement
+  // contract names this as the user-perceived-latency measurement
+  // (the operator's experience, not the per-attempt server time).
+  // Pure-attempt latency is recoverable from retry breadcrumbs in the
+  // CI log when needed.
   const latencyMs = performance.now() - t0;
   if (!res.ok) {
     const text = await res.text().catch(() => "");
