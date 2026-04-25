@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed — Knowlex ingest title-based UPSERT (ADR-0050) + corpus cleanup script
+
+After threshold alignment (PR #21), a fourth manual eval dispatch failed structurally — pass rate collapsed from run 3's 19/30 (63%) to **1/30 (3.3%)**. Direct curl observation: `/api/kb/ask` returned HTTP 200 with citation header populated but **`Content-Length: 0` (empty body, even with `curl -N`)**. `/api/kb/stats` showed `documents: 32, chunks: 63` — 3-4 copies of each golden-set document accumulated across runs 1-4 because `POST /api/kb/ingest` was non-deduplicating per the original ADR-0039 stance.
+
+Diagnosis: cosine kNN top-6 was returning 6 near-identical chunks from duplicate documents. Gemini 2.0 Flash, given 6 copies of the same passage as context, returned an empty stream — consistent with documented `finishReason: RECITATION` / `SAFETY` behaviour on heavy-repetition prompts. **Retrieval was healthy; generation silently dropped to zero.**
+
+Fixed structurally:
+
+- **`apps/knowledge/src/server/ingest.ts`** — `prisma.$transaction` now opens with `tx.document.deleteMany({ where: { title } })` before the create, so re-ingest of an existing title replaces rather than appends. Cascade is handled by the Prisma schema's existing `onDelete: Cascade` on `Chunk → Document` and `Embedding → Chunk`, so a single deleteMany cleans up all three tables atomically inside the transaction. Logs `[ingest] dedup: removed N prior Document(s) titled "..."` when dedup fires, so re-seed activity is visible in the Vercel function log.
+- **`apps/knowledge/scripts/cleanup-corpus.mjs`** + `pnpm --filter knowledge cleanup-corpus` — one-off post-deploy script. Lists every document via `GET /api/kb/documents` and deletes each via `DELETE /api/kb/documents?id=...`, with 7s pacing to honour the per-IP limiter. No `DATABASE_URL` needed — operates entirely through the public HTTP surface. `DRY_RUN=1` flag for inspection.
+- **ADR-0050 (Accepted)** — documents the title-based UPSERT regime, supersedes ADR-0039 § 5 on dedup semantics, names the trade-offs (mandatory embed re-cost on re-ingest, title as dedup key not content hash, transaction window grows by one cascading delete) and explicitly defers content-hash dedup, document versioning, and `(workspaceId, title)` composite key for ADR-0047's tenancy implementation.
+- **ADR-0049 § 4th arc** — full timeline of the four iterations same day (cold-start retry → 429 cascade → threshold alignment → duplicate-corpus starvation), the run-4 observation that motivated ADR-0050, and the four-arc structure that closes eval-reliability for the v0.5.1 ship.
+- **ADR-0039** — top-line Status updated to mark "Superseded on dedup semantics by ADR-0050 (2026-04-25)" so a reader scrolling ADR-0039 lands on the correction immediately.
+
+The eval mechanism, retrieval mechanism, threshold values, pacing, retry, and rate-limit-aware client are all already correct from PR #19/#20/#21. This PR fixes the corpus accumulation pattern that was silently breaking generation. Run 5 (post-deploy verification) is the next test of the combined regime.
+
 ### Fixed — RAG eval thresholds aligned to measured baseline (ADR-0049 § Measured baseline + improvement headroom)
 
 After the cold-start retry (PR #19) and the rate-limit-aware pacing (PR #20) both shipped, a third manual eval dispatch completed the full 30-question run end to end with the eval mechanism behaving as designed: one cold-start retry on the first ingest (recovered), zero 429 cascades, all 30 questions scored. The third arc same day moves the conversation from "the eval mechanism is broken" to "the substantive measurement is in."
