@@ -200,6 +200,62 @@ Honest measured numbers beat aspirational targets. A reviewer who sees `pass 63%
 
 Each of these tightens the substring-AND scoring without breaking the existing semantics. Conservative estimate post-improvement: 80%+ pass rate against the same 30-question set.
 
+### 4th arc — duplicate-corpus retrieval starvation (added 2026-04-25)
+
+After the threshold alignment landed, a fourth manual eval dispatch
+**failed in a structurally different way**:
+
+- Pass rate: 1/30 = **3.3%** (down from run 3's 19/30 = 63%)
+- p95 latency: 8572 ms (within new 10 000 ms threshold — `latencyOk = true`)
+- Failures: every basic factual question that previously passed
+  (q002 "HNSW", q003 "LexoRank", q004 "optimistic locking", q006
+  "Pusher", q022 "SHA-256") now missed its expected substrings —
+  these aren't paraphrase questions, they're literal-fact recall.
+
+Direct curl against the live `/api/kb/ask` showed:
+
+- HTTP 200 OK
+- `X-Knowlex-Docs` populated with the correct citation document
+- `X-Knowlex-Hits: 6`
+- **`Content-Length: 0` — empty body, even with `curl -N`**
+
+`/api/kb/stats` showed `documents: 32, chunks: 63` — 3-4 copies of
+each golden-set doc accumulated across runs 1–4 because
+`POST /api/kb/ingest` was non-deduplicating per the original
+ADR-0039 stance.
+
+**Diagnosis**: cosine kNN top-6 was returning 6 near-identical chunks
+from duplicates of the same source document. Gemini 2.0 Flash, given
+6 copies of the same passage as context, returned an empty stream —
+consistent with documented `finishReason: RECITATION` / `SAFETY`
+behaviour on heavy-repetition prompts. Retrieval was healthy;
+generation silently dropped to zero.
+
+**Decision**: the "duplicates tolerated" stance from ADR-0039 § 5 is
+incompatible with the eval cron's idempotent-re-seed pattern.
+Replaced with title-based UPSERT semantics in
+[ADR-0050](0050-knowlex-ingest-deduplication.md) — ingest deletes any
+existing `Document` with the same title (cascading to its `Chunk`
+and `Embedding` rows via Prisma's `onDelete: Cascade`) before
+inserting the new one. The corpus stays at the golden-set 10 docs
+across any number of nightly re-seeds.
+
+A one-off `apps/knowledge/scripts/cleanup-corpus.mjs` clears the
+existing 32-doc accumulation by listing + paced-deleting (7s spacing
+honouring the per-IP limiter, same regime as eval.ts). Run once
+post-deploy, then the next nightly cron re-seeds into a clean
+10-doc state.
+
+This 4th arc closes the eval-reliability story for the v0.5.1 ship:
+
+- Arc 1 — cold-start retry (ADR-0049 § Retry contract)
+- Arc 2 — pacing + 429 handling (§ Rate-limit-aware contract)
+- Arc 3 — threshold alignment (§ Measured baseline)
+- **Arc 4 — corpus deduplication (ADR-0050, this session)**
+
+Run 5 (the post-fix verification dispatch) is the next test of the
+combined regime.
+
 ### Measurement contract
 
 The eval's `latencyMs` for `/api/kb/ask` is wall-clock from request

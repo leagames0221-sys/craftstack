@@ -1,6 +1,6 @@
 # ADR-0039: Knowlex MVP — ship vertical slice, defer tenancy
 
-- Status: Accepted (scopes down the design-phase schema recorded in earlier ADRs 0011–0015)
+- Status: Accepted (scopes down the design-phase schema recorded in earlier ADRs 0011–0015). **Superseded on dedup semantics by [ADR-0050](0050-knowlex-ingest-deduplication.md) (2026-04-25)** — the "duplicates tolerated" clause in § Decision § 5 is no longer accurate at v0.5.x. Ingest now performs title-based UPSERT after observed retrieval-quality collapse from corpus accumulation across eval re-seeds.
 - Date: 2026-04-23
 - Tags: knowlex, rag, scope, pgvector
 
