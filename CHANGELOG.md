@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.7] — 2026-04-25
+
 ### Fixed — Gemini RECITATION mitigation in /api/kb/ask (ADR-0049 § 5th arc)
 
 Run 5 (post-ADR-0050 cleanup, clean 10-doc corpus, all prior failure modes addressed) failed identically to run 4: 1/30 pass with empty bodies. `/api/kb/stats` confirmed `documents: 10, chunks: 20` — the duplicate-corpus root-cause from ADR-0050 was disproven as sole cause. A web-research pass identified the actual mechanism: **Gemini Flash's `finishReason: "RECITATION"` filter** — a documented quirk that returns HTTP 200 with empty stream when the model would generate text resembling training data, including the user's own RAG context. 30–50% first-turn empty-rate is reported on Gemini 2.0 / 2.5 Flash across the Google AI Forum, Vercel AI SDK issues, and LiveKit Agents.
