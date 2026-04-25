@@ -122,6 +122,23 @@ export async function POST(req: Request) {
   }
 
   const google = getGemini(apiKey);
+  // ADR-0049 § 5th arc: Gemini Flash returns HTTP 200 + empty stream
+  // when its (separate-from-safety) RECITATION filter trips on
+  // repetition-heavy prompts — a documented quirk of the 2.0 / 2.5
+  // Flash family that fires probabilistically in RAG pipelines even
+  // for the user's own corpus content. The most-cited mitigations
+  // (Google AI Forum, Vercel AI SDK issues, fusionchat) are:
+  //   1. Higher temperature (0.2 → 0.7) so the response is less
+  //      tempted to recite verbatim from the retrieved chunks.
+  //   2. Explicit safetySettings BLOCK_NONE (independent of
+  //      RECITATION but eliminates the adjacent-but-distinct safety
+  //      drop-out path).
+  //   3. Retry on empty/RECITATION (probabilistic — same prompt
+  //      often passes on the second attempt). Server-side retry
+  //      with streamText requires structural rewrite; we surface
+  //      the breadcrumb in observability for now and add the retry
+  //      in a follow-up if the temperature + safety bump alone
+  //      isn't enough.
   const result = streamText({
     model: google(GENERATION_MODEL),
     system: RAG_SYSTEM_PROMPT,
@@ -131,8 +148,39 @@ export async function POST(req: Request) {
         content: buildUserMessage(parsed.data.question, hits),
       },
     ],
-    temperature: 0.2,
+    temperature: 0.7,
     maxOutputTokens: 600,
+    providerOptions: {
+      google: {
+        safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_NONE",
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_NONE",
+          },
+        ],
+      },
+    },
+    onFinish: ({ finishReason, text }) => {
+      // Observability for ADR-0049 § 5th arc — surface RECITATION /
+      // empty-text outcomes so the failure mode is greppable in the
+      // captures ring buffer / Sentry. Empty-text + non-error
+      // finishReason is the diagnostic signature of the silent
+      // RECITATION drop documented in the Gemini API forum.
+      if (!text || text.length === 0) {
+        void captureError(
+          new Error(
+            `Gemini empty completion (finishReason=${finishReason}, hits=${hits.length}); RECITATION suspected`,
+          ),
+          { route: "/api/kb/ask" },
+        );
+      }
+    },
   });
 
   const docTitles = [...new Set(hits.map((h) => h.documentTitle))].join("|");
