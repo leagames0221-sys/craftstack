@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed — RAG eval cron robustness against Neon Free cold-start (ADR-0049)
+
+The first scheduled nightly RAG eval (2026-04-25 05:52 UTC) crashed at the very first ingest call with a Prisma `Unable to start a transaction in the given time` 500. Live smoke kept passing on the 6-hourly cron through the same window — the live URLs themselves are healthy. The most plausible cause given the free-tier topology is Neon Free's compute autosuspend leaving the underlying Postgres in a cold-start state when the eval's first heavy request lands.
+
+Closed with a small `retryFetch` helper:
+
+- **`apps/knowledge/src/lib/eval-retry-fetch.ts`** — pure-module exponential-backoff retry wrapper. Default 3 attempts with `[2000, 4000]` ms backoff. Retries on transient HTTP statuses (500/502/503/504), the `Unable to start a transaction` Prisma marker (Neon cold-start signature) embedded in body text, `Connection terminated unexpectedly`, `FUNCTION_INVOCATION_TIMEOUT`, and network errors. 4xx statuses are NOT retried (request shape, not transience). Returns the final response so the existing `if (!res.ok) throw …` guards in the eval script still surface readable terminal failures.
+- **`apps/knowledge/src/lib/eval-retry-fetch.test.ts`** — 8 Vitest cases covering single-success, single-retry, Prisma-cold-start body marker, all-attempts-503, 4xx-no-retry, network-error-retry, all-attempts-throw, and breadcrumb-format. Knowledge-app suite 29 → 37 passing.
+- **`apps/knowledge/scripts/eval.ts`** — `ingestCorpus` and `ask` route through `retryFetch` with descriptive labels (`ingest "Knowlex RAG architecture"`, `ask "What embedding model..."`). Each retry emits a single-line `[retryFetch]` breadcrumb to the GitHub Actions log; the breadcrumb count is now a load-bearing observability surface for cold-start frequency drift.
+- **ADR-0049 (Accepted)** — documents the regime: under the `$0/mo` design contract (ADR-0016, ADR-0046), Neon Free cold-start is an expected operational reality, not a bug. The retry is the line of defence that keeps three consecutive nightly reports landing cleanly so the v0.5.1 measured-eval README badge can ship on schedule. Includes explicit measurement contract (`latencyMs` is wall-clock-through-final-return, retry latency is in the metric — the user-perceived contract).
+
+The workflow YAML (`.github/workflows/eval.yml`) is unchanged. Retry is entirely client-side. No new GitHub secret required.
+
 ### Fixed — stale counts + broken cross-repo link
 
 Audit pass after v0.4.5 surfaced stale numeric counts on several portfolio surfaces plus one broken link in ADR-0047. All corrections are cosmetic / documentary — no runtime behaviour changes.
