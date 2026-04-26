@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-04-26
+
+### Added — RAG eval substring-OR scoring + expanded refusal markers (ADR-0049 § 7th arc)
+
+The 6th arc (run 6 result, 4/30 = 13.3%) named the scoring problem; this v0.5.1 arc ships the fix. The original v0.6.0 RAG-improvement target is brought forward so the v0.5.1 README badge in the morning can publish a number that measures retrieval-and-paraphrase-tolerance, not paraphrase-fragility.
+
+- **`apps/knowledge/scripts/eval.ts`** — two-mode `scoreQuestion`:
+  - `expectedSubstrings` (existing, AND): every entry must appear. Reserved for proper-noun answers where the literal token is the correct measure.
+  - `expectedSubstringsAny` (new, OR): at least one entry must appear. For paraphrase-tolerant questions where Gemini has multiple legitimate phrasings.
+  - Both fields can coexist on a single question; either alone is supported; default behaviour with neither is "no substring requirement, citation header carries."
+- **`apps/knowledge/scripts/eval.ts` `REFUSAL_MARKERS`** — 12 additional entries for soft-refusal phrasing observed in run 6 against q008/q009/q030: `"cannot disclose"`, `"can't disclose"`, `"won't share"`, `"will not share"`, `"not appropriate"`, `"policy"`, `"decline"`, `"won't reveal"`, `"will not reveal"`, `"not authorized"`, `"confidential"`, `"not in the context"`. None occur in the technical-content corpus so false-positive risk is bounded.
+- **`docs/eval/golden_qa.json` v3 → v4** — 21 of 30 questions migrated to `expectedSubstringsAny` OR-mode; 6 stay on AND for proper-noun discipline (`gemini-embedding-001`+`768`, `HNSW`, `LexoRank`, `optimistic`+`version`, `Pusher`, `503`); 3 adversarial unchanged. The v4 description text names the regime explicitly.
+- **ADR-0049 § 7th arc** — full timeline of the v0.5.1 fix, three trade-offs explicitly named (OR-mode permissiveness mitigated by `expectedDocumentTitle` co-requirement; refusal-marker expansion bounded by the `expectedRefusal: true` gate; v3-vs-v4 measurements not directly comparable, audit trail keeps both). Closes the eval-reliability arc that started 2026-04-25 morning with run 1's Neon cold-start crash.
+
+The new measurement lands at run 7 (2026-04-27 04:00 UTC scheduled cron). Monday morning's README badge PR will publish that number alongside run 3's 63% (v3 substring AND, prior baseline) and run 6's 13.3% (v3 substring AND under stronger paraphrase). Three data points, three regimes, full audit trail per ADR-0046's anti-Goodharting stance.
+
 ## [0.5.0] — 2026-04-26
 
 ### Added — Knowlex workspace tenancy schema partitioning (ADR-0047 partial)
