@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-04-26
+
+### Added — Knowlex workspace tenancy schema partitioning (ADR-0047 partial)
+
+ADR-0047's first ship: schema-level workspace tenancy lands; member-based access control is deferred to v0.5.2 once Auth.js arrives on the Knowlex deploy. The "multi-tenant" claim retracted in v0.4.2 now has data-model backing — every Document is scoped to a Workspace, retrieval pre-filters by `workspaceId`, and the title-based UPSERT (ADR-0050) is scoped per workspace. Cross-workspace partitioning is enforced at the SQL layer and verified by integration tests; access control remains honest about deferring until auth.
+
+- **`apps/knowledge/prisma/migrations/20260426_workspace_tenancy/migration.sql`** — additive Prisma migration: creates `Workspace` table, seeds `wks_default_v050` row, adds nullable `Document.workspaceId` column, backfills every existing Document to the default workspace, then tightens to `NOT NULL` + composite index `(workspaceId, createdAt)`. Six in-order steps, single migration file, idempotent on re-run.
+- **`apps/knowledge/src/lib/tenancy.ts`** — pure module: `DEFAULT_WORKSPACE_ID`, `isTenancyEnabled()` (reads `TENANCY_ENABLED` env, defaults `false`), `resolveWorkspaceId(supplied)` (flag-off → always default; flag-on → caller value or default fallback). Documents the partial-acceptance framing inline so a reviewer scrolling the file lands on the scope honestly.
+- **`apps/knowledge/src/server/retrieve.ts`** — `retrieveTopK` accepts an optional `workspaceId` parameter. When supplied, the SQL `WHERE` clause adds `d."workspaceId" = $3` so the cosine kNN pre-filters before HNSW ranking. Without it, behaviour is identical to v0.4.7.
+- **`apps/knowledge/src/server/ingest.ts`** — `ingestDocument(opts)` now requires `opts.workspaceId`. ADR-0050's title-based UPSERT dedup is scoped per workspace via `tx.document.deleteMany({ where: { title, workspaceId } })`, so re-ingesting "Alpha" into workspace A does not touch "Alpha" in workspace B.
+- **`apps/knowledge/src/app/api/kb/{ingest,ask}/route.ts`** — bodySchema gains `workspaceId: z.string().trim().min(1).max(100).optional()`. Routes call `resolveWorkspaceId(parsed.data.workspaceId)` and forward the resolved id to ingest / retrieve. Flag-off path is byte-identical to v0.4.7.
+- **`apps/knowledge/src/server/tenancy.integration.test.ts`** — 4 integration cases against the live pgvector docker container: cross-workspace listing isolation, UPSERT scoped per workspace (same title coexists in two workspaces), default-workspace migration seeded successfully, schema NOT-NULL constraint on `Document.workspaceId` enforced at SQL level.
+- **ADR-0047 status flip**: `Proposed` → `Partially Accepted (2026-04-26)`. New "Implementation status — v0.5.0" table itemises shipped vs deferred; Auth.js prerequisite explicitly named for v0.5.2.
+
+### Fixed — RAG eval 6th arc, partial RECITATION recovery + scoring trade-off observed (ADR-0049 § 6th arc)
+
+First nightly cron after v0.4.7 (run 6, 2026-04-26 06:14 UTC) verified the temperature 0.2 → 0.7 + safety BLOCK_NONE mitigation works qualitatively (empty-body rate dropped from 96% → 13%) but quantitatively still misses the run 3 measured baseline (4/30 = 13.3% vs 19/30 = 63%). The substring-AND scoring is now the limiting factor — all 26 failed questions retrieved the correct citation document but paraphrased the answer text ("memory buffer" vs "ring buffer", "Singapore region" vs "Singapore"). Higher temperature traded RECITATION suppression for paraphrase variance.
+
+ADR-0049 § 6th arc documents the trade-off in full: a comparison table across run 3 / run 4-5 / run 6, the trade-off framing (faithfulness high, scoring brittle), and the decision to bring v0.6.0's substring-OR fix forward to v0.5.1 on Monday morning rather than deferring. The honest both-numbers-published stance — 63% under prior scoring, 13.3% under stronger paraphrase, and a v0.5.1 number under OR-mode scoring — is the audit-trail consistency ADR-0046 fights for.
+
 ## [0.4.7] — 2026-04-25
 
 ### Fixed — Gemini RECITATION mitigation in /api/kb/ask (ADR-0049 § 5th arc)

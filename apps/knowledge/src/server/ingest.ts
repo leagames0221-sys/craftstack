@@ -25,6 +25,13 @@ export async function ingestDocument(opts: {
   apiKey: string;
   title: string;
   content: string;
+  /**
+   * ADR-0047 v0.5.0 partial implementation: when supplied, the new
+   * Document is scoped to this workspace and the title-based UPSERT
+   * dedup (ADR-0050) only removes prior documents within the same
+   * workspace. Required at the route layer.
+   */
+  workspaceId: string;
 }): Promise<{ documentId: string; chunks: number }> {
   const title = opts.title.trim().slice(0, 200) || "Untitled";
   const content = opts.content.trim();
@@ -55,28 +62,30 @@ export async function ingestDocument(opts: {
   }
 
   return prisma.$transaction(async (tx) => {
-    // ADR-0050: title-based UPSERT semantics. Any pre-existing
-    // Document(s) with the same title are removed before insert so
-    // the corpus cannot accumulate near-duplicates from re-ingest.
-    // Without this, top-K cosine kNN starts returning N copies of
-    // the same chunk and the LLM's response degrades — observed
-    // 2026-04-25 when a 4th eval re-seed pushed the corpus from 22
-    // to 32 docs and the answer-completion rate collapsed from
-    // 19/30 to 1/30 (ADR-0049 § 4th arc).
+    // ADR-0050 + ADR-0047: title-based UPSERT semantics, **scoped to
+    // the supplied workspace**. Any pre-existing Document(s) with the
+    // same title in this workspace are removed before insert so the
+    // corpus cannot accumulate near-duplicates from re-ingest. Other
+    // workspaces' documents with the same title are unaffected — the
+    // cross-workspace data partitioning gate ADR-0047 establishes is
+    // honoured by scoping the deleteMany WHERE.
     //
     // Cascade is handled by the Prisma schema's onDelete: Cascade on
     // Chunk → Document and Embedding → Chunk, so this single
     // deleteMany cleans up rows in all three tables atomically inside
     // the same transaction.
-    const dedupResult = await tx.document.deleteMany({ where: { title } });
+    const dedupResult = await tx.document.deleteMany({
+      where: { title, workspaceId: opts.workspaceId },
+    });
     if (dedupResult.count > 0) {
       console.log(
-        `[ingest] dedup: removed ${dedupResult.count} prior Document(s) titled "${title}"`,
+        `[ingest] dedup: removed ${dedupResult.count} prior Document(s) titled "${title}" in workspace ${opts.workspaceId}`,
       );
     }
 
     const doc = await tx.document.create({
       data: {
+        workspaceId: opts.workspaceId,
         title,
         content,
         charCount: content.length,

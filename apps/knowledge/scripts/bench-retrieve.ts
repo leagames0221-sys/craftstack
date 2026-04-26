@@ -59,11 +59,24 @@ async function main() {
   console.log(`[bench] N=${N} seed rows, M=${M} queries, K=${K}`);
 
   // Ensure at least N seed rows under a dedicated document.
+  // ADR-0047 v0.5.0: bench-only path uses the default workspace
+  // seeded by the v0.5.0 migration. The bench is a local-dev tool
+  // and never runs against production.
   const seedDocId = "bench_seed_doc";
+  await prisma.workspace.upsert({
+    where: { id: "wks_default_v050" },
+    create: {
+      id: "wks_default_v050",
+      name: "Default workspace",
+      slug: "default",
+    },
+    update: {},
+  });
   await prisma.document.upsert({
     where: { id: seedDocId },
     create: {
       id: seedDocId,
+      workspaceId: "wks_default_v050",
       title: "bench seed",
       content: "bench",
       charCount: 5,

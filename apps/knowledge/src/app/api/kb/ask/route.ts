@@ -9,6 +9,7 @@ import { GENERATION_MODEL, getGemini } from "@/lib/gemini";
 import { checkAndIncrementGlobalBudget } from "@/lib/global-budget";
 import { checkAndIncrement } from "@/lib/kb-rate-limit";
 import { captureError } from "@/lib/observability";
+import { resolveWorkspaceId } from "@/lib/tenancy";
 import { buildUserMessage, RAG_SYSTEM_PROMPT } from "@/server/rag-prompt";
 import { retrieveTopK } from "@/server/retrieve";
 
@@ -18,6 +19,11 @@ export const dynamic = "force-dynamic";
 const bodySchema = z.object({
   question: z.string().trim().min(1).max(500),
   k: z.number().int().min(1).max(16).optional(),
+  // ADR-0047 v0.5.0: optional workspaceId. With TENANCY_ENABLED off
+  // (default), retrieval is unfiltered; with the flag on, retrieval
+  // is restricted to the supplied workspace and absent values fall
+  // back to the default workspace.
+  workspaceId: z.string().trim().min(1).max(100).optional(),
 });
 
 /**
@@ -99,12 +105,15 @@ export async function POST(req: Request) {
     );
   }
 
+  const workspaceId = resolveWorkspaceId(parsed.data.workspaceId);
+
   let hits;
   try {
     hits = await retrieveTopK({
       apiKey,
       question: parsed.data.question,
       k: parsed.data.k,
+      workspaceId,
     });
   } catch (err) {
     // Log server-side and forward to the observability seam (Sentry
