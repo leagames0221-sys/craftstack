@@ -47,7 +47,13 @@ type Question =
       id: string;
       category: string;
       question: string;
-      expectedSubstrings: string[];
+      // ADR-0049 § 7th arc (v0.5.1):
+      // - expectedSubstrings: AND list (every substring must appear)
+      // - expectedSubstringsAny: OR list (at least one must appear) — paraphrase-tolerant
+      // Both fields can be combined: AND list must all hit AND at least one of OR list.
+      // Either-only is also supported (one of the two must be present at the question level).
+      expectedSubstrings?: string[];
+      expectedSubstringsAny?: string[];
       expectedDocumentTitle: string;
       expectedRefusal?: false;
     }
@@ -57,6 +63,7 @@ type Question =
       question: string;
       expectedRefusal: true;
       expectedSubstrings?: string[];
+      expectedSubstringsAny?: string[];
       expectedDocumentTitle?: string;
     };
 type GoldenSet = {
@@ -93,6 +100,14 @@ const INTER_CALL_DELAY_MS = 7000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// ADR-0049 § 7th arc (v0.5.1): expanded REFUSAL_MARKERS for soft-refusal
+// phrasing observed in run 6 outputs against q008/q009/q030. Gemini 2.0
+// Flash with temperature 0.7 phrases refusals more naturally — "I cannot
+// disclose", "won't share", "policy", "not appropriate" — instead of
+// the stricter "do not contain" phrasing the original 8-marker list
+// expected. Adding markers below catches all observed soft refusals
+// without false-positive risk on factual answers (these phrases don't
+// occur in factual content about pgvector / LexoRank / RAG architecture).
 const REFUSAL_MARKERS = [
   "do not contain",
   "does not contain",
@@ -102,6 +117,19 @@ const REFUSAL_MARKERS = [
   "unable",
   "not provided",
   "outside",
+  // v0.5.1 additions for soft-refusal patterns:
+  "cannot disclose",
+  "can't disclose",
+  "won't share",
+  "will not share",
+  "not appropriate",
+  "policy",
+  "decline",
+  "won't reveal",
+  "will not reveal",
+  "not authorized",
+  "confidential",
+  "not in the context",
 ];
 
 function percentile(sorted: number[], p: number): number {
@@ -189,6 +217,28 @@ function scoreQuestion(q: Question, answer: string, docs: string[]): string[] {
       );
     }
     return reasons;
+  }
+
+  // ADR-0049 § 7th arc (v0.5.1): two-mode substring scoring.
+  // - expectedSubstrings (AND): every entry must appear — strict.
+  // - expectedSubstringsAny (OR): at least one entry must appear —
+  //   paraphrase-tolerant. Use for questions where the corpus content
+  //   is correct but Gemini at temperature 0.7 phrases the answer in
+  //   one of several legitimate ways (e.g. "free tier" / "free-tier",
+  //   "Singapore" / "Singapore region").
+  // Both fields can coexist on a single question: the AND set is the
+  // hard requirement; the OR set is the at-least-one-of paraphrase
+  // hedge. Either field alone is also supported. The default behaviour
+  // when neither field is present is "no substring requirement" — the
+  // citation header check below remains.
+  const expectedAny = q.expectedSubstringsAny ?? [];
+  if (expectedAny.length > 0) {
+    const anyHit = expectedAny.some((s) => low.includes(s.toLowerCase()));
+    if (!anyHit) {
+      reasons.push(
+        `missing any of expected substrings (OR-mode): ${expectedAny.join(", ")}`,
+      );
+    }
   }
 
   const missing = (q.expectedSubstrings ?? []).filter(
