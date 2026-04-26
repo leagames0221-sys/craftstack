@@ -7,6 +7,7 @@ import {
 import { checkAndIncrementGlobalBudget } from "@/lib/global-budget";
 import { checkAndIncrement } from "@/lib/kb-rate-limit";
 import { captureError } from "@/lib/observability";
+import { resolveWorkspaceId } from "@/lib/tenancy";
 import { ingestDocument } from "@/server/ingest";
 
 export const runtime = "nodejs";
@@ -15,6 +16,12 @@ export const dynamic = "force-dynamic";
 const bodySchema = z.object({
   title: z.string().trim().min(1).max(200),
   content: z.string().trim().min(1).max(50_000),
+  // ADR-0047 v0.5.0: optional workspaceId. With TENANCY_ENABLED off
+  // (default), this field is ignored and the request lands in the
+  // default workspace. With the flag on, the request is scoped to
+  // the supplied workspace; callers that omit the field still fall
+  // back to the default for backward compatibility.
+  workspaceId: z.string().trim().min(1).max(100).optional(),
 });
 
 /**
@@ -90,13 +97,16 @@ export async function POST(req: Request) {
     );
   }
 
+  const workspaceId = resolveWorkspaceId(parsed.data.workspaceId);
+
   try {
     const result = await ingestDocument({
       apiKey,
       title: parsed.data.title,
       content: parsed.data.content,
+      workspaceId,
     });
-    return Response.json(result, { status: 201 });
+    return Response.json({ ...result, workspaceId }, { status: 201 });
   } catch (err) {
     const code = (err as Error).message || "INGEST_FAILED";
     console.error("[ingest] failed", err);

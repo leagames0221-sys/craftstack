@@ -83,12 +83,24 @@ beforeAll(async () => {
   await prisma.$executeRawUnsafe(`DELETE FROM "Embedding"`);
   await prisma.$executeRawUnsafe(`DELETE FROM "Chunk"`);
   await prisma.$executeRawUnsafe(`DELETE FROM "Document"`);
+  // ADR-0047 v0.5.0: ensure the default workspace exists so test
+  // documents can satisfy the new NOT-NULL workspaceId constraint.
+  await prisma.workspace.upsert({
+    where: { id: "wks_default_v050" },
+    create: {
+      id: "wks_default_v050",
+      name: "Default workspace",
+      slug: "default",
+    },
+    update: {},
+  });
 
   for (let d = 0; d < NUM_DOCS; d++) {
     const docId = `testdoc_${d}`;
     await prisma.document.create({
       data: {
         id: docId,
+        workspaceId: "wks_default_v050",
         title: `Test doc ${d}`,
         content: `Doc ${d} full body`,
         charCount: 100,

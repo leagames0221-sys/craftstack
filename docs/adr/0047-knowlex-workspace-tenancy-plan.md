@@ -1,9 +1,27 @@
 # ADR-0047: Knowlex workspace tenancy — plan and scoped migration
 
-- Status: Proposed (implementation tracked as Session 256-A)
-- Date: 2026-04-24
+- Status: **Partially Accepted (2026-04-26)** — schema partitioning shipped in **v0.5.0**; member-based access control deferred to v0.5.2 once Auth.js lands on the Knowlex deploy.
+- Date: 2026-04-24 (proposed) / 2026-04-26 (partial implementation)
 - Tags: knowlex, tenancy, schema, migration, scope
-- Supersedes (on implementation): the "no tenancy in the MVP" clause of [ADR-0039](0039-knowlex-mvp-scope.md)
+- Supersedes (on the schema dimension only): the "no tenancy in the MVP" clause of [ADR-0039](0039-knowlex-mvp-scope.md)
+
+## Implementation status — v0.5.0 (2026-04-26)
+
+| Aspect                                        | Status                                                                     | Notes                                                                       |
+| --------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `Workspace` model + `Document.workspaceId`    | **Shipped**                                                                | `apps/knowledge/prisma/migrations/20260426_workspace_tenancy/migration.sql` |
+| Default-workspace backfill                    | **Shipped**                                                                | `wks_default_v050` row, every existing Document migrated                    |
+| `TENANCY_ENABLED` feature flag                | **Shipped**                                                                | `apps/knowledge/src/lib/tenancy.ts`                                         |
+| Routes accept `workspaceId` body field        | **Shipped**                                                                | `/api/kb/{ingest,ask}` route handlers                                       |
+| `retrieveTopK` workspace filter               | **Shipped**                                                                | optional `workspaceId` parameter, SQL `WHERE` clause                        |
+| Cross-workspace partitioning integration test | **Shipped**                                                                | `apps/knowledge/src/server/tenancy.integration.test.ts` (4 cases)           |
+| ADR-0050 dedup scoped per workspace           | **Shipped**                                                                | `tx.document.deleteMany({ where: { title, workspaceId } })`                 |
+| `WorkspaceMember` model                       | **Deferred** to v0.5.2                                                     |
+| `requireWorkspaceMember` route guard          | **Deferred** to v0.5.2 (needs Auth.js setup on Knowlex first)              |
+| Workspace switcher UI                         | **Deferred** to v0.5.2 (no auth → no per-user state to read)               |
+| Production flag flip                          | **Deferred** to v0.5.3 (`TENANCY_ENABLED=true` on Vercel after auth lands) |
+
+The "Partially Accepted" framing is deliberate — Knowlex shipped at v0.4.x as a fully unauthenticated MVP per ADR-0039, so the access-control half of ADR-0047 needs Auth.js as a prerequisite. Shipping the schema + filter layer first is correct sequencing: the data partitioning gate is real (no document leaks across `workspaceId` at the SQL level), the member-based access gate is honest about not being live yet.
 
 ## Context
 

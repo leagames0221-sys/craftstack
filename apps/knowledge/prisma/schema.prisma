@@ -20,19 +20,40 @@ datasource db {
 }
 
 // -------------------------------------------------------------------
+//  Workspace — tenant boundary (ADR-0047 v0.5.0 partial implementation).
+//
+//  Schema partitioning ships in v0.5.0 with a `default` workspace and
+//  every existing Document backfilled to it. Member-based access
+//  control (WorkspaceMember + auth-gated route guards) is deferred to
+//  v0.5.2 once Auth.js lands on the Knowlex deploy. See ADR-0047
+//  Status block for the partial-acceptance framing.
+// -------------------------------------------------------------------
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  documents Document[]
+}
+
+// -------------------------------------------------------------------
 //  Documents — a blob of text the user has ingested.
 // -------------------------------------------------------------------
 model Document {
-  id        String   @id @default(cuid())
-  title     String
-  content   String // full pasted text, for reference / re-chunk / preview
-  charCount Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  workspaceId String
+  title       String
+  content     String // full pasted text, for reference / re-chunk / preview
+  charCount   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  chunks Chunk[]
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  chunks    Chunk[]
 
   @@index([createdAt])
+  @@index([workspaceId, createdAt])
 }
 
 // -------------------------------------------------------------------
