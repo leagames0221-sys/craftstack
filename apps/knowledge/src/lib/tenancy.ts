@@ -5,7 +5,9 @@
  * exists, every Document is backfilled to a default workspace, and
  * routes accept an optional `workspaceId` parameter that scopes
  * queries. Member-based access control (auth-gated guards) is
- * deferred to v0.5.2 once Auth.js lands on the Knowlex deploy.
+ * deferred to v0.5.4 once Auth.js lands on the Knowlex deploy.
+ * (Originally targeted v0.5.2; revised because v0.5.2 scope was
+ * redirected to the schema-vs-prod drift forensic per ADR-0051.)
  *
  * The `TENANCY_ENABLED` env flag controls whether routes treat the
  * `workspaceId` parameter as load-bearing:

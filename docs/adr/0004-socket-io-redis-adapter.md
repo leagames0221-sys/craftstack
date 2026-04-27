@@ -1,8 +1,10 @@
 # ADR-0004: Socket.IO + Redis Adapter for realtime
 
-- Status: Accepted
+- Status: **Partially superseded by [ADR-0052](0052-pusher-pivot-from-flyio-socketio.md) (2026-04-28)** — original Accepted earlier; the Boardly realtime portion pivoted to Pusher Channels. The "rejected: Ably/Pusher — forces future vendor cost" alternative below was reversed by [ADR-0046](0046-zero-cost-by-construction.md) (Pusher Sandbox is hard-capped at $0).
 - Date: 2026-04-22
 - Tags: realtime, websocket
+
+> **Supersession note**: this ADR's realtime decision was superseded by [ADR-0052](0052-pusher-pivot-from-flyio-socketio.md). Pusher Channels (Sandbox tier) is the shipped realtime fanout for Boardly. The Redis Pub/Sub component intent (ADR-0005) remains valid for future architectural extensions but is not currently exercised — Boardly only uses Upstash Redis for `@upstash/ratelimit`. Decision content below is preserved as historical record.
 
 ## Context
 

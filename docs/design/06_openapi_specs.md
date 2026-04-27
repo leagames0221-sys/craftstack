@@ -3,6 +3,8 @@ name: Phase 5 - OpenAPI 仕様書
 type: project
 ---
 
+> ⚠️ **設計フェーズ文書 (2026-04-22)** — v0.5.2 実装は OpenAPI 3.1 を hand-written で運用 ([ADR-0035](../adr/0035-hand-written-openapi-as-the-contract.md))。spec 本体は `apps/collab/src/openapi.ts` (live at `/api/openapi.json` + `/docs/api`)。`openapi-typescript` で型生成。
+
 # Phase 5(γ): OpenAPI 仕様書
 
 両アプリ分の `openapi.yaml` を `docs/api/` に配置。`openapi-typescript` で型自動生成 → `packages/api-client` に反映。

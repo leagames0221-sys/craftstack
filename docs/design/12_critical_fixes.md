@@ -3,6 +3,8 @@ name: 自己レビューで判明した Critical/High 修正パッチ
 type: project
 ---
 
+> ⚠️ **設計フェーズ文書 (2026-04-22)** — 当時の自己レビュー patch を設計書に取り込んだ記録。実装段階で更に多くの incident-driven ratchet が発生 ([ADR-0049](../adr/0049-rag-eval-client-retry-contract.md) 7-arc / [ADR-0050](../adr/0050-knowlex-ingest-deduplication.md) / [ADR-0051](../adr/0051-prisma-migrate-on-vercel-build.md) / [ADR-0052](../adr/0052-pusher-pivot-from-flyio-socketio.md))。実装時の修正履歴は [CHANGELOG](../../CHANGELOG.md) と git log を参照。
+
 # 自己レビュー修正パッチ(2026-04-22 反映済)
 
 レビュー指摘を設計書に取り込んだ最終版の要点。実装時はこの仕様に従う。

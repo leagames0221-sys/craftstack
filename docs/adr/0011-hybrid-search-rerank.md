@@ -1,8 +1,10 @@
 # ADR-0011: Hybrid search (pgvector + BM25 + RRF) with rerank
 
-- Status: Accepted
+- Status: **Accepted (planned)** — design-phase decision; **deferred for v0.5.2** per [ADR-0039](0039-knowlex-mvp-scope.md) MVP scope (pure pgvector HNSW cosine kNN ships; hybrid + RRF + Cohere rerank remain on roadmap)
 - Date: 2026-04-22
 - Tags: search, rag, retrieval
+
+> **Implementation status (v0.5.2)**: not implemented. ADR-0039 explicitly defers hybrid retrieval / Cohere Rerank / cross-encoder fallback to a later arc. The MVP demonstrates the full ingest → embed → store → retrieve → stream pipeline with pure cosine kNN, sufficient for the corpus sizes that fit a portfolio demo. The "Context Precision 0.62 → 0.89" measurement below is a design target, not a current measurement — the nightly RAG eval cron measures the v0.5.2 pure-cosine-kNN system; see [`docs/eval/`](../eval/) for actual numbers.
 
 ## Context
 
