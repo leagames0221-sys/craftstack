@@ -2,7 +2,7 @@
 
 Two production-grade SaaS apps, designed and shipped from schema to deploy by a single developer. Currently at **v0.5.2** with measured production reliability — not aspirational targets.
 
-> **Status (as of v0.5.2, 2026-04-27)**: Both apps are live with full feature sets. Boardly serves authenticated dashboard + workspaces + boards + DnD + Pusher realtime + invitations + mentions + notifications + command palette + activity log. Knowlex serves end-to-end RAG (ingest → HNSW kNN → streamed citations) with workspace schema partitioning per [ADR-0047](../adr/0047-knowlex-workspace-tenancy-plan.md) (auth-gated access control deferred to v0.5.4 once Auth.js lands on Knowlex). Numbers below are real: **51 ADRs** documenting actual decisions, **206 Vitest + 24 Playwright** + integration + a11y + nightly eval cron, **$0/mo infra** under CI-enforced free-tier compliance per [ADR-0046](../adr/0046-zero-cost-by-construction.md).
+> **Status (as of v0.5.2, 2026-04-27)**: Both apps are live with full feature sets. Boardly serves authenticated dashboard + workspaces + boards + DnD + Pusher realtime + invitations + mentions + notifications + command palette + activity log. Knowlex serves end-to-end RAG (ingest → HNSW kNN → streamed citations) with workspace schema partitioning per [ADR-0047](../adr/0047-knowlex-workspace-tenancy-plan.md) (auth-gated access control deferred to v0.5.4 once Auth.js lands on Knowlex). Numbers below are real: **52 ADRs** documenting actual decisions, **206 Vitest + 24 Playwright** + integration + a11y + nightly eval cron, **$0/mo infra** under CI-enforced free-tier compliance per [ADR-0046](../adr/0046-zero-cost-by-construction.md).
 
 ## 🟣 Boardly — Realtime collaborative kanban
 
@@ -32,7 +32,7 @@ Live at <https://craftstack-knowledge.vercel.app>. Workspace schema partitioning
 
 ## What this portfolio demonstrates
 
-**Audit-survivable engineering.** **51 ADRs** documenting every consequential decision in MADR format. Incident-driven ratchet log: [ADR-0046](../adr/0046-zero-cost-by-construction.md) (zero-cost stance), [ADR-0049](../adr/0049-rag-eval-client-retry-contract.md) (7-arc eval reliability incident log), [ADR-0050](../adr/0050-knowlex-ingest-deduplication.md) (ingest dedup), [ADR-0051](../adr/0051-prisma-migrate-on-vercel-build.md) (schema-vs-prod drift forensic + axis-4 audit category mistake retracted in writing). Decisions get superseded explicitly, never silently rewritten.
+**Audit-survivable engineering.** **52 ADRs** documenting every consequential decision in MADR format. Incident-driven ratchet log: [ADR-0046](../adr/0046-zero-cost-by-construction.md) (zero-cost stance), [ADR-0049](../adr/0049-rag-eval-client-retry-contract.md) (7-arc eval reliability incident log), [ADR-0050](../adr/0050-knowlex-ingest-deduplication.md) (ingest dedup), [ADR-0051](../adr/0051-prisma-migrate-on-vercel-build.md) (schema-vs-prod drift forensic + axis-4 audit category mistake retracted in writing). Decisions get superseded explicitly, never silently rewritten.
 
 **Implementation discipline.** Pivoted from [ADR-0009](../adr/0009-vercel-flyio-hybrid.md) (Vercel + Fly.io hybrid) to Pusher Channels during Boardly v0.1.0 implementation. Reason: ADR-0046 mandate (zero-cost-by-construction) + single-pipeline simplicity + env-guarded degradation pattern. ADR-0009 marked Superseded by ADR-0052 which records the implementation-time pivot rationale.
 
