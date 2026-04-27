@@ -1,8 +1,8 @@
 # Portfolio
 
-Two production-grade SaaS apps, designed and shipped from schema to deploy by a single developer. Currently at **v0.5.2** with measured production reliability — not aspirational targets.
+Two production-grade SaaS apps, designed and shipped from schema to deploy by a single developer. Currently at **v0.5.3** with measured production reliability — not aspirational targets.
 
-> **Status (as of v0.5.2, 2026-04-27)**: Both apps are live with full feature sets. Boardly serves authenticated dashboard + workspaces + boards + DnD + Pusher realtime + invitations + mentions + notifications + command palette + activity log. Knowlex serves end-to-end RAG (ingest → HNSW kNN → streamed citations) with workspace schema partitioning per [ADR-0047](../adr/0047-knowlex-workspace-tenancy-plan.md) (auth-gated access control deferred to v0.5.4 once Auth.js lands on Knowlex). Numbers below are real: **52 ADRs** documenting actual decisions, **206 Vitest + 24 Playwright** + integration + a11y + nightly eval cron, **$0/mo infra** under CI-enforced free-tier compliance per [ADR-0046](../adr/0046-zero-cost-by-construction.md).
+> **Status (as of v0.5.3, 2026-04-28)**: Both apps are live with full feature sets. Boardly serves authenticated dashboard + workspaces + boards + DnD + Pusher realtime + invitations + mentions + notifications + command palette + activity log. Knowlex serves end-to-end RAG (ingest → HNSW kNN → streamed citations) with workspace schema partitioning per [ADR-0047](../adr/0047-knowlex-workspace-tenancy-plan.md) (auth-gated access control deferred to v0.5.4 once Auth.js lands on Knowlex). Numbers below are real: **52 ADRs** documenting actual decisions, **206 Vitest + 24 Playwright** + integration + a11y + nightly eval cron with green-run report auto-commit (v0.5.3 ship), **$0/mo infra** under CI-enforced free-tier compliance per [ADR-0046](../adr/0046-zero-cost-by-construction.md). The README's measured-eval badge sources from `docs/eval/badge.json` regenerated on every green eval run.
 
 ## 🟣 Boardly — Realtime collaborative kanban
 

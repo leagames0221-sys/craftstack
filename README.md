@@ -3,6 +3,7 @@
 [![CI](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml/badge.svg)](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml)
 [![Security Headers: A](https://img.shields.io/badge/Security%20Headers-A-brightgreen)](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on)
 [![Tests: 206 Vitest + 24 Playwright](https://img.shields.io/badge/tests-206%20%2B%2024-success)](./apps/collab)
+[![Knowlex eval (measured)](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fleagames0221-sys%2Fcraftstack%2Fmain%2Fdocs%2Feval%2Fbadge.json)](./docs/eval/reports/)
 [![Infra: $0/mo](https://img.shields.io/badge/infra-%240%2Fmo-blue)](#tech-stack)
 [![Free-tier CI-enforced](https://img.shields.io/badge/free--tier-CI%20enforced-brightgreen)](./docs/adr/0046-zero-cost-by-construction.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)

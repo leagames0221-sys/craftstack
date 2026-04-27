@@ -4,6 +4,25 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.3] — 2026-04-28
+
+### Added — measured-eval auto-commit + README badge (ADR-0049 § 7th arc Tier C-#2)
+
+Closes the last `hire` → `strong hire` gap surfaced by the v2-methodology hiring sim: live measurement infrastructure now produces a repo-visible artifact, not just a workflow run.
+
+- **`.github/workflows/eval.yml`** — `permissions: contents: read` → `contents: write`. New steps after the eval run: regenerate `docs/eval/badge.json` from the latest report (`scripts/eval-badge.mjs`), then commit `docs/eval/reports/YYYY-MM-DD.json` + the refreshed `docs/eval/badge.json` back to `main`. Both new steps are gated `if: success()` — a regression report never lands on main from the workflow itself; the workflow's failure is still the regression signal.
+- **`scripts/eval-badge.mjs`** — new file. Reads the most recent `docs/eval/reports/YYYY-MM-DD.json` and writes `docs/eval/badge.json` in the shields.io custom-endpoint shape (`{schemaVersion, label, message, color}`). Color thresholds: brightgreen ≥ 80% / green ≥ 60% / yellowgreen otherwise / orange on `overallPass=false`.
+- **`README.md`** — new badge row entry: `[![Knowlex eval (measured)](shields.io/endpoint?url=…/docs/eval/badge.json)](./docs/eval/reports/)`. Sources from the JSON file the workflow auto-commits, so the badge stays current without manual intervention.
+- **`docs/eval/README.md`** — Reports section + Follow-ups updated: the two checked-off items (`Auto-commit eval reports` + `Measured numbers on the README badge`) now record v0.5.3 as their ship version. LLM-as-judge `--judge` flag remains as the open follow-up.
+
+### Changed — interview-qa Q20 forward-date eliminated
+
+`docs/hiring/interview-qa.md` Q20 was authored before Run 8 landed and described it in forward-tense ("Run 8 (Tuesday 2026-04-28...) is the first stable measurement"). Rewritten to past-tense with the actual measured numbers from Run 8, plus a cross-reference to `docs/eval/reports/` and the new measured-eval README badge — closes the temporal-class drift the v2-methodology hiring sim flagged.
+
+### Verified — schema-vs-prod drift recurrence closed on the live Knowlex db
+
+The 2026-04-27 06:35 UTC eval cron crashed on `Document.workspaceId does not exist` even though ADR-0051 had shipped — root cause was that the live Knowlex Vercel deploy had not been redeployed under the new `vercel-build` migration regime yet. The PR #32 redeploy on 2026-04-27 ~17:38 UTC fired `prisma migrate deploy` against the live Neon db; Run 8 (this v0.5.3 release) confirms the column now exists and the eval pipeline runs end-to-end. ADR-0051's structural ratchet is now corroborated by a runtime canary (the green eval cron itself), not just by a PR-time gate.
+
 ## [0.5.2] — 2026-04-27
 
 ### Fixed — Knowlex live `/api/kb/ingest` recovery (ADR-0051)
