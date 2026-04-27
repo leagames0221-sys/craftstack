@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack --port 3001",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && prisma migrate deploy && next build",
     "postinstall": "prisma generate",
     "start": "next start --port 3001",
     "lint": "eslint",
@@ -28,6 +28,7 @@
     "ai": "^6.0.168",
     "next": "16.2.4",
     "pg": "^8.20.0",
+    "prisma": "^7.7.0",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "zod": "^4.3.6"
@@ -44,7 +45,6 @@
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.4",
-    "prisma": "^7.7.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
