@@ -226,6 +226,84 @@ export function BoardClient({
     [canWrite, lists],
   );
 
+  // submitMove is defined ahead of onDragEnd (which calls it) so the
+  // react-compiler `Cannot access variable before it is declared` rule
+  // doesn't fire — the previous order had submitMove after onDragEnd
+  // and only worked because both useCallbacks are top-level in the
+  // component body and React invokes them post-mount. The current order
+  // is also more readable: the data-mutation function comes before the
+  // event handlers that use it.
+  const submitMove = useCallback(
+    async (
+      payload: {
+        cardId: string;
+        version: number;
+        listId: string;
+        beforeId: string | null;
+        afterId: string | null;
+      },
+      historyEntry?: { from: MoveEndpoint; to: MoveEndpoint },
+    ): Promise<boolean> => {
+      const snapshot = snapshotRef.current;
+      try {
+        const res = await fetch(`/api/cards/${payload.cardId}/move`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            version: payload.version,
+            listId: payload.listId,
+            beforeId: payload.beforeId,
+            afterId: payload.afterId,
+          }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          if (res.status === 409) {
+            setToast("Someone else moved this card — reloading.");
+          } else {
+            setToast(
+              (body && typeof body.message === "string" && body.message) ||
+                "Move failed — reverting.",
+            );
+          }
+          if (snapshot) setLists(snapshot);
+          router.refresh();
+          return false;
+        }
+        // Success: authoritative state will land via router.refresh(); bump
+        // the local version eagerly so repeat drags don't stale-conflict.
+        setLists((prev) =>
+          prev.map((l) =>
+            l.id !== payload.listId
+              ? l
+              : {
+                  ...l,
+                  cards: l.cards.map((c) =>
+                    c.id === payload.cardId
+                      ? { ...c, version: c.version + 1 }
+                      : c,
+                  ),
+                },
+          ),
+        );
+        if (historyEntry) {
+          historyRef.current = pushMove(historyRef.current, {
+            cardId: payload.cardId,
+            from: historyEntry.from,
+            to: historyEntry.to,
+          });
+        }
+        router.refresh();
+        return true;
+      } catch {
+        setToast("Network error — reverting.");
+        if (snapshot) setLists(snapshot);
+        return false;
+      }
+    },
+    [router],
+  );
+
   const onDragEnd = useCallback(
     (e: DragEndEvent) => {
       setActiveCardId(null);
@@ -305,78 +383,7 @@ export function BoardClient({
         },
       );
     },
-    [canWrite, lists],
-  );
-
-  const submitMove = useCallback(
-    async (
-      payload: {
-        cardId: string;
-        version: number;
-        listId: string;
-        beforeId: string | null;
-        afterId: string | null;
-      },
-      historyEntry?: { from: MoveEndpoint; to: MoveEndpoint },
-    ): Promise<boolean> => {
-      const snapshot = snapshotRef.current;
-      try {
-        const res = await fetch(`/api/cards/${payload.cardId}/move`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            version: payload.version,
-            listId: payload.listId,
-            beforeId: payload.beforeId,
-            afterId: payload.afterId,
-          }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          if (res.status === 409) {
-            setToast("Someone else moved this card — reloading.");
-          } else {
-            setToast(
-              (body && typeof body.message === "string" && body.message) ||
-                "Move failed — reverting.",
-            );
-          }
-          if (snapshot) setLists(snapshot);
-          router.refresh();
-          return false;
-        }
-        // Success: authoritative state will land via router.refresh(); bump
-        // the local version eagerly so repeat drags don't stale-conflict.
-        setLists((prev) =>
-          prev.map((l) =>
-            l.id !== payload.listId
-              ? l
-              : {
-                  ...l,
-                  cards: l.cards.map((c) =>
-                    c.id === payload.cardId
-                      ? { ...c, version: c.version + 1 }
-                      : c,
-                  ),
-                },
-          ),
-        );
-        if (historyEntry) {
-          historyRef.current = pushMove(historyRef.current, {
-            cardId: payload.cardId,
-            from: historyEntry.from,
-            to: historyEntry.to,
-          });
-        }
-        router.refresh();
-        return true;
-      } catch {
-        setToast("Network error — reverting.");
-        if (snapshot) setLists(snapshot);
-        return false;
-      }
-    },
-    [router],
+    [canWrite, lists, submitMove],
   );
 
   /**
