@@ -77,7 +77,7 @@ type: project
 
 ## 採用担当を唸らせるポイント
 
-- **設計ドキュメント 51 ADR (v0.5.2 時点) + ER 図 + OpenAPI + 脅威モデル + Runbook** 完備
+- **設計ドキュメント 52 ADR (v0.5.2 時点) + ER 図 + OpenAPI + 脅威モデル + Runbook** 完備
 - **テスト全層**: Unit / Integration / API / Contract / WebSocket / E2E / A11y / Load / Eval
 - **実測ベンチマーク**: p95 / TTFT / Context Precision を README に掲載
 - **プロンプト Git 管理 + ハッシュ記録**(AI 品質改善の追跡可能性)
