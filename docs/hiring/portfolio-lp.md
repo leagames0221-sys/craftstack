@@ -1,49 +1,56 @@
 # Portfolio
 
-Two production-grade SaaS apps, designed and shipped from schema to deploy by a single developer.
+Two production-grade SaaS apps, designed and shipped from schema to deploy by a single developer. Currently at **v0.5.2** with measured production reliability — not aspirational targets.
 
-> **Status (as of v0.1.0)**: Boardly is **live with authentication + CRUD** at <https://craftstack-collab.vercel.app>. Socket.IO realtime, attachments, search, notifications, and the Knowlex RAG stack are in the roadmap and are not yet measurable. Numbers quoted below are targets set in the ADRs, not current measurements.
+> **Status (as of v0.5.2, 2026-04-27)**: Both apps are live with full feature sets. Boardly serves authenticated dashboard + workspaces + boards + DnD + Pusher realtime + invitations + mentions + notifications + command palette + activity log. Knowlex serves end-to-end RAG (ingest → HNSW kNN → streamed citations) with workspace schema partitioning per [ADR-0047](../adr/0047-knowlex-workspace-tenancy-plan.md) (auth-gated access control deferred to v0.5.4 once Auth.js lands on Knowlex). Numbers below are real: **51 ADRs** documenting actual decisions, **206 Vitest + 24 Playwright** + integration + a11y + nightly eval cron, **$0/mo infra** under CI-enforced free-tier compliance per [ADR-0046](../adr/0046-zero-cost-by-construction.md).
 
 ## 🟣 Boardly — Realtime collaborative kanban
 
-Trello's simultaneous-edit experience rebuilt with first-class permissions, audit, and accessibility.
+Trello-style simultaneous-edit experience with first-class permissions, audit, and accessibility. Live at <https://craftstack-collab.vercel.app>.
 
-- OAuth (Google / GitHub) with database-session strategy for instant revocation
-- 4-tier RBAC (Owner / Admin / Editor / Viewer) enforced at REST and WebSocket
-- Realtime via Socket.IO + Redis Pub/Sub across Fly.io instances
-- Optimistic locking × LexoRank for zero-conflict reorder
-- Attachments via Cloudflare R2 presigned URLs; search over `tsvector`
-- Web Vitals, Sentry, Better Stack, UptimeRobot on the free tier
+- OAuth (Google / GitHub) with Auth.js v5 JWT session strategy
+- 4-tier RBAC (Owner / Admin / Editor / Viewer) — `roleAtLeast()` pure helper with a 4×4 = 16-case Vitest matrix, enforced at every REST handler per [ADR-0023](../adr/0023-four-tier-rbac.md)
+- Realtime via **Pusher Channels** with env-guarded degradation per [ADR-0030](../adr/0030-best-effort-side-effects.md) / [ADR-0032](../adr/0032-mention-resolution-and-env-guarded-integrations.md) (missing credentials = silent skip, no breakage). Implementation pivoted from the design-phase Fly.io + Socket.IO plan ([ADR-0009](../adr/0009-vercel-flyio-hybrid.md)) for ADR-0046 compliance — see ADR-0052 for the rationale
+- Optimistic locking via `version` column + LexoRank positions for zero-conflict reorder per [ADR-0007](../adr/0007-optimistic-locking.md) / [ADR-0024](../adr/0024-optimistic-locking-version-column.md) / [ADR-0048](../adr/0048-undo-redo-optimistic-lock-semantics.md)
+- Token-hashed, email-bound, 3-layer rate-limited invitations per [ADR-0026](../adr/0026-token-hashed-invitations.md) / [ADR-0027](../adr/0027-three-layer-invitation-rate-limit.md)
+- @mention notifications + bell + ⌘K command palette + WIP limits + labels + assignees + activity log + undo/redo
 
-[Live demo](#) · [Source](https://github.com/leagames0221-sys/craftstack/tree/main/apps/collab) · [Architecture](../architecture/system-overview.md)
+[Live demo](https://craftstack-collab.vercel.app) · [Source](https://github.com/leagames0221-sys/craftstack/tree/main/apps/collab) · [45 s walkthrough](https://www.loom.com/share/1f6915e588cb4176bfc8272f0f9310bb)
 
-## 🟠 Knowlex — Single-tenant RAG demo (multi-tenant evolution deferred)
+## 🟠 Knowlex — Single-tenant RAG demo
 
-> ⚠️ **Design-phase aspirational copy** — this section describes the original design-phase ambition for Knowlex. The **shipped MVP** is scoped down per [ADR-0039](../adr/0039-knowlex-mvp-scope.md): single-tenant, paragraph-aware chunking, pgvector HNSW cosine kNN, streamed Gemini 2.0 Flash with numbered citations. The bullets below are the next-arc target, not the current state. Current status + measured numbers live in the main [README](../../README.md) and [`docs/eval/README.md`](../eval/README.md).
+Live at <https://craftstack-knowledge.vercel.app>. Workspace schema partitioning shipped per [ADR-0047](../adr/0047-knowlex-workspace-tenancy-plan.md) partial in v0.5.0; access control deferred to v0.5.4 once Auth.js lands.
 
-Target state (per design-phase ADRs 0011–0015, not yet shipped):
+- Paste text at `/kb` → paragraph-aware 512-char chunking → `gemini-embedding-001` at 768 dim (via `outputDimensionality`) → pgvector **HNSW cosine** index per [ADR-0041](../adr/0041-knowlex-ivfflat-to-hnsw.md) (replaced ivfflat after a silent-zero-rows pathology at corpus=2)
+- Ask at `/` → cosine kNN retrieval → streamed Gemini 2.0 Flash answer with numbered citations per [ADR-0039](../adr/0039-knowlex-mvp-scope.md) (MVP scope)
+- Live measurement infrastructure: nightly eval cron with v4 OR-mode scoring (21 OR + 6 AND proper-noun + 3 adversarial questions) per [ADR-0049 § 7th arc](../adr/0049-rag-eval-client-retry-contract.md)
+- Schema-vs-prod drift fix shipped in v0.5.2 (`vercel-build` migration regime per [ADR-0051](../adr/0051-prisma-migrate-on-vercel-build.md)); drift-detect-v2 via `pg_catalog` assertion gates PRs
 
-- PostgreSQL Row-Level Security + query-layer `withTenant()` wrapper
-- Hybrid retrieval: pgvector (HNSW) + BM25, fused via Reciprocal Rank Fusion
-- Cohere `rerank-multilingual-v3`, cross-encoder fallback for quota resilience
-- HyDE + Faithfulness check — hallucinated sentences are flagged, not hidden
-- 50-sample golden QA running in CI with Context Precision ≥ 0.80 gate
+> ⚠️ **Design-phase ambitions deferred**: hybrid retrieval (BM25 + vector via RRF) per ADR-0011, Cohere Rerank per ADR-0011, HyDE per ADR-0014, NLI Faithfulness check per ADR-0013, RLS per ADR-0010 — all explicitly scoped out by ADR-0039 (MVP). They remain on the roadmap. Pure cosine kNN is what ships.
 
-[Live demo](https://craftstack-knowledge.vercel.app) · [Source](https://github.com/leagames0221-sys/craftstack/tree/main/apps/knowledge) · [Eval report](../eval/README.md) · [ADR-0039](../adr/0039-knowlex-mvp-scope.md)
+[Live demo](https://craftstack-knowledge.vercel.app) · [Source](https://github.com/leagames0221-sys/craftstack/tree/main/apps/knowledge) · [33 s walkthrough](https://www.loom.com/share/acff991e3da94d5aa4e98dcee0b100e2) · [Eval reports](../eval/README.md)
 
 ## What this portfolio demonstrates
 
-**Full-stack delivery from scratch.** Schema, API, realtime, UI, CI, observability — no starter template was cloned. Every subsystem is justified in [48 ADRs](../adr/).
+**Audit-survivable engineering.** **51 ADRs** documenting every consequential decision in MADR format. Incident-driven ratchet log: [ADR-0046](../adr/0046-zero-cost-by-construction.md) (zero-cost stance), [ADR-0049](../adr/0049-rag-eval-client-retry-contract.md) (7-arc eval reliability incident log), [ADR-0050](../adr/0050-knowlex-ingest-deduplication.md) (ingest dedup), [ADR-0051](../adr/0051-prisma-migrate-on-vercel-build.md) (schema-vs-prod drift forensic + axis-4 audit category mistake retracted in writing). Decisions get superseded explicitly, never silently rewritten.
 
-**Production discipline.** Security headers, [STRIDE threat model](../security/threat-model.md), [incident runbook](../ops/runbook.md), [rate limits](../api/rate-limits.md), [data-retention policy](../compliance/data-retention.md). RAG quality regressions are caught by an [Eval CI gate](../adr/0015-eval-in-ci.md).
+**Implementation discipline.** Pivoted from [ADR-0009](../adr/0009-vercel-flyio-hybrid.md) (Vercel + Fly.io hybrid) to Pusher Channels during Boardly v0.1.0 implementation. Reason: ADR-0046 mandate (zero-cost-by-construction) + single-pipeline simplicity + env-guarded degradation pattern. ADR-0009 marked Superseded by ADR-0052 which records the implementation-time pivot rationale.
 
-**Free-tier operations.** The entire production target is `$0/month` using Neon, Upstash, Fly.io, Vercel, Cloudflare R2, Google Gemini, Cohere trial. Every free-tier quirk is mitigated in code, not hoped around. See [ADR-0016](../adr/0016-free-tier-constraints.md).
+**Free-tier operations, $0/mo by construction, CI-enforced.** [`scripts/check-free-tier-compliance.mjs`](../../scripts/check-free-tier-compliance.mjs) runs as a PR-blocking `free-tier-compliance` gate; introducing paid-plan `vercel.json`, billable SDKs, or leaked secret patterns fails the merge. `EMERGENCY_STOP=1` env flag short-circuits every write + AI endpoint per [ADR-0046](../adr/0046-zero-cost-by-construction.md). STRIDE threat model covers the cost-attack class as `C-01..C-06`.
 
-## Stack
+**Test discipline by surface.** 166 Vitest in collab + 40 in knowledge = **206 unit cases**, **24 Playwright** (smoke / authed E2E across board/dashboard/rate-limits/workspace / a11y + authed-a11y / signin), Knowlex retrieve integration test against real `pgvector` service container, axe-core a11y gate as PR-blocking on every public + authenticated page, nightly RAG eval cron with v4 substring-OR + AND-proper-noun + adversarial scoring.
 
-Next.js 16 · TypeScript · Prisma 7 · PostgreSQL 16 · pgvector · Socket.IO · Upstash Redis · Cloudflare R2 · Auth.js v5 · Gemini · Cohere Rerank · Turborepo · pnpm · Vitest · Playwright · k6 · Sentry · Better Stack · UptimeRobot · Fly.io · Vercel · Cloudflare DNS.
+## Stack (as actually deployed)
+
+Next.js 16 · TypeScript 5 · Prisma 7 + `@prisma/adapter-pg` · PostgreSQL 16 + pgvector (HNSW) on Neon Singapore · **Pusher Channels** (Sandbox tier, env-guarded) · Upstash Redis (Tokyo, rate-limit only) · Resend (email, env-guarded) · Auth.js v5 (JWT) · Gemini AI Studio (`embedding-001` + `2.0-flash`) · Turborepo · pnpm · Vitest · Playwright · k6 (scaffold per [ADR-0009 superseded note](../adr/0009-vercel-flyio-hybrid.md)) · Sentry (env-guarded with in-memory fallback per [ADR-0045](../adr/0045-observability-demo-mode.md)) · Vercel Hobby.
+
+## How to evaluate this in 10 minutes
+
+1. **Live probes**: `curl https://craftstack-knowledge.vercel.app/api/kb/stats` should return `indexType: "hnsw"`, `storedDim: 768`, `expectedDim: 768`. Then ingest at `/api/kb/ingest`, ask at `/`. The `/status` page on Boardly shows env-presence health for every optional service.
+2. **Recommended ADRs to read first** (each tells a complete incident → fix → ratchet story): [0046](../adr/0046-zero-cost-by-construction.md) (zero-cost stance) → [0049](../adr/0049-rag-eval-client-retry-contract.md) (7-arc eval reliability incident log) → [0051](../adr/0051-prisma-migrate-on-vercel-build.md) (schema-vs-prod drift forensic + axis-4 audit category mistake) → [0040](../adr/0040-csp-rollback-to-static-unsafe-inline.md) (CSP rollback honesty, A+ → A).
+3. **Measured eval**: see [`docs/eval/`](../eval/) for golden corpus + per-cron-run reports.
+4. **Demo videos**: [45 s Boardly](https://www.loom.com/share/1f6915e588cb4176bfc8272f0f9310bb) + [33 s Knowlex](https://www.loom.com/share/acff991e3da94d5aa4e98dcee0b100e2) narrated walkthroughs.
 
 ## Contact
 
-- Email · leagames0221-sys@github
-- GitHub · <https://github.com/leagames0221-sys>
+GitHub · <https://github.com/leagames0221-sys>
