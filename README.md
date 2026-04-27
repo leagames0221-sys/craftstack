@@ -231,16 +231,27 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 
 ## Roadmap
 
+### Shipped
+
 - ✅ **Week 1–2** — Monorepo scaffolding, CI, Docker Compose
-- ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, Vitest (40 cases)
-- ✅ **Boardly v0.1.0** — Deployed to Vercel + Neon + Upstash; authenticated dashboard, workspace & board CRUD working
+- ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, initial Vitest suite (40 cases at the time, now **206**)
+- ✅ **Boardly v0.1.0** — Deployed to Vercel + Neon + Upstash; authenticated dashboard, workspace & board CRUD
+- ✅ **Week 4** — Resend-backed workspace invitations with token-hashed accept flow (7-day expiry, revocable, email-matching enforcement)
 - ✅ **Week 5** — Card/List CRUD with optimistic lock, editor modal, `@dnd-kit` drag-and-drop
 - ✅ **Week 6** — Pusher Channels realtime fanout (card/list mutations broadcast to peers on the same board)
-- ✅ **Week 4** — Resend-backed workspace invitations with token-hashed accept flow (7-day expiry, revocable, email-matching enforcement)
-- 🚧 **Week 6 (follow-up)** — presence indicators, cursor sharing
-- ⏳ **Week 7–9** — Attachments (Vercel Blob), search, notifications, multi-language, k6 load test
-- ⏳ **Week 9–16** — Knowlex: ingestion pipeline, hybrid search, RAG with Faithfulness gate
-- ⏳ **Week 17–18** — Demo videos, portfolio LP polish
+- ✅ **Week 7–9** — Search (⌘K command palette + label filter, membership-scoped server-side), notifications (mention bell + Notification rows + unread badge polling)
+- ✅ **Demo videos** — Boardly 45 s + Knowlex 33 s narrated walkthroughs (VOICEVOX, free tier, fully reproducible pipeline)
+- ✅ **Knowlex MVP through v0.5.2** — full RAG live: ingestion (paragraph-aware 512-char chunking → 768-dim `gemini-embedding-001` → pgvector HNSW cosine kNN), streamed Gemini 2.0 Flash with numbered citations, nightly eval cron + golden v4 OR-mode scoring (ADR-0049 § 7th arc), workspace schema partitioning (ADR-0047 partial), schema-vs-prod drift fix + `vercel-build` migration regime (ADR-0051), drift-detect-v2 via `pg_catalog` assertion gating PRs
+
+### Planned
+
+- 🚧 **Presence indicators / cursor sharing** — Pusher presence channels, follow-up to Week 6
+- ⏳ **Attachments (Cloudflare R2)** — schema-ready at the Prisma layer per [ADR-0008](docs/adr/0008-cloudflare-r2.md); UI wiring follow-up
+- ⏳ **Multi-language** support and **k6 load-test** scenario execution (k6 script exists, measured run pending)
+- ⏳ **Knowlex retrieval extensions** — hybrid search (BM25 + vector via RRF), HyDE, Cohere Rerank, all named in [ADR-0011](docs/adr/0011-hybrid-search-rerank.md) / [ADR-0014](docs/adr/0014-hyde.md)
+- ⏳ **LLM-as-judge `--judge` flag** in `scripts/eval.ts` (gemini-2.5-pro rubric, optional env-toggled CI job so the default eval stays $0)
+- ⏳ **Auth.js on Knowlex + `WorkspaceMember` access-control** (v0.5.4 arc, the access-control half of [ADR-0047](docs/adr/0047-knowlex-workspace-tenancy-plan.md) § Status)
+- ⏳ **HNSW tuning at 10 k-chunk corpus** — measured p95 × `ef_search` × `m` grid in `docs/eval/HNSW_TUNING.md`, hourly background ingest under the 1500 RPD AI Studio cap (v0.6.0)
 
 ## License
 
