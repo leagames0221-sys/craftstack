@@ -12,7 +12,7 @@
  * that don't carry our nonce, and hydration silently failed — every
  * interactive page looked dead. Rolled back to the static CSP in
  * `next.config.ts`. Grade drops from A+ to A; functional site wins.
- * Follow-up ADR to be added.
+ * Decision recorded in ADR-0040.
  */
 import NextAuth from "next-auth";
 import { authEdgeConfig } from "@/auth/config.edge";
