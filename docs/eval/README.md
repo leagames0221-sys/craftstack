@@ -60,8 +60,47 @@ Requires `GEMINI_API_KEY` on the target server (the eval hits the live ingest + 
 
 Prefer questions where the expected answer contains distinctive, low-ambiguity substrings (model names, specific numbers, protocol names). Avoid scoring on style or phrasing.
 
+## Reports (v0.5.3+ — auto-emitted by eval.ts)
+
+`apps/knowledge/scripts/eval.ts` emits a JSON report to `docs/eval/reports/YYYY-MM-DD.json` at the end of every run, regardless of pass/fail. Schema (v1):
+
+```jsonc
+{
+  "schemaVersion": 1,
+  "ranAt": "2026-04-28T04:14:00.000Z",
+  "baseUrl": "https://craftstack-knowledge.vercel.app",
+  "goldenVersion": 4,
+  "goldenSize": { "questions": 30, "corpus": 10 },
+  "thresholds": { "minPassRate": 0.6, "maxP95LatencyMs": 10000 },
+  "aggregate": {
+    "passed": 24,
+    "total": 30,
+    "passRate": 0.8,
+    "passRatePct": 80.0,
+    "latencyP50Ms": 4321,
+    "latencyP95Ms": 8800,
+    "passRateOk": true,
+    "latencyOk": true,
+    "overallPass": true,
+  },
+  "outcomes": [
+    {
+      "id": "q001",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 4123,
+      "reasons": [],
+    },
+    // ...
+  ],
+}
+```
+
+The eval workflow's `actions/upload-artifact@v4` step picks these up automatically. `if-no-files-found: ignore` is preserved as a safety net (a crashed eval still uploads whatever exists). The eventual auto-commit-to-main step (Tier C-#2 follow-up) will consume this directly to populate the README badge.
+
 ## Follow-ups
 
-- **Nightly GitHub Actions workflow (Session 256-B target)**. `.github/workflows/eval.yml` wires `pnpm --filter knowledge eval` into a scheduled run against the live Knowlex deploy. The workflow commits JSON reports into `docs/eval/reports/YYYY-MM-DD.json` and opens an issue on regression (pass-rate drop ≥ 5 points day-over-day). Requires a `GEMINI_API_KEY` GitHub secret; workflow ships as `workflow_dispatch` only until the secret is present, then the cron trigger is enabled in a follow-up.
-- **Measured numbers on the README badge**. Once the nightly workflow has produced at least three report files, the main `README.md` gains an eval badge showing `contextPrecision / faithfulness / p95` from the latest report. Turns the `hire` → `strong hire` probe (measured eval numbers) into a repo-visible answer.
+- **Auto-commit eval reports to main on green runs (Tier C-#2)**. The eval workflow currently runs with `permissions: contents: read`. Flipping to `contents: write` and adding a `git commit -am` step gives main a tracked time-series of measurements without manual intervention. Defer until at least one stable report week has been observed, to avoid the workflow-spam class of bug.
+- **Measured numbers on the README badge**. Once one report file exists, the main `README.md` gains an eval badge showing `passRate / p95Ms` from the latest report. Turns the `hire` → `strong hire` probe (measured eval numbers) into a repo-visible answer.
+- **LLM-as-judge `--judge` flag**. Optional post-processing pass that posts answers to `gemini-2.5-pro` with a rubric prompt for true faithfulness scoring. Gated as a separate env-toggled CI job so the default eval stays zero-cost-on-free-tier.
 - **LLM-as-judge `--judge` flag**. Optional post-processing pass that posts answers to `gemini-2.5-pro` with a rubric prompt for true faithfulness scoring. Gated as a separate env-toggled CI job so the default eval stays zero-cost-on-free-tier.
