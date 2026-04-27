@@ -162,10 +162,6 @@ export async function deleteList(userId: string, listId: string) {
   });
 }
 
-async function assertListEditor(userId: string, listId: string) {
-  return assertListRole(userId, listId, "EDITOR");
-}
-
 export async function assertListRole(
   userId: string,
   listId: string,
