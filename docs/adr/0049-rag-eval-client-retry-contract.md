@@ -443,10 +443,13 @@ recoverable from the retry breadcrumbs in the CI log when needed for
 deeper analysis.
 
 p95 thresholds in `docs/eval/golden_qa.json` (`maxP95LatencyMs:
-8000`) implicitly tolerate one retry path at the tail. If p95 ever
-exceeds 8s, the retry breadcrumbs will show whether the cause is
-slow Gemini generation or chronic cold-start re-fires; the
-distinction lives in the log, not in the metric.
+10000` at v0.5.1; was `8000` in earlier arcs and relaxed to 10000 to
+absorb the temperature 0.7 + safety BLOCK_NONE generation overhead
+observed in run 6 — see § 6th arc) implicitly tolerate one retry
+path at the tail. If p95 ever exceeds the threshold, the retry
+breadcrumbs will show whether the cause is slow Gemini generation
+or chronic cold-start re-fires; the distinction lives in the log,
+not in the metric.
 
 ## Consequences
 

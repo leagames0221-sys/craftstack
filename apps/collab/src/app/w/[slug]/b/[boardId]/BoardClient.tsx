@@ -442,7 +442,6 @@ export function BoardClient({
     let history = historyRef.current;
     let entry: MoveEntry | null = null;
     let skipped = 0;
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const r = popUndo(history);
       if (!r) {
@@ -477,7 +476,6 @@ export function BoardClient({
     let history = historyRef.current;
     let entry: MoveEntry | null = null;
     let skipped = 0;
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const r = popRedo(history);
       if (!r) {

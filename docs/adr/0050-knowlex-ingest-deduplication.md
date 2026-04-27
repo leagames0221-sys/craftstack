@@ -187,4 +187,4 @@ re-seeds 10 docs into a clean DB and steady-state is locked at 10.
 - Content-hash dedup (skip the embed call when the new body's hash matches the existing). Cheaper, but adds a hash column or a separate index. Tracked as a future optimisation if embed cost becomes load-bearing.
 - Document versioning. ADR-0039's deferral stays — UPSERT with replace is the v0.5.x stance; explicit version history is a v0.6.0+ concern.
 - Multi-tenant dedup key extension (`(workspaceId, title)`). Lands together with ADR-0047 implementation in Session 256-A.
-- Refusal-marker expansion / substring-AND→OR scoring. Tracked as the v0.6.0 RAG-improvement arc per ADR-0049 § Measured baseline + improvement headroom.
+- Refusal-marker expansion / substring-AND→OR scoring. **Shipped in v0.5.1** per ADR-0049 § 7th arc (originally tracked as v0.6.0 work in § Measured baseline + improvement headroom; brought forward after run 6 trade-off observation).
