@@ -4,6 +4,54 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.2] — 2026-04-27
+
+### Fixed — Knowlex live `/api/kb/ingest` recovery (ADR-0051)
+
+The Sunday 2026-04-26 audit looked clean, then Monday's eval cron Run 7 (2026-04-27 06:35 UTC) crashed at the very first ingest:
+
+```
+Invalid `prisma.document.deleteMany()` invocation:
+The column `Document.workspaceId` does not exist in the current database.
+```
+
+Root cause: the v0.5.0 ship added `prisma/migrations/20260426_workspace_tenancy/migration.sql` and updated `schema.prisma`, but `apps/knowledge/package.json` `build` only ran `prisma generate && next build` — never `prisma migrate deploy`. Vercel regenerated the client to expect the new column, but the migration was never applied to the live Neon database. `/api/kb/ingest` and any `workspaceId`-aware retrieval path were silently broken from 2026-04-26 07:50 UTC through 2026-04-27 ~07:30 UTC (~23h). The probes the Sunday audit relied on (`/api/kb/stats`, `/api/kb/documents`) don't reference `workspaceId`, so the drift was invisible. ADR-0051 documents the full inference error.
+
+- **`apps/knowledge/package.json`** — added **`vercel-build`** script (`prisma generate && prisma migrate deploy && next build`) alongside unchanged `build` (`prisma generate && next build`). Vercel auto-prefers `vercel-build`; CI continues with `build` (no DB needed). Idempotent on re-run via Prisma's `_prisma_migrations` table. Pattern per Prisma's "Deploy to Vercel" guide.
+- **`turbo.json`** — `build` task gains `passThroughEnv` for `DATABASE_URL`, `DIRECT_DATABASE_URL`, `GEMINI_API_KEY`, `SENTRY_AUTH_TOKEN`, `TENANCY_ENABLED`, `ENABLE_OBSERVABILITY_API`, `EMERGENCY_STOP`. Without this, Vercel's env vars don't reach the `vercel-build` script even though they're set on the project.
+- **`apps/knowledge/package.json`** — `prisma` CLI moved from `devDependencies` to `dependencies` so Vercel's devDeps pruning doesn't break the new `migrate deploy` step (per Prisma's "Deploy to Vercel" guide).
+- **ADR-0051** — `prisma migrate deploy` in Vercel build script — closing the v0.5.0 schema-vs-prod drift. Documents idempotency, concurrent-deploy race mitigation, the failure mode (build fails → previous deploy stays live, atomic ship preserved), and the audit category mistake (probes that don't touch the new column are not evidence of migration application).
+
+### Changed — stale value sync + ADR alignment + operator note (audit Tier A/B/D/E)
+
+Sunday 2026-04-26 audit (doc 45) Tier A/B/D/E findings, all bundled per doc 46 § 10:00 JST playbook. No code semantics change.
+
+- **README badges + body** — `tests-195+35` → `tests-206+35`; `(48 entries)` → `(50 entries)`; `**195** unit cases` and `166 collab + 29 knowledge` → `**206** unit cases` and `166 collab + 40 knowledge`.
+- **Landing + OG + layout** — `apps/collab/src/app/page.tsx` description, `<Stat label="Vitest cases" value="195"/>` → `value="206"`, `<Stat label="ADRs" value="48"/>` → `value="50"`; `apps/collab/src/app/opengraph-image.tsx` `"195 tests"` → `"206 tests"`; `apps/collab/src/app/layout.tsx` `description` (×2) `195 tests` → `206 tests`.
+- **`package.json` description** — Knowlex single-tenant RAG demo / tenancy deferred per ADR-0039 → workspace schema partitioning shipped per ADR-0047 partial in v0.5.0; auth-gated access control deferred to v0.5.2.
+- **ADR-0050 § Not in scope** — substring-AND→OR scoring is no longer "v0.6.0 RAG-improvement arc" but "Shipped in v0.5.1 per ADR-0049 § 7th arc" (the work was brought forward).
+- **ADR-0049 § Measurement contract** — `maxP95LatencyMs: 8000` → `10000` with v0.5.1 trade-off note (run 6 temperature 0.7 + safety BLOCK_NONE generation overhead).
+- **ADR-0047 § Implementation status** — added operator note: `TENANCY_ENABLED=true` を Vercel env で flip する前に `WorkspaceMember` model + `requireWorkspaceMember` route guard が live で実装されていることを確認すること。
+- **`BoardClient.tsx`** — 不要になった `eslint-disable-next-line no-constant-condition` を 2 箇所削除 (lint warning -2)。
+
+### Added — perfectionist scope (post external-LLM review, ChatGPT 2026-04-27)
+
+After a side-by-side architecture review with an external LLM and a live probe verifying that the Vercel preview build had already migrated prod (HTTP 201 with `workspaceId` field present), the v0.5.2 PR scope was expanded with three additional layers of defence per the user mandate "妥協せず完璧":
+
+- **`.github/workflows/ci.yml` — drift detection attempted, deferred to v0.5.3**: a `Verify schema matches migrations (drift detect)` step using `prisma migrate diff --from-migrations --to-schema --exit-code` was added against a `knowlex_shadow` DB, but the resulting diff was a structural false positive (Prisma's declarative language has no HNSW index syntax; the v0.4.x raw-SQL HNSW migration looks like "removed index" to `migrate diff` regardless of any schema change). The step + shadow DB + config-side `shadowDatabaseUrl` were reverted in the same v0.5.2 PR. Two paths forward documented in ADR-0051: snapshot post-migration `prisma db pull` output, or custom `pg_catalog` assertion script. Both deferred to v0.5.3 so the approach can be vetted with synthetic-drift dry-runs before becoming a PR-blocking gate.
+- **`docs/adr/0051` § Not in scope (revised)**: rewritten to reflect post-PR-time observations — Vercel preview build uses prod DB (confirmed by probe), expand→backfill→contract pattern recommendation captured for future migrations introducing NOT NULL on tables with concurrent writes, ChatGPT hallucination flagged (Vercel Hobby build timeout is 45 minutes, not 45-60 seconds). The ADR now also references ADR-0049 § 8th arc (this incident as continuation of the eval-reliability arc).
+- **`docs/adr/README.md` index backfill**: ADR-0041 through ADR-0051 added to the index table. The table previously stopped at ADR-0040 (pre-existing drift before this PR); the perfectionist scope cleared it inline rather than deferring to a separate cleanup PR.
+
+### Tier C critical follow-up (v0.5.3)
+
+- **Vercel preview deploy MUST stop touching prod DB**. The Q1 verification probe confirmed the preview build of PR #27 ran `prisma migrate deploy` against the production Neon DB, not a preview-scoped branch. Today this was beneficial (it pre-applied the fix before merge), but in general a preview build mutating prod schema violates the "preview is reviewable without side effect" principle. v0.5.3 wires the Vercel-Neon integration so each preview deploy auto-creates a Neon branch. The wiring is dashboard-side (Vercel project → Integrations → Neon) and cannot ship in a code-only PR.
+
+### What this proves about the audit→ratchet loop
+
+Sunday's audit (doc 45) found 12 stale strings and 1 OpenAPI drift; all measurement-cosmetic issues. It also concluded `軸 4: schema migration prod 適用 = 異常なし` based on probe responses that **could not have disproved** the drift in the first place. Run 7's crash exposed the category mistake. v0.5.2 ships both halves: the cosmetic Tier A sync, and the load-bearing ADR-0051 fix that prevents the same drift class from recurring. The hiring-sim rubric (doc 42) called out `claim-reality alignment via retraction` as the rare positive signal in v0.4.2; v0.5.2 ships the same shape for an audit conclusion that was wrong.
+
+Run 7 measured-eval results (and the README badge that depends on them) are deferred to a future v0.5.3 once the Run 8 cron observes a working ingest path.
+
 ## [0.5.1] — 2026-04-26
 
 ### Added — RAG eval substring-OR scoring + expanded refusal markers (ADR-0049 § 7th arc)

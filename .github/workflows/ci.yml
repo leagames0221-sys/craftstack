@@ -130,6 +130,33 @@ jobs:
           DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
         run: pnpm --filter knowledge exec prisma migrate deploy
 
+      # NOTE on PR-time drift detection (ADR-0051 § Not in scope #2):
+      #
+      # `prisma migrate diff --from-migrations --to-schema --exit-code`
+      # was attempted in PR #27 (commits 55e31e6 / 54eca07) but
+      # surfaced **pre-existing structural drift that Prisma cannot
+      # represent**: the v0.4.x HNSW index on `Embedding.embedding`
+      # is created via raw SQL in migration `20260424_hnsw`, but
+      # Prisma's declarative schema language does not natively
+      # express HNSW indexes. Result: every PR would fail drift
+      # detect with `[-] Removed index on columns (embedding)`
+      # even when no schema change was made — a false positive that
+      # blocks all PRs.
+      #
+      # Two paths forward (deferred to v0.5.3):
+      # 1. Snapshot post-migration `prisma db pull` output as a
+      #    canonical reference and diff PR-time DB introspection
+      #    against it (sidesteps schema.prisma's HNSW gap).
+      # 2. Custom Node script that introspects the DB after
+      #    `prisma migrate deploy` and asserts a known-good shape
+      #    (table list, column list, index list including HNSW).
+      #
+      # Until then, the integration tests below provide *indirect*
+      # drift detection: they exercise workspaceId-aware routes that
+      # would fail if the generated client and the migrated DB
+      # diverge. Weaker than a dedicated drift gate but the state
+      # of the art given Prisma's HNSW limitation.
+
       - name: Run integration tests
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex

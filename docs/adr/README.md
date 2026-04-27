@@ -7,48 +7,59 @@ Once Accepted, an ADR is immutable — later decisions supersede, they do not re
 
 > **Supersession notice**: [ADR-0003](0003-auth-js-database-session.md) specified a database session strategy. It was superseded in practice by the JWT strategy to unblock the Vercel Edge Runtime proxy; see the `fix(auth)` commit in git history for the rationale. A formal ADR-0023 will replace it when the next batch lands.
 
-| #                                                               | Title                                                       | Status   |
-| --------------------------------------------------------------- | ----------------------------------------------------------- | -------- |
-| [0001](0001-monorepo.md)                                        | Monorepo (Turborepo + pnpm workspaces)                      | Accepted |
-| [0002](0002-prisma-orm.md)                                      | Prisma as ORM                                               | Accepted |
-| [0003](0003-auth-js-database-session.md)                        | Auth.js v5 + database session strategy                      | Accepted |
-| [0004](0004-socket-io-redis-adapter.md)                         | Socket.IO + Redis Adapter for realtime                      | Accepted |
-| [0005](0005-redis-pubsub-broadcast.md)                          | Redis Pub/Sub for broadcast synchronization                 | Accepted |
-| [0006](0006-lexorank.md)                                        | LexoRank for list/card ordering                             | Accepted |
-| [0007](0007-optimistic-locking.md)                              | Optimistic locking via `version` column                     | Accepted |
-| [0008](0008-cloudflare-r2.md)                                   | Cloudflare R2 for object storage                            | Accepted |
-| [0009](0009-vercel-flyio-hybrid.md)                             | Vercel + Fly.io hybrid deploy                               | Accepted |
-| [0010](0010-rls-and-query-layer-defense.md)                     | RLS + query-layer double defense                            | Accepted |
-| [0011](0011-hybrid-search-rerank.md)                            | Hybrid search (pgvector + BM25 + RRF) + rerank              | Accepted |
-| [0012](0012-embedding-separate-table.md)                        | Embedding separated into its own table                      | Accepted |
-| [0013](0013-faithfulness-check.md)                              | Faithfulness check for RAG grounding                        | Accepted |
-| [0014](0014-hyde.md)                                            | HyDE (hypothetical document embeddings)                     | Accepted |
-| [0015](0015-eval-in-ci.md)                                      | RAG evaluation integrated into CI                           | Accepted |
-| [0016](0016-free-tier-constraints.md)                           | Free-tier infra constraints and mitigations                 | Accepted |
-| [0017](0017-release-order.md)                                   | Boardly-first release order                                 | Accepted |
-| [0018](0018-db-instance-per-app.md)                             | Separate database instances per app                         | Accepted |
-| [0019](0019-conversation-tenant-trigger.md)                     | Conversation/Message tenant-member trigger                  | Accepted |
-| [0020](0020-prompt-registry.md)                                 | Prompt Git-managed with SHA256 tracking                     | Accepted |
-| [0021](0021-lexorank-library.md)                                | Use existing `lexorank` npm package                         | Accepted |
-| [0022](0022-e2e-credentials-provider.md)                        | E2E-only credentials provider                               | Accepted |
-| [0023](0023-four-tier-rbac.md)                                  | Four-tier RBAC with `roleAtLeast` comparator                | Accepted |
-| [0024](0024-optimistic-locking-version-column.md)               | Optimistic locking via `version` column on Card             | Accepted |
-| [0025](0025-lexorank-positions.md)                              | LexoRank strings for list and card ordering                 | Accepted |
-| [0026](0026-token-hashed-invitations.md)                        | Token-hashed invitations with email-bound accept            | Accepted |
-| [0027](0027-three-layer-invitation-rate-limit.md)               | Three-layer invitation rate limit                           | Accepted |
-| [0028](0028-full-replace-set-semantics.md)                      | Full-replace set semantics for labels / assignees           | Accepted |
-| [0029](0029-cross-workspace-guards.md)                          | Cross-workspace guards on set-mutations                     | Accepted |
-| [0030](0030-best-effort-side-effects.md)                        | Best-effort side effects separated from business writes     | Accepted |
-| [0031](0031-url-as-state-for-filters.md)                        | URL query string as source of truth for filters             | Accepted |
-| [0032](0032-mention-resolution-and-env-guarded-integrations.md) | `@mention` resolution and env-guarded integrations          | Accepted |
-| [0033](0033-knowlex-playground-on-collab-deploy.md)             | Host the Knowlex "playground" surface on the collab deploy  | Accepted |
-| [0034](0034-axe-core-a11y-in-playwright-smoke.md)               | A11y assertions via axe-core in Playwright smoke            | Accepted |
-| [0035](0035-hand-written-openapi-as-the-contract.md)            | Hand-written OpenAPI 3.1 spec as the API contract           | Accepted |
-| [0036](0036-move-undo-redo-client-only.md)                      | Client-only undo / redo for card moves                      | Accepted |
-| [0037](0037-cost-attack-hardening-layered-budgets.md)           | Layered cost-attack hardening with in-code budgets          | Accepted |
-| [0038](0038-e2e-credentials-provider-implementation.md)         | E2E credentials provider implementation + authed Playwright | Accepted |
-| [0039](0039-knowlex-mvp-scope.md)                               | Knowlex MVP — ship vertical slice, defer tenancy            | Accepted |
-| [0040](0040-csp-rollback-to-static-unsafe-inline.md)            | Roll back nonce CSP; accept A grade for a working site      | Accepted |
+| #                                                               | Title                                                                                                     | Status                                                                             |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [0001](0001-monorepo.md)                                        | Monorepo (Turborepo + pnpm workspaces)                                                                    | Accepted                                                                           |
+| [0002](0002-prisma-orm.md)                                      | Prisma as ORM                                                                                             | Accepted                                                                           |
+| [0003](0003-auth-js-database-session.md)                        | Auth.js v5 + database session strategy                                                                    | Accepted                                                                           |
+| [0004](0004-socket-io-redis-adapter.md)                         | Socket.IO + Redis Adapter for realtime                                                                    | Accepted                                                                           |
+| [0005](0005-redis-pubsub-broadcast.md)                          | Redis Pub/Sub for broadcast synchronization                                                               | Accepted                                                                           |
+| [0006](0006-lexorank.md)                                        | LexoRank for list/card ordering                                                                           | Accepted                                                                           |
+| [0007](0007-optimistic-locking.md)                              | Optimistic locking via `version` column                                                                   | Accepted                                                                           |
+| [0008](0008-cloudflare-r2.md)                                   | Cloudflare R2 for object storage                                                                          | Accepted                                                                           |
+| [0009](0009-vercel-flyio-hybrid.md)                             | Vercel + Fly.io hybrid deploy                                                                             | Accepted                                                                           |
+| [0010](0010-rls-and-query-layer-defense.md)                     | RLS + query-layer double defense                                                                          | Accepted                                                                           |
+| [0011](0011-hybrid-search-rerank.md)                            | Hybrid search (pgvector + BM25 + RRF) + rerank                                                            | Accepted                                                                           |
+| [0012](0012-embedding-separate-table.md)                        | Embedding separated into its own table                                                                    | Accepted                                                                           |
+| [0013](0013-faithfulness-check.md)                              | Faithfulness check for RAG grounding                                                                      | Accepted                                                                           |
+| [0014](0014-hyde.md)                                            | HyDE (hypothetical document embeddings)                                                                   | Accepted                                                                           |
+| [0015](0015-eval-in-ci.md)                                      | RAG evaluation integrated into CI                                                                         | Accepted                                                                           |
+| [0016](0016-free-tier-constraints.md)                           | Free-tier infra constraints and mitigations                                                               | Accepted                                                                           |
+| [0017](0017-release-order.md)                                   | Boardly-first release order                                                                               | Accepted                                                                           |
+| [0018](0018-db-instance-per-app.md)                             | Separate database instances per app                                                                       | Accepted                                                                           |
+| [0019](0019-conversation-tenant-trigger.md)                     | Conversation/Message tenant-member trigger                                                                | Accepted                                                                           |
+| [0020](0020-prompt-registry.md)                                 | Prompt Git-managed with SHA256 tracking                                                                   | Accepted                                                                           |
+| [0021](0021-lexorank-library.md)                                | Use existing `lexorank` npm package                                                                       | Accepted                                                                           |
+| [0022](0022-e2e-credentials-provider.md)                        | E2E-only credentials provider                                                                             | Accepted                                                                           |
+| [0023](0023-four-tier-rbac.md)                                  | Four-tier RBAC with `roleAtLeast` comparator                                                              | Accepted                                                                           |
+| [0024](0024-optimistic-locking-version-column.md)               | Optimistic locking via `version` column on Card                                                           | Accepted                                                                           |
+| [0025](0025-lexorank-positions.md)                              | LexoRank strings for list and card ordering                                                               | Accepted                                                                           |
+| [0026](0026-token-hashed-invitations.md)                        | Token-hashed invitations with email-bound accept                                                          | Accepted                                                                           |
+| [0027](0027-three-layer-invitation-rate-limit.md)               | Three-layer invitation rate limit                                                                         | Accepted                                                                           |
+| [0028](0028-full-replace-set-semantics.md)                      | Full-replace set semantics for labels / assignees                                                         | Accepted                                                                           |
+| [0029](0029-cross-workspace-guards.md)                          | Cross-workspace guards on set-mutations                                                                   | Accepted                                                                           |
+| [0030](0030-best-effort-side-effects.md)                        | Best-effort side effects separated from business writes                                                   | Accepted                                                                           |
+| [0031](0031-url-as-state-for-filters.md)                        | URL query string as source of truth for filters                                                           | Accepted                                                                           |
+| [0032](0032-mention-resolution-and-env-guarded-integrations.md) | `@mention` resolution and env-guarded integrations                                                        | Accepted                                                                           |
+| [0033](0033-knowlex-playground-on-collab-deploy.md)             | Host the Knowlex "playground" surface on the collab deploy                                                | Accepted                                                                           |
+| [0034](0034-axe-core-a11y-in-playwright-smoke.md)               | A11y assertions via axe-core in Playwright smoke                                                          | Accepted                                                                           |
+| [0035](0035-hand-written-openapi-as-the-contract.md)            | Hand-written OpenAPI 3.1 spec as the API contract                                                         | Accepted                                                                           |
+| [0036](0036-move-undo-redo-client-only.md)                      | Client-only undo / redo for card moves                                                                    | Accepted                                                                           |
+| [0037](0037-cost-attack-hardening-layered-budgets.md)           | Layered cost-attack hardening with in-code budgets                                                        | Accepted                                                                           |
+| [0038](0038-e2e-credentials-provider-implementation.md)         | E2E credentials provider implementation + authed Playwright                                               | Accepted                                                                           |
+| [0039](0039-knowlex-mvp-scope.md)                               | Knowlex MVP — ship vertical slice, defer tenancy                                                          | Accepted                                                                           |
+| [0040](0040-csp-rollback-to-static-unsafe-inline.md)            | Roll back nonce CSP; accept A grade for a working site                                                    | Accepted                                                                           |
+| [0041](0041-knowlex-ivfflat-to-hnsw.md)                         | Replace pgvector ivfflat index with HNSW for Knowlex kNN                                                  | Accepted                                                                           |
+| [0042](0042-knowlex-test-observability-stack.md)                | Knowlex test, bench, and smoke stack after the HNSW fix                                                   | Accepted                                                                           |
+| [0043](0043-knowlex-ops-cost-ci-eval.md)                        | Knowlex operational parity — cost guards, CI gates, RAG eval                                              | Accepted                                                                           |
+| [0044](0044-knowlex-openapi-a11y-sentry-v0.4.0.md)              | Knowlex docs / a11y / security-header / Sentry parity for v0.4.0                                          | Accepted                                                                           |
+| [0045](0045-observability-demo-mode.md)                         | Observability with a zero-signup demo mode                                                                | Accepted                                                                           |
+| [0046](0046-zero-cost-by-construction.md)                       | Zero-cost by construction — CI-enforced free-tier + kill switch                                           | Accepted                                                                           |
+| [0047](0047-knowlex-workspace-tenancy-plan.md)                  | Knowlex workspace tenancy — plan and scoped migration                                                     | Partially Accepted (v0.5.0 schema partitioning; access control deferred to v0.5.2) |
+| [0048](0048-undo-redo-optimistic-lock-semantics.md)             | Undo/redo ↔ optimistic-locking semantics under broadcast                                                  | Accepted                                                                           |
+| [0049](0049-rag-eval-client-retry-contract.md)                  | RAG eval client retry contract — defending nightly cron against Neon Free cold-start (7-arc incident log) | Accepted                                                                           |
+| [0050](0050-knowlex-ingest-deduplication.md)                    | Knowlex ingest deduplication — title-based UPSERT                                                         | Accepted                                                                           |
+| [0051](0051-prisma-migrate-on-vercel-build.md)                  | `prisma migrate deploy` in Vercel build script — closing the v0.5.0 schema-vs-prod drift                  | Accepted                                                                           |
 
 ## Implementation-phase addendum (0023–0032)
 

@@ -23,6 +23,8 @@
 
 The "Partially Accepted" framing is deliberate — Knowlex shipped at v0.4.x as a fully unauthenticated MVP per ADR-0039, so the access-control half of ADR-0047 needs Auth.js as a prerequisite. Shipping the schema + filter layer first is correct sequencing: the data partitioning gate is real (no document leaks across `workspaceId` at the SQL level), the member-based access gate is honest about not being live yet.
 
+> **Operator note (v0.5.2 prerequisite gate)** — `TENANCY_ENABLED=true` を Vercel env で flip する**前に** `WorkspaceMember` model + `requireWorkspaceMember` route guard が live で実装されていることを確認すること (v0.5.2 で同梱予定)。Auth.js 未導入の状態で flag を flip すると、認証なし状態で任意 `workspaceId` を body に指定して `/api/kb/{ingest,ask}` を呼ぶことが可能になる (= Knowlex MVP のベースライン unauth surface 以上に新規攻撃面を増やしはしないが、schema partitioning gate が意味する「workspace 単位の隔離」が運用上は機能しない状態になる)。本 flag flip は v0.5.3 を予定。
+
 ## Context
 
 [ADR-0039](0039-knowlex-mvp-scope.md) deliberately shipped Knowlex as a
