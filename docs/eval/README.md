@@ -96,10 +96,10 @@ Prefer questions where the expected answer contains distinctive, low-ambiguity s
 }
 ```
 
-The eval workflow's `actions/upload-artifact@v4` step picks these up automatically. `if-no-files-found: ignore` is preserved as a safety net (a crashed eval still uploads whatever exists). The eventual auto-commit-to-main step (Tier C-#2 follow-up) will consume this directly to populate the README badge.
+The eval workflow's `actions/upload-artifact@v7` step uploads these as a workflow artifact. On **green runs**, `eval.yml` also commits the new report plus a refreshed `docs/eval/badge.json` (shields.io endpoint shape) back to `main` so the README measured-eval badge always reflects the latest pass rate + p95 latency. Failed runs short-circuit before the commit step — a regression report never lands on main.
 
 ## Follow-ups
 
-- **Auto-commit eval reports to main on green runs (Tier C-#2)**. The eval workflow currently runs with `permissions: contents: read`. Flipping to `contents: write` and adding a `git commit -am` step gives main a tracked time-series of measurements without manual intervention. Defer until at least one stable report week has been observed, to avoid the workflow-spam class of bug.
-- **Measured numbers on the README badge**. Once one report file exists, the main `README.md` gains an eval badge showing `passRate / p95Ms` from the latest report. Turns the `hire` → `strong hire` probe (measured eval numbers) into a repo-visible answer.
+- ✅ **Auto-commit eval reports to main on green runs (Tier C-#2)** — shipped in v0.5.3. `eval.yml` runs with `permissions: contents: write` and the final step commits `docs/eval/reports/YYYY-MM-DD.json` plus the refreshed `docs/eval/badge.json` (regenerated from the latest report by `scripts/eval-badge.mjs`). Failed runs do not commit.
+- ✅ **Measured numbers on the README badge** — shipped in v0.5.3. Sourced from `docs/eval/badge.json` via shields.io custom-endpoint badge.
 - **LLM-as-judge `--judge` flag**. Optional post-processing pass that posts answers to `gemini-2.5-pro` with a rubric prompt for true faithfulness scoring. Gated as a separate env-toggled CI job so the default eval stays zero-cost-on-free-tier.

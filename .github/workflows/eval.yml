@@ -32,13 +32,16 @@ name: RAG eval
 #     improvement will auto-open a GitHub issue with the artifact
 #     attached.
 #   - Report JSON is written to docs/eval/reports/YYYY-MM-DD.json and
-#     uploaded as a workflow artifact. A follow-up improvement will
-#     commit passing reports back to main so trend visualisation
-#     becomes possible.
+#     uploaded as a workflow artifact.
+#   - On green runs (eval step succeeds) the report file plus the
+#     refreshed docs/eval/badge.json are committed back to main so the
+#     measured-eval README badge stays sourced from a real time series.
+#     Failed runs do not commit (the eval-bot never lands a regression
+#     report on main).
 #
 # See docs/eval/README.md for the eval methodology, threshold
-# semantics, and the Session 256-B roadmap that tracks the
-# report-commit automation.
+# semantics, and ADR-0049 § 7th arc Tier C-#2 follow-up that this
+# auto-commit step closes.
 
 on:
   schedule:
@@ -55,7 +58,10 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  # Bumped to write so the green-run report + badge.json can land on
+  # main from the workflow itself. Failed runs short-circuit before
+  # the commit step so a regression report never reaches main.
+  contents: write
 
 jobs:
   eval:
@@ -100,3 +106,25 @@ jobs:
           path: docs/eval/reports/
           retention-days: 30
           if-no-files-found: ignore
+
+      # Refresh badge.json from the latest report so the README
+      # shields.io endpoint badge tracks the most recent green run.
+      - name: Regenerate badge.json from latest report
+        if: success()
+        run: node scripts/eval-badge.mjs
+
+      # Auto-commit-on-green. Failed runs never reach this step
+      # because of `if: success()`, so a regression report never
+      # lands on main from the workflow itself.
+      - name: Commit report + badge to main on success
+        if: success() && github.event_name != 'pull_request'
+        run: |
+          git config user.name "eval-bot"
+          git config user.email "263370648+leagames0221-sys@users.noreply.github.com"
+          git add docs/eval/reports/ docs/eval/badge.json
+          if git diff --cached --quiet; then
+            echo "no changes to commit"
+          else
+            git commit -m "chore(eval): commit green run report + refresh measured badge"
+            git push origin HEAD:main
+          fi
