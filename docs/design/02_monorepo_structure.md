@@ -3,6 +3,8 @@ name: Phase 1 - Monorepo 構成
 type: project
 ---
 
+> ⚠️ **設計フェーズ文書 (2026-04-22)** — v0.5.2 (2026-04-28) の shipped 実装は数点で乖離。詳細は [`01_project_overview.md`](01_project_overview.md) 冒頭の banner と [README](../../README.md) を参照。
+
 # Phase 1: Monorepo ディレクトリ構成 + 初期セットアップ
 
 ## ツール

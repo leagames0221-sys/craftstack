@@ -3,6 +3,8 @@ name: 脅威モデル + Runbook + レート制限 + データ保持
 type: project
 ---
 
+> ⚠️ **設計フェーズ文書 (2026-04-22)** — v0.5.2 で ship 済の同名成果物が `docs/security/threat-model.md` / `docs/ops/runbook.md` / `docs/compliance/data-retention.md` に存在 (こちらが authoritative)。コスト面の追加 defence は [ADR-0046](../adr/0046-zero-cost-by-construction.md) + [`COST_SAFETY.md`](../../COST_SAFETY.md) 参照。データ保持の自動 cleanup job は v0.5.2 時点で未 ship (v0.6.0 roadmap)。
+
 # 欠落成果物補完:セキュリティ/運用/コンプライアンス
 
 ## 1. STRIDE 脅威モデル(`docs/security/threat-model.md`)

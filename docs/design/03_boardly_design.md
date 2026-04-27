@@ -3,6 +3,8 @@ name: Phase 2 - Boardly 設計完全版
 type: project
 ---
 
+> ⚠️ **設計フェーズ文書 (2026-04-22)** — v0.5.2 実装で乖離した主な点: realtime は **Pusher Channels** ([ADR-0052](../adr/0052-pusher-pivot-from-flyio-socketio.md))、Socket.IO + Redis Pub/Sub ではない。auth は **JWT** (DB session ではない、ADR-0003 supersession in practice)。実装の現状は [README](../../README.md) と [`docs/architecture/system-overview.md`](../architecture/system-overview.md) 参照。
+
 # Phase 2: Boardly (apps/collab) 完全版設計
 
 ## プロダクト概要

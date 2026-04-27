@@ -3,6 +3,8 @@ name: Phase 3 - Knowlex 設計完全版
 type: project
 ---
 
+> ⚠️ **設計フェーズ文書 (2026-04-22)** — v0.5.2 実装で乖離した主な点: **単一テナント** ([ADR-0039](../adr/0039-knowlex-mvp-scope.md) MVP scope、RLS / `withTenant()` は defer)、**ハイブリッド検索 / HyDE / Faithfulness / Cohere Rerank は未実装** ([ADR-0011](../adr/0011-hybrid-search-rerank.md) / [ADR-0013](../adr/0013-faithfulness-check.md) / [ADR-0014](../adr/0014-hyde.md) いずれも planned, deferred 注記済)、**BullMQ ingest pipeline は採用せず** synchronous request-response ([ADR-0052](../adr/0052-pusher-pivot-from-flyio-socketio.md) でも言及)、workspace schema partitioning は v0.5.0 で ship ([ADR-0047](../adr/0047-knowlex-workspace-tenancy-plan.md) partial、access control は v0.5.4 defer)。実装の現状は [README](../../README.md) と [`docs/architecture/system-overview.md`](../architecture/system-overview.md) 参照。
+
 # Phase 3: Knowlex (apps/knowledge) 完全版設計
 
 ## プロダクト概要

@@ -10,8 +10,9 @@
  * 3. The default workspace seeded by the migration is queryable by id
  *
  * This is the "tenancy data layer works" test. Member-based access
- * control is deferred to v0.5.2 with Auth.js — that test surface
- * doesn't exist yet at v0.5.0 ship time.
+ * control is deferred to v0.5.4 with Auth.js — that test surface
+ * doesn't exist yet at v0.5.0 ship time. (Originally targeted v0.5.2;
+ * revised per ADR-0051 v0.5.2 scope redirection.)
  *
  * Run via the existing knowlex-integration CI job (KNOWLEX_INTEGRATION=1
  * spins up Postgres + pgvector via docker-compose and applies

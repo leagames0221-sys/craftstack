@@ -3,6 +3,8 @@ name: Phase 6 - Boardly Week 3 日次タスク分解
 type: project
 ---
 
+> ⚠️ **設計フェーズ文書 (2026-04-22)** — Week 3 当時の日次計画。v0.5.2 までに Boardly 全機能 ship 済 (commit history + [CHANGELOG](../../CHANGELOG.md) 参照)。当文書は施工 reference、現状は git log。
+
 # Phase 6(α): Boardly Week 3 日次タスク分解
 
 **Week 3 目標**: Prisma 全テーブル + Auth.js + ログイン→ダッシュボード表示 を公開可能な粒度で完了。

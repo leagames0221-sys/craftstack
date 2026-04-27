@@ -3,6 +3,8 @@ name: Phase 4 - Prisma schema 完全版
 type: project
 ---
 
+> ⚠️ **設計フェーズ文書 (2026-04-22)** — v0.5.2 実装での主な乖離: **RLS は deferred** ([ADR-0010](../adr/0010-rls-and-query-layer-defense.md) は planned、[ADR-0039](../adr/0039-knowlex-mvp-scope.md) MVP scope で未実装)、shipped Prisma schema は collab 19 model + knowledge 4 model ([ADR-0047](../adr/0047-knowlex-workspace-tenancy-plan.md) v0.5.0 で `Workspace` table 追加 + `Document.workspaceId` backfill)。実装の現状は `apps/{collab,knowledge}/prisma/schema.prisma` 参照。
+
 # Phase 4(δ): Prisma schema 完全版 + RLS + pgvector
 
 両アプリは **別 DB インスタンス**(ADR-0018)。schema も別ファイル。

@@ -3,6 +3,10 @@ name: craftstack プロジェクト概要
 type: project
 ---
 
+> ⚠️ **設計フェーズ文書 (2026-04-22 起草)** — 当ファイルは設計フェーズ時点の計画。v0.5.2 (2026-04-28) の shipped 実装は数点で乖離: Pusher Channels (Fly.io + Socket.IO ではなく、[ADR-0052](../adr/0052-pusher-pivot-from-flyio-socketio.md))、単一テナント Knowlex (ハイブリッド検索 / HyDE / Faithfulness / RLS は [ADR-0039](../adr/0039-knowlex-mvp-scope.md) MVP scope で defer)、JWT auth (DB session ではなく)、Vercel-only deploy (Fly.io 未 deploy)。**実装の現状**は [README](../../README.md) / [`docs/architecture/system-overview.md`](../architecture/system-overview.md) / [ADR-0046](../adr/0046-zero-cost-by-construction.md) / [ADR-0049](../adr/0049-rag-eval-client-retry-contract.md) / [ADR-0051](../adr/0051-prisma-migrate-on-vercel-build.md) / [ADR-0052](../adr/0052-pusher-pivot-from-flyio-socketio.md) を参照。
+>
+> ⚠️ **Status: design-phase document (drafted 2026-04-22)** — Original plan. As of v0.5.2 (2026-04-28) the implementation diverges in several places (see banner above in Japanese). For shipped state, read README + system-overview + ADRs 0039/0046/0049/0051/0052.
+
 # プロジェクト概要
 
 ## プロダクト 2 本
@@ -73,7 +77,7 @@ type: project
 
 ## 採用担当を唸らせるポイント
 
-- **設計ドキュメント 22 ADR + ER 図 + OpenAPI + 脅威モデル + Runbook** 完備
+- **設計ドキュメント 51 ADR (v0.5.2 時点) + ER 図 + OpenAPI + 脅威モデル + Runbook** 完備
 - **テスト全層**: Unit / Integration / API / Contract / WebSocket / E2E / A11y / Load / Eval
 - **実測ベンチマーク**: p95 / TTFT / Context Precision を README に掲載
 - **プロンプト Git 管理 + ハッシュ記録**(AI 品質改善の追跡可能性)

@@ -3,6 +3,8 @@ name: プロンプトレジストリ + Eval パイプライン
 type: project
 ---
 
+> ⚠️ **設計フェーズ文書 (2026-04-22)** — v0.5.2 では eval pipeline が live (nightly cron `eval.yml` + golden v4 corpus)。**SHA256 prompt registry は当時の design**、現状は git history で prompt 変更を track。eval reports は [`docs/eval/reports/`](../eval/) に per-cron-run 出力。最新 incident-driven 修正は [ADR-0049 § 7th arc](../adr/0049-rag-eval-client-retry-contract.md) 参照。
+
 # Knowlex プロンプト管理 + Eval
 
 ## 1. プロンプトレジストリ
