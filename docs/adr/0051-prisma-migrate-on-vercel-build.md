@@ -165,31 +165,118 @@ The Sunday audit (doc 45) concluded `軸 4: schema migration prod 適用 = 異�
 
 > When auditing schema-migration application, probe the **specific column or constraint** introduced. Cheap proxy: a one-row test ingest against the new column from a workspace that did NOT exist pre-migration; or a `\d "Document"` via the Neon dashboard. Inferring from unrelated 200s is a category mistake.
 
-**What this does NOT solve**
+**What this does NOT solve (revised after PR-time observations)**
 
-- **Vercel preview deploys against the production DB**: not yet
-  configured. When preview deploys land, they should target a Neon
-  branch (separate physical DB), not the prod DB.
-- **CI assert that the local schema and migrations are coherent**:
-  `prisma migrate diff` could be added to `ci.yml` to fail the PR
-  when a schema change is committed without the corresponding
-  migration. Tracked separately as a v0.5.3 follow-up.
+- **Vercel preview deploys against the production DB — CONFIRMED LIVE**.
+  Post-PR-#27 verification probe (2026-04-27 07:58 UTC) hit
+  `https://craftstack-knowledge.vercel.app/api/kb/ingest` with body
+  `{"title":"v052_verify_attempt2","content":"…"}` and received
+  `HTTP 201` with `{"workspaceId":"wks_default_v050"}` — meaning the
+  Vercel **preview build** for PR #27 (commit `f5cdc22`) ran
+  `prisma migrate deploy` against the **production Neon DB**, not a
+  preview-scoped branch. This is the Vercel default when env vars
+  are scoped to all environments (Production + Preview + Development),
+  which is the CLI/dashboard default for `vercel env add`. Implication:
+  any preview build that succeeds has already mutated prod schema.
+  This is operationally surprising and demands the Preview DB
+  separation tracked below as a Tier C critical follow-up. **Today
+  the preview-touches-prod behaviour was useful** (it pre-applied
+  the v0.5.0 backfill before PR merge so live ingest recovered ~20
+  minutes earlier than the merge would have done it), but in general
+  it means a draft PR could schema-mutate prod via a preview build,
+  which violates the principle that preview is supposed to be
+  reviewable-without-side-effect. **Mitigation in this PR**: an
+  operator note added to ADR-0047 § Status; immediate follow-up to
+  wire the Vercel-Neon integration so preview deploys auto-create
+  Neon branches, tracked as a v0.5.3 critical PR.
 - **Migration rollback playbook**: if a future migration is
   accidentally applied and needs to be reverted, the recovery path
   is "write a new forward migration that undoes it", not "edit the
   applied migration's content". A runbook entry covering this is
-  Tier B follow-up.
+  Tier B follow-up. This ADR's § Failure mode covers the
+  build-fails-after-migrate case but not the
+  migration-was-wrong-after-apply case.
+
+**What this PR DOES additionally solve (added in v0.5.2 perfectionist scope)**
+
+- **CI assert that the local schema and migrations are coherent**:
+  `.github/workflows/ci.yml` `knowlex integration (pgvector)` job
+  gains a `Verify schema matches migrations (drift detect)` step
+  after `Apply migrations`. It uses `prisma migrate diff
+--from-migrations prisma/migrations --to-schema prisma/schema.prisma
+--shadow-database-url <knowlex_shadow on the same Postgres service>
+--exit-code` to fail the PR if `schema.prisma` declares structure
+  that no migration creates. The shadow DB (`knowlex_shadow`) is a
+  second logical DB on the existing pgvector service container;
+  zero new infrastructure, ~3-5s overhead. This **does not** catch
+  the v0.5.0 incident class (which was prod-side, not PR-side), but
+  does close ChatGPT's Q4 review gap and prevents a future incident
+  where someone edits `schema.prisma` and forgets to commit the
+  corresponding migration — the next CI run would block.
+
+**What ChatGPT's external review surfaced** (2026-04-27 audit)
+
+A side-by-side review with an external LLM (model unspecified;
+prompt and response archived in
+`~/.claude/other-projects/craftstack/`) confirmed the architecture
+direction (`vercel-build` split, `prisma` in `dependencies`,
+`turbo.json` passThroughEnv) is canonical Vercel + Prisma + Neon
+practice. Three corrections / additions surfaced:
+
+1. **Hallucination flagged**: the review claimed Vercel Hobby
+   build timeout is "~45-60 seconds". Vercel docs actually
+   document the build timeout as **45 minutes** for Hobby; the
+   10s figure is the runtime function execution timeout, not
+   build. The v0.5.0 migration runs in <2s so this is not
+   load-bearing here either way.
+2. **Preview = Prod confirmed via probe** (see above).
+3. **Expand → Backfill → Contract pattern recommendation**:
+   the v0.5.0 `20260426_workspace_tenancy/migration.sql` collapses
+   all three steps into a single migration file (additive nullable
+   column → `UPDATE` backfill → `ALTER NOT NULL` + FK + index).
+   This is fine for a low-write live URL where the backfill window
+   has zero concurrent writes (Knowlex's actual state at v0.5.0
+   ship), but in general this is **not the right pattern** —
+   concurrent writes during the backfill window would have
+   produced `Document` rows with `workspaceId IS NULL` that the
+   final `ALTER NOT NULL` step would have rejected. Future
+   migrations introducing NOT NULL columns on tables with live
+   writes should split into three deploys: deploy 1 = additive
+   column nullable + dual-write code; deploy 2 = backfill
+   migration; deploy 3 = `ALTER NOT NULL` + drop dual-write code.
+   This is documented for ratchet but not enforced — adding a
+   linter / convention check is Tier C follow-up.
 
 ## Related
 
 - [ADR-0042](0042-knowlex-test-observability-stack.md) — established the original `prisma generate && next build` build pipeline; this ADR extends it.
 - [ADR-0047](0047-knowlex-workspace-tenancy-plan.md) — the v0.5.0 schema partitioning whose migration was the first to surface this gap.
 - [ADR-0046](0046-zero-cost-by-construction.md) — the cost-safety regime; a free-tier deploy still has an ops contract.
+- [ADR-0049](0049-rag-eval-client-retry-contract.md) § 8th arc (this incident: Run 7 surfaced the schema drift → ADR-0051 ships the structural fix). Also § Measurement contract for the ingest path's retryFetch coverage which would have masked the symptom on the eval side if not for the empty-body / wrong-status-code distinction.
 - Prisma docs — [Deploy to Vercel](https://www.prisma.io/docs/orm/prisma-client/deployment/serverless/deploy-to-vercel) and [Deploy database changes with Prisma Migrate](https://www.prisma.io/docs/guides/deployment/deploy-database-changes-with-prisma-migrate).
 
 ## Not in scope
 
-- Preview-deploy DB strategy (Neon branch per preview).
-- CI step adding `prisma migrate diff` for drift detection at PR time.
-- A formal rollback runbook with worked examples.
-- Switching to `DIRECT_URL` (Neon's pooled vs direct split) — only needed once a migration requires an exclusive lock pgbouncer can't proxy.
+- **Preview-deploy DB separation (Neon branch per preview)** —
+  CONFIRMED critical from this PR's probe; tracked as v0.5.3 PR
+  with the Vercel-Neon integration setup. The wiring is dashboard-
+  side (Vercel project → Integrations → Neon) and cannot be
+  configured purely from this repo, so it can't ship in a
+  code-only PR.
+- **A formal rollback runbook with worked examples** — Tier B
+  follow-up.
+- **Switching to `DIRECT_URL` (Neon's pooled vs direct split)** —
+  `prisma.config.ts` already prefers `DIRECT_DATABASE_URL` and
+  falls back to `DATABASE_URL`. Both env vars are present in the
+  Vercel project (per build warning). Whether they actually point
+  at different connection strings (one pooled, one direct) needs
+  to be verified at the Vercel + Neon dashboard layer; if both
+  are the pooled URL, migration locking under concurrent deploys
+  could fail (per Prisma docs on pgbouncer). Verifying is dashboard-
+  side; tracked alongside the Neon branching follow-up.
+- **Long-running migration handling** — current migration set is
+  bounded (additive columns, backfill of <30 rows, single-column
+  index). When tables grow past ~100k rows or migrations include
+  destructive ALTERs, the build-time pattern in this ADR may need
+  to move to a separate "deploy hook" job (GitHub Actions step
+  before Vercel deploy fires); see ChatGPT review § Q2 Option B.

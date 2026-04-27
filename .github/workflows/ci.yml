@@ -123,12 +123,43 @@ jobs:
         run: |
           psql -h localhost -U postgres -c 'CREATE DATABASE knowlex;'
           psql -h localhost -U postgres -d knowlex -c 'CREATE EXTENSION vector;'
+          psql -h localhost -U postgres -c 'CREATE DATABASE knowlex_shadow;'
+          psql -h localhost -U postgres -d knowlex_shadow -c 'CREATE EXTENSION vector;'
 
       - name: Apply migrations
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
           DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
         run: pnpm --filter knowledge exec prisma migrate deploy
+
+      # ADR-0051 § Not in scope #2 — schema-vs-migrations drift detection
+      # at PR time. Catches the failure class: someone updates
+      # `prisma/schema.prisma` without committing the corresponding
+      # migration file. `prisma migrate diff --from-migrations
+      # --to-schema-datamodel --exit-code` requires a shadow DB to
+      # apply migrations into; we use `knowlex_shadow` (created
+      # above) on the same Postgres service.
+      #
+      # Exit codes: 0 = no drift, 2 = drift present (non-empty diff),
+      # 1 = error. `--exit-code` flips the success-on-empty-diff
+      # default. CI fails on 2, so any uncommitted schema change
+      # blocks the PR.
+      #
+      # The v0.5.0 incident itself was prod-side (Vercel build never
+      # ran `prisma migrate deploy`), not PR-side: the schema and
+      # migrations were aligned in the v0.5.0 PR. This step catches
+      # a *different* drift class and is the second layer of
+      # defence per ChatGPT Q4 review.
+      - name: Verify schema matches migrations (drift detect)
+        env:
+          SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex_shadow
+        working-directory: apps/knowledge
+        run: |
+          npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema prisma/schema.prisma \
+            --shadow-database-url "$SHADOW_DATABASE_URL" \
+            --exit-code
 
       - name: Run integration tests
         env:

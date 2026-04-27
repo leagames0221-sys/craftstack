@@ -34,9 +34,17 @@ Sunday 2026-04-26 audit (doc 45) Tier A/B/D/E findings, all bundled per doc 46 �
 - **ADR-0047 § Implementation status** — added operator note: `TENANCY_ENABLED=true` を Vercel env で flip する前に `WorkspaceMember` model + `requireWorkspaceMember` route guard が live で実装されていることを確認すること。
 - **`BoardClient.tsx`** — 不要になった `eslint-disable-next-line no-constant-condition` を 2 箇所削除 (lint warning -2)。
 
-### Known stale (deferred to a separate sweep)
+### Added — perfectionist scope (post external-LLM review, ChatGPT 2026-04-27)
 
-- `docs/adr/README.md` index table stops at ADR-0040 (pre-existing drift before this PR). Re-listing 0041-0051 inline is out of scope here; tracked as a doc-only cleanup PR.
+After a side-by-side architecture review with an external LLM and a live probe verifying that the Vercel preview build had already migrated prod (HTTP 201 with `workspaceId` field present), the v0.5.2 PR scope was expanded with three additional layers of defence per the user mandate "妥協せず完璧":
+
+- **`.github/workflows/ci.yml` — schema-vs-migrations drift detection**: the `knowlex integration (pgvector)` job gains a `Verify schema matches migrations (drift detect)` step using `prisma migrate diff --from-migrations --to-schema --shadow-database-url --exit-code` against a second logical DB (`knowlex_shadow`) on the existing pgvector service container. Catches the failure class where someone updates `prisma/schema.prisma` without committing the corresponding migration. Does NOT catch the v0.5.0 incident class (which was prod-side, not PR-side); that's what this PR's load-bearing fix above handles. Closes ChatGPT review § Q4.
+- **`docs/adr/0051` § Not in scope (revised)**: rewritten to reflect post-PR-time observations — Vercel preview build uses prod DB (confirmed by probe), expand→backfill→contract pattern recommendation captured for future migrations introducing NOT NULL on tables with concurrent writes, ChatGPT hallucination flagged (Vercel Hobby build timeout is 45 minutes, not 45-60 seconds). The ADR now also references ADR-0049 § 8th arc (this incident as continuation of the eval-reliability arc).
+- **`docs/adr/README.md` index backfill**: ADR-0041 through ADR-0051 added to the index table. The table previously stopped at ADR-0040 (pre-existing drift before this PR); the perfectionist scope cleared it inline rather than deferring to a separate cleanup PR.
+
+### Tier C critical follow-up (v0.5.3)
+
+- **Vercel preview deploy MUST stop touching prod DB**. The Q1 verification probe confirmed the preview build of PR #27 ran `prisma migrate deploy` against the production Neon DB, not a preview-scoped branch. Today this was beneficial (it pre-applied the fix before merge), but in general a preview build mutating prod schema violates the "preview is reviewable without side effect" principle. v0.5.3 wires the Vercel-Neon integration so each preview deploy auto-creates a Neon branch. The wiring is dashboard-side (Vercel project → Integrations → Neon) and cannot ship in a code-only PR.
 
 ### What this proves about the audit→ratchet loop
 
