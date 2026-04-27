@@ -34,7 +34,7 @@
  * workflow once the corpus grows past this self-contained seed.
  */
 
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
@@ -347,6 +347,59 @@ async function main() {
 
   const passRateOk = passRate >= golden.thresholds.minPassRate;
   const latencyOk = p95 <= golden.thresholds.maxP95LatencyMs;
+
+  // ADR-0051 § Tier B-#1 / v0.5.2 follow-up — write a JSON report so the
+  // eval workflow's `actions/upload-artifact@v4` step (eval.yml line 95-102)
+  // has something to upload. Prior to this, eval.ts produced console output
+  // only, and the workflow's `if-no-files-found: ignore` silently skipped
+  // the upload step every night. Now Run N produces a tracked artifact;
+  // future README-badge automation (Tier C-#2) can consume it directly
+  // instead of sanitizing CI logs by hand.
+  //
+  // Schema is intentionally simple — version + timestamp + base url +
+  // golden-set version + outcomes + aggregates + threshold pass/fail.
+  // Adding fields later is additive (consumers should treat unknown
+  // fields as forward-compatible).
+  try {
+    const hereDir = dirname(fileURLToPath(import.meta.url));
+    const reportsDir = resolve(hereDir, "../../../docs/eval/reports");
+    mkdirSync(reportsDir, { recursive: true });
+    const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const reportPath = resolve(reportsDir, `${date}.json`);
+    const report = {
+      schemaVersion: 1,
+      ranAt: new Date().toISOString(),
+      baseUrl: BASE_URL,
+      goldenVersion: golden.version,
+      goldenSize: {
+        questions: outcomes.length,
+        corpus: golden.corpus.length,
+      },
+      thresholds: golden.thresholds,
+      aggregate: {
+        passed,
+        total: outcomes.length,
+        passRate,
+        passRatePct: Number((passRate * 100).toFixed(1)),
+        latencyP50Ms: Number.isFinite(p50) ? Math.round(p50) : null,
+        latencyP95Ms: Number.isFinite(p95) ? Math.round(p95) : null,
+        passRateOk,
+        latencyOk,
+        overallPass: passRateOk && latencyOk,
+      },
+      outcomes,
+    };
+    writeFileSync(reportPath, JSON.stringify(report, null, 2));
+    console.log(`\n[eval] report written to docs/eval/reports/${date}.json`);
+  } catch (err) {
+    // Non-fatal: a report-write failure should not flip a passing eval to
+    // a failing one. Log and continue so the workflow's exit code reflects
+    // the eval result, not the disk-write result.
+    console.error(
+      `\n[eval] report write failed (non-fatal): ${(err as Error).message}`,
+    );
+  }
+
   if (!passRateOk || !latencyOk) {
     console.error(
       `\n[eval] FAIL — passRateOk=${passRateOk} latencyOk=${latencyOk}`,
