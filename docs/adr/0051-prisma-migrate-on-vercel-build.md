@@ -53,21 +53,40 @@ on every build.
 
 ## Decision
 
-`apps/knowledge/package.json` `build` script changes from
-`prisma generate && next build` to **`prisma generate && prisma migrate
-deploy && next build`**. Two structural consequences:
+`apps/knowledge/package.json` gains a **`vercel-build`** script
+alongside the existing `build`. Vercel detects `vercel-build`
+automatically and prefers it over `build` when both exist; CI continues
+to invoke `build`. The two scripts:
+
+- **`build`** = `prisma generate && next build` — unchanged from
+  v0.5.1. CI-safe, requires no DB credentials, used by GitHub Actions
+  `lint / typecheck / test / build` job and by local dev.
+- **`vercel-build`** = `prisma generate && prisma migrate deploy && next
+build` — runs only on Vercel deploys. Applies pending migrations
+  to the live DB before producing the production bundle.
+
+This split is the canonical pattern from Prisma's
+[Deploy to Vercel guide](https://www.prisma.io/docs/orm/prisma-client/deployment/serverless/deploy-to-vercel).
+A unified `build` that calls `prisma migrate deploy` would break CI
+because the GHA build job has no DB credentials (and shouldn't — its
+purpose is to verify the bundle compiles, not to mutate prod state).
+
+Two structural consequences in addition to the script split:
 
 1. **`prisma` CLI moves from `devDependencies` to `dependencies`**.
-   Vercel prunes devDependencies during build per Prisma's
-   [Deploy to Vercel guide](https://www.prisma.io/docs/orm/prisma-client/deployment/serverless/deploy-to-vercel),
-   so leaving the CLI in devDeps would surface as `prisma: command
-not found` at the migration step. The CLI tarball is bounded
-   (a few MB) and only loaded at build time, so the bundle-size cost
-   is zero at runtime.
-2. **`DATABASE_URL` must be set as a Vercel environment variable for
-   the build environment** (already the case for the runtime
-   environment; Vercel exposes the same env to both phases). No
-   second `DIRECT_URL` is needed because Knowlex uses
+   Vercel prunes devDependencies during build per the same Prisma
+   guide, so leaving the CLI in devDeps would surface as
+   `prisma: command not found` at the migration step. The CLI
+   tarball is bounded (a few MB) and only loaded at build time, so
+   the bundle-size cost is zero at runtime.
+2. **`DATABASE_URL` must be available to the Vercel build environment
+   AND `turbo.json` must declare it in `passThroughEnv`** so Turborepo
+   forwards it to the `vercel-build` script. Initially missed in this
+   ADR's first push; observed when `prisma migrate deploy` errored
+   with `datasource.url required` despite Vercel having the env set.
+   The full passthrough list also covers `DIRECT_DATABASE_URL`,
+   `GEMINI_API_KEY`, `SENTRY_AUTH_TOKEN`, `TENANCY_ENABLED`,
+   `ENABLE_OBSERVABILITY_API`, `EMERGENCY_STOP`. Knowlex uses
    `@prisma/adapter-pg` (driver-adapter pattern, not the data proxy)
    and Neon's pooled URL accepts both runtime queries and migrations
    via the same connection string. If a future migration needs to
