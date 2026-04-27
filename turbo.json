@@ -3,7 +3,16 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "DIRECT_DATABASE_URL",
+        "GEMINI_API_KEY",
+        "SENTRY_AUTH_TOKEN",
+        "TENANCY_ENABLED",
+        "ENABLE_OBSERVABILITY_API",
+        "EMERGENCY_STOP"
+      ]
     },
     "dev": {
       "cache": false,
