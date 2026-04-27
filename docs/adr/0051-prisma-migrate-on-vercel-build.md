@@ -197,22 +197,55 @@ The Sunday audit (doc 45) concluded `軸 4: schema migration prod 適用 = 異�
   build-fails-after-migrate case but not the
   migration-was-wrong-after-apply case.
 
-**What this PR DOES additionally solve (added in v0.5.2 perfectionist scope)**
+**Drift detection — attempted, deferred to v0.5.3 (honest report)**
 
-- **CI assert that the local schema and migrations are coherent**:
-  `.github/workflows/ci.yml` `knowlex integration (pgvector)` job
-  gains a `Verify schema matches migrations (drift detect)` step
-  after `Apply migrations`. It uses `prisma migrate diff
---from-migrations prisma/migrations --to-schema prisma/schema.prisma
---shadow-database-url <knowlex_shadow on the same Postgres service>
---exit-code` to fail the PR if `schema.prisma` declares structure
-  that no migration creates. The shadow DB (`knowlex_shadow`) is a
-  second logical DB on the existing pgvector service container;
-  zero new infrastructure, ~3-5s overhead. This **does not** catch
-  the v0.5.0 incident class (which was prod-side, not PR-side), but
-  does close ChatGPT's Q4 review gap and prevents a future incident
-  where someone edits `schema.prisma` and forgets to commit the
-  corresponding migration — the next CI run would block.
+The v0.5.2 perfectionist scope attempted a `Verify schema matches
+migrations (drift detect)` CI step using `prisma migrate diff
+--from-migrations --to-schema --exit-code` against a `knowlex_shadow`
+DB on the same pgvector service container. Two CI iterations
+(commits `55e31e6` and `54eca07`) shipped against PR #27 with the
+fix progressively narrowed:
+
+1. **First iteration** (commit `55e31e6`) passed `--shadow-database-url`
+   as a CLI flag. Failed with usage help — that flag is not exposed
+   on the `migrate diff` subcommand even though Prisma's error
+   message suggests it ("You must pass the `--shadow-database-url`
+   flag or set `datasource.shadowDatabaseUrl` in your
+   prisma.config.ts"). CLI quirk: the suggested flag doesn't exist
+   on this subcommand.
+2. **Second iteration** (commit `54eca07`) declared
+   `shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL` in
+   `prisma.config.ts` `datasource` block. The flag combination was
+   accepted; drift detect ran and exited `2` with a non-empty diff.
+   **But the diff was a false positive**: pre-existing structural
+   mismatch between the `20260424_hnsw` migration (raw SQL
+   `CREATE INDEX … USING hnsw`) and `schema.prisma` (Prisma's
+   declarative language has no HNSW index syntax — the closest is
+   `extensions = [pgvector(...)]`, which declares the extension but
+   not the specific HNSW index type or parameters). Result: every
+   PR would fail drift detect with `[-] Removed index on columns
+(embedding)` regardless of any schema change, blocking all
+   merges.
+
+The drift step + shadow DB + config-side `shadowDatabaseUrl` were
+reverted in the same v0.5.2 PR's third iteration. The CI job
+retains its `prisma migrate deploy` against the pgvector service
+container (established in v0.5.1 ADR-0042), and the integration
+tests exercise `workspaceId`-aware routes that would fail if
+schema and DB diverged — that's the _indirect_ drift detection
+available under Prisma's HNSW representation gap.
+
+**Two follow-up paths for v0.5.3** (proper drift detection, both
+deferred so the path can be vetted with synthetic-drift dry-runs
+before becoming a PR-blocking gate):
+
+- **DB-introspection snapshot**: capture a canonical
+  `prisma db pull` output post-migration as a tracked file, diff
+  PR-time output against it. Catches HNSW because `db pull` reads
+  the actual DB, not `schema.prisma`.
+- **Custom Node assertion script**: introspect post-migration DB
+  via `pg_catalog` queries, assert known-good table/column/index
+  list including HNSW. More work, more flexible.
 
 **What ChatGPT's external review surfaced** (2026-04-27 audit)
 

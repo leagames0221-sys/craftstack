@@ -123,8 +123,6 @@ jobs:
         run: |
           psql -h localhost -U postgres -c 'CREATE DATABASE knowlex;'
           psql -h localhost -U postgres -d knowlex -c 'CREATE EXTENSION vector;'
-          psql -h localhost -U postgres -c 'CREATE DATABASE knowlex_shadow;'
-          psql -h localhost -U postgres -d knowlex_shadow -c 'CREATE EXTENSION vector;'
 
       - name: Apply migrations
         env:
@@ -132,41 +130,32 @@ jobs:
           DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
         run: pnpm --filter knowledge exec prisma migrate deploy
 
-      # ADR-0051 § Not in scope #2 — schema-vs-migrations drift detection
-      # at PR time. Catches the failure class: someone updates
-      # `prisma/schema.prisma` without committing the corresponding
-      # migration file. `prisma migrate diff --from-migrations
-      # --to-schema-datamodel --exit-code` requires a shadow DB to
-      # apply migrations into; we use `knowlex_shadow` (created
-      # above) on the same Postgres service.
+      # NOTE on PR-time drift detection (ADR-0051 § Not in scope #2):
       #
-      # Exit codes: 0 = no drift, 2 = drift present (non-empty diff),
-      # 1 = error. `--exit-code` flips the success-on-empty-diff
-      # default. CI fails on 2, so any uncommitted schema change
-      # blocks the PR.
+      # `prisma migrate diff --from-migrations --to-schema --exit-code`
+      # was attempted in PR #27 (commits 55e31e6 / 54eca07) but
+      # surfaced **pre-existing structural drift that Prisma cannot
+      # represent**: the v0.4.x HNSW index on `Embedding.embedding`
+      # is created via raw SQL in migration `20260424_hnsw`, but
+      # Prisma's declarative schema language does not natively
+      # express HNSW indexes. Result: every PR would fail drift
+      # detect with `[-] Removed index on columns (embedding)`
+      # even when no schema change was made — a false positive that
+      # blocks all PRs.
       #
-      # The v0.5.0 incident itself was prod-side (Vercel build never
-      # ran `prisma migrate deploy`), not PR-side: the schema and
-      # migrations were aligned in the v0.5.0 PR. This step catches
-      # a *different* drift class and is the second layer of
-      # defence per ChatGPT Q4 review.
-      - name: Verify schema matches migrations (drift detect)
-        env:
-          # SHADOW_DATABASE_URL is read by prisma.config.ts and exposed
-          # to the migrate diff CLI as `datasource.shadowDatabaseUrl`.
-          # The `--shadow-database-url` flag is not exposed on the
-          # `migrate diff` subcommand even though the error message
-          # suggests it (Prisma CLI quirk); config-side declaration
-          # is the documented path.
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
-          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
-          SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex_shadow
-        working-directory: apps/knowledge
-        run: |
-          npx prisma migrate diff \
-            --from-migrations prisma/migrations \
-            --to-schema prisma/schema.prisma \
-            --exit-code
+      # Two paths forward (deferred to v0.5.3):
+      # 1. Snapshot post-migration `prisma db pull` output as a
+      #    canonical reference and diff PR-time DB introspection
+      #    against it (sidesteps schema.prisma's HNSW gap).
+      # 2. Custom Node script that introspects the DB after
+      #    `prisma migrate deploy` and asserts a known-good shape
+      #    (table list, column list, index list including HNSW).
+      #
+      # Until then, the integration tests below provide *indirect*
+      # drift detection: they exercise workspaceId-aware routes that
+      # would fail if the generated client and the migrated DB
+      # diverge. Weaker than a dedicated drift gate but the state
+      # of the art given Prisma's HNSW limitation.
 
       - name: Run integration tests
         env:
