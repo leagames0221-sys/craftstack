@@ -235,17 +235,34 @@ tests exercise `workspaceId`-aware routes that would fail if
 schema and DB diverged — that's the _indirect_ drift detection
 available under Prisma's HNSW representation gap.
 
-**Two follow-up paths for v0.5.3** (proper drift detection, both
-deferred so the path can be vetted with synthetic-drift dry-runs
-before becoming a PR-blocking gate):
+**Two follow-up paths considered for v0.5.3**:
 
 - **DB-introspection snapshot**: capture a canonical
   `prisma db pull` output post-migration as a tracked file, diff
-  PR-time output against it. Catches HNSW because `db pull` reads
-  the actual DB, not `schema.prisma`.
-- **Custom Node assertion script**: introspect post-migration DB
-  via `pg_catalog` queries, assert known-good table/column/index
-  list including HNSW. More work, more flexible.
+  PR-time output against it. Rejected — `prisma db pull` is gated
+  by what `schema.prisma` can express, so HNSW indexes and `USING
+vector` index parameters fall outside its vocabulary; output
+  would either silently omit them or embed them as comments. The
+  same Prisma-representation gap that broke `migrate diff`
+  partially affects `db pull` too.
+- **Custom Node `pg_catalog` assertion script** (chosen, **shipped
+  in v0.5.3 per this PR's follow-up commit**): `apps/knowledge/scripts/verify-schema-shape.mjs`
+  connects to the migrated DB via `pg`, queries
+  `information_schema.tables`, `information_schema.columns`,
+  `pg_class + pg_index + pg_am`, and `pg_extension`, and asserts
+  every entry in `apps/knowledge/prisma/expected-shape.json`
+  exists. Because pg_catalog reports the actual physical DB state,
+  HNSW indexes appear correctly with `amname = 'hnsw'` —
+  sidestepping Prisma's representation gap entirely. Wired into
+  the `knowlex integration (pgvector)` CI job after `Apply
+migrations`. Exit codes: 0 = OK, 2 = drift, 1 = error.
+
+The chosen approach declares its expected shape as data
+(`expected-shape.json`) rather than as code, which makes the
+schema-vs-manifest contract reviewable in PR diffs and explicit
+about what the gate cares about. Adding a new column to a
+migration without updating the manifest is exactly what the gate
+catches.
 
 **What ChatGPT's external review surfaced** (2026-04-27 audit)
 
