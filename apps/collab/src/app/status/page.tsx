@@ -145,7 +145,7 @@ export default async function StatusPage() {
           <InfoCard
             title="Security headers"
             href="https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on"
-            body="A+ on securityheaders.com (nonce-based CSP + strict-dynamic)."
+            body="A on securityheaders.com — rolled back from A+ (nonce + strict-dynamic) to a static CSP per ADR-0040 to fix Vercel platform-script hydration."
           />
           <InfoCard
             title="API contract"

@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 export const metadata = {
   title: "craftstack · Full-stack monorepo portfolio",
   description:
-    "Two production-grade SaaS built from schema to deploy: Boardly (realtime collaborative kanban) and Knowlex (AI knowledge retrieval with pgvector + HNSW). A security headers, 206 tests, zero-dollar infra.",
+    "Two production-grade SaaS built from schema to deploy: Boardly (realtime collaborative kanban) and Knowlex (AI knowledge retrieval with pgvector + HNSW). Grade-A security headers, 206 Vitest + 24 Playwright tests, zero-dollar infra.",
 };
 
 /**
@@ -78,12 +78,14 @@ export default async function Home() {
         </h1>
         <p className="mt-6 max-w-2xl text-lg text-neutral-400">
           <span className="text-neutral-200">Boardly</span>, a realtime
-          collaborative kanban with DnD, optimistic locking, and a nonce-based
-          CSP. <span className="text-neutral-200">Knowlex</span>, a
-          single-tenant RAG demo over pgvector HNSW with streamed Gemini 2.0
-          Flash and numbered citations (workspace tenancy is the next arc — see
-          ADR-0039). Both in one Turborepo, deployed on Vercel Hobby, zero
-          dollars per month.
+          collaborative kanban with DnD, optimistic locking, and a static CSP
+          (rolled back from nonce + strict-dynamic per ADR-0040 to fix Vercel
+          platform-script hydration; grade A on securityheaders.com).{" "}
+          <span className="text-neutral-200">Knowlex</span>, a single-tenant RAG
+          demo over pgvector HNSW with streamed Gemini 2.0 Flash and numbered
+          citations (workspace schema partitioning shipped per ADR-0047 partial
+          in v0.5.0; auth-gated access control deferred to v0.5.4). Both in one
+          Turborepo, deployed on Vercel Hobby, zero dollars per month.
         </p>
 
         <div className="mt-10 flex flex-wrap gap-3">
@@ -121,13 +123,13 @@ export default async function Home() {
 
         <div className="mt-12 grid grid-cols-2 gap-6 text-xs text-neutral-400 md:grid-cols-4">
           <Stat label="Vitest cases" value="206" />
-          <Stat label="Playwright" value="35+" />
-          <Stat label="Next routes" value="41" />
-          <Stat label="ADRs" value="50" />
+          <Stat label="Playwright" value="24" />
+          <Stat label="Next routes" value="38" />
+          <Stat label="ADRs" value="51" />
           <Stat label="Security Headers" value="A" />
           <Stat label="Monthly infra" value="$0" />
-          <Stat label="Prisma models" value="15 / 17" />
-          <Stat label="Architecture docs" value="180+ pages" />
+          <Stat label="Prisma models" value="19 + 4" />
+          <Stat label="Markdown docs" value="6.9k lines" />
         </div>
       </section>
 
