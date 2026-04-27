@@ -11,7 +11,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)](https://www.typescriptlang.org)
 
-> Full-stack portfolio monorepo — **Boardly** (realtime collaborative kanban with drag-and-drop, multi-tenant workspaces) + **Knowlex** (single-tenant RAG demo on pgvector HNSW + Gemini; workspace tenancy deferred per [ADR-0039](docs/adr/0039-knowlex-mvp-scope.md)).
+> Full-stack portfolio monorepo — **Boardly** (realtime collaborative kanban with drag-and-drop, multi-tenant workspaces) + **Knowlex** (single-tenant RAG demo on pgvector HNSW + Gemini; workspace schema partitioning shipped per [ADR-0047](docs/adr/0047-knowlex-workspace-tenancy-plan.md) partial in v0.5.0; auth-gated access control deferred to v0.5.4 once Auth.js lands on the Knowlex deploy).
 
 Two production-grade SaaS applications designed and built from schema to deploy, as a solo developer, to demonstrate full-stack × from-scratch engineering capability.
 
@@ -87,10 +87,10 @@ Invitations (token-hashed, email-bound, three-layer rate-limited per [ADR-0026](
 
 ## Apps
 
-| App                           | Description                                                                                                                                                                                 | Tech highlights                                                                                             | Status               |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------- |
-| [**Boardly**](apps/collab)    | Collaborative kanban with drag-and-drop and realtime fanout                                                                                                                                 | Next.js 16 · Auth.js v5 · Prisma 7 · PostgreSQL · LexoRank · Optimistic lock · `@dnd-kit` · Pusher Channels | v0.1.0 — live deploy |
-| [**Knowlex**](apps/knowledge) | Single-tenant RAG demo — pgvector HNSW kNN + streamed Gemini with numbered citations. Workspace tenancy is deferred per [ADR-0039](docs/adr/0039-knowlex-mvp-scope.md) and is the next arc. | Next.js · pgvector (HNSW) · Gemini Embeddings · Gemini 2.0 Flash streaming · Prisma                         | MVP live deploy      |
+| App                           | Description                                                                                                                                                                                                                                                             | Tech highlights                                                                                             | Status               |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------- |
+| [**Boardly**](apps/collab)    | Collaborative kanban with drag-and-drop and realtime fanout                                                                                                                                                                                                             | Next.js 16 · Auth.js v5 · Prisma 7 · PostgreSQL · LexoRank · Optimistic lock · `@dnd-kit` · Pusher Channels | v0.1.0 — live deploy |
+| [**Knowlex**](apps/knowledge) | Single-tenant RAG demo — pgvector HNSW kNN + streamed Gemini with numbered citations. Workspace schema partitioning shipped per [ADR-0047](docs/adr/0047-knowlex-workspace-tenancy-plan.md) partial in v0.5.0; auth-gated access control deferred to v0.5.4 (next arc). | Next.js · pgvector (HNSW) · Gemini Embeddings · Gemini 2.0 Flash streaming · Prisma                         | MVP live deploy      |
 
 ## Monorepo layout
 
@@ -155,7 +155,7 @@ craftstack/
 - **Undo / redo on card moves** — `Ctrl-Z` / `⌘-Z` reverses the last drag, `Ctrl-Shift-Z` / `⌘-Shift-Z` re-applies it. Bounded 25-entry LIFO stack, replays against the existing optimistic-lock-protected `/api/cards/:id/move` endpoint so concurrent-edit rejection behaves exactly like a fresh drag. Pure state-machine module (6 Vitest cases) in [ADR-0036](docs/adr/0036-move-undo-redo-client-only.md)
 - **Cost safety by construction** — every service the project touches (Vercel, Neon, Gemini via AI Studio, Pusher, Resend, GitHub Actions, Upstash, Sentry) is on a free tier that **caps out to zero cost** rather than auto-scaling to the attacker's credit card. In-code defense-in-depth: per-IP + global daily/monthly budget on `/api/kb/ask` **and** `/api/kb/ingest` (Knowlex parity, see [ADR-0043](docs/adr/0043-knowlex-ops-cost-ci-eval.md)), per-user rate limits on authenticated reads, three-layer cap on invitation emails. The guarantee is enforced, not declared: [`scripts/check-free-tier-compliance.mjs`](scripts/check-free-tier-compliance.mjs) runs as a **PR-blocking `free-tier-compliance` gate** in [`ci.yml`](.github/workflows/ci.yml) that fails merges introducing paid-plan `vercel.json`, billable SDKs, or leaked secret patterns. A single-flag kill switch `EMERGENCY_STOP=1` short-circuits every write + AI endpoint on the next request (runbook §9); its counterpart observability endpoint [`/api/kb/budget`](https://craftstack-knowledge.vercel.app/api/kb/budget) mirrors `/api/kb/stats` to expose the current used/cap state. STRIDE threat model covers this attack shape explicitly as `C-01..C-06`. Decision record: [ADR-0046](docs/adr/0046-zero-cost-by-construction.md). Credit-card-free signup walk-through in [`docs/FREE_TIER_ONBOARDING.md`](docs/FREE_TIER_ONBOARDING.md); cost-attack threat model in [`COST_SAFETY.md`](COST_SAFETY.md)
 - **Error-capture pipeline with demo mode** — both apps boot `@sentry/nextjs` via Next's `instrumentation.ts` + `instrumentation-client.ts` hooks; server and browser errors, unhandled rejections, and every `error.tsx` boundary flow through a unified `lib/observability.ts` seam. When `SENTRY_DSN` is configured the captures ship upstream; when it's not, they land in an in-memory ring buffer surfaced at `/api/observability/captures`, so a reviewer can prove the pipeline works end-to-end **without signing up for Sentry**. Rationale in [ADR-0044](docs/adr/0044-knowlex-openapi-a11y-sentry-v0.4.0.md) (wiring) and [ADR-0045](docs/adr/0045-observability-demo-mode.md) (demo-mode dual-backend)
-- **Knowlex RAG regression stack** — `retrieve.integration.test.ts` exercises the real pgvector kNN path against a `pgvector/pgvector:pg16` service container in CI, asserting "returns every row when `k ≥ corpus size`" — the exact regression a misconfigured ivfflat(lists, probes) silently produces ([ADR-0041](docs/adr/0041-knowlex-ivfflat-to-hnsw.md) documents the production diagnosis). `scripts/bench-retrieve.ts` reports min / p50 / p95 / p99 / max latency over N=1000 / M=100 probes. `scripts/eval.ts` seeds a self-contained 3-doc / 10-question golden set (factual / reasoning / adversarial) and scores substring-faithfulness + citation-coverage + refusal correctness against the live deploy — full measurement methodology in [ADR-0042](docs/adr/0042-knowlex-test-observability-stack.md) / [ADR-0043](docs/adr/0043-knowlex-ops-cost-ci-eval.md) and [`docs/eval/README.md`](docs/eval/README.md)
+- **Knowlex RAG regression stack** — `retrieve.integration.test.ts` exercises the real pgvector kNN path against a `pgvector/pgvector:pg16` service container in CI, asserting "returns every row when `k ≥ corpus size`" — the exact regression a misconfigured ivfflat(lists, probes) silently produces ([ADR-0041](docs/adr/0041-knowlex-ivfflat-to-hnsw.md) documents the production diagnosis). `scripts/bench-retrieve.ts` reports min / p50 / p95 / p99 / max latency over N=1000 / M=100 probes. `scripts/eval.ts` seeds a self-contained **10-doc / 30-question golden set v4** (21 OR-mode + 6 AND-mode + 3 adversarial) and scores substring-faithfulness + citation-coverage + refusal correctness against the live deploy — full measurement methodology in [ADR-0042](docs/adr/0042-knowlex-test-observability-stack.md) / [ADR-0043](docs/adr/0043-knowlex-ops-cost-ci-eval.md) / [ADR-0049 § 7th arc](docs/adr/0049-rag-eval-client-retry-contract.md) (substring-OR scoring + 12 expanded refusal markers) and [`docs/eval/README.md`](docs/eval/README.md)
 - **Live deploy smoke, scheduled** — [`.github/workflows/smoke.yml`](.github/workflows/smoke.yml) runs Playwright against both production URLs every 6 h (plus on `workflow_dispatch` and on main pushes after a 90-second Vercel-settle sleep). Knowlex smoke asserts `indexType === "hnsw"` so an accidental ivfflat rollback trips the workflow, not production users
 - **Demo video pipeline** (`pnpm demo:tts && pnpm demo:compose`): capture a silent screen recording once, and an ffmpeg+TTS toolchain overlays a fully synthesized Japanese narration. Pluggable providers — **VOICEVOX** (local, $0) or **Azure Neural TTS** (500k chars/mo free). Script lives as JSON; editing the story is two commands away from a new mp4. See [scripts/demo/README.md](scripts/demo/README.md)
 
@@ -231,16 +231,27 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 
 ## Roadmap
 
+### Shipped
+
 - ✅ **Week 1–2** — Monorepo scaffolding, CI, Docker Compose
-- ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, Vitest (40 cases)
-- ✅ **Boardly v0.1.0** — Deployed to Vercel + Neon + Upstash; authenticated dashboard, workspace & board CRUD working
+- ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, initial Vitest suite (40 cases at the time, now **206**)
+- ✅ **Boardly v0.1.0** — Deployed to Vercel + Neon + Upstash; authenticated dashboard, workspace & board CRUD
+- ✅ **Week 4** — Resend-backed workspace invitations with token-hashed accept flow (7-day expiry, revocable, email-matching enforcement)
 - ✅ **Week 5** — Card/List CRUD with optimistic lock, editor modal, `@dnd-kit` drag-and-drop
 - ✅ **Week 6** — Pusher Channels realtime fanout (card/list mutations broadcast to peers on the same board)
-- ✅ **Week 4** — Resend-backed workspace invitations with token-hashed accept flow (7-day expiry, revocable, email-matching enforcement)
-- 🚧 **Week 6 (follow-up)** — presence indicators, cursor sharing
-- ⏳ **Week 7–9** — Attachments (Vercel Blob), search, notifications, multi-language, k6 load test
-- ⏳ **Week 9–16** — Knowlex: ingestion pipeline, hybrid search, RAG with Faithfulness gate
-- ⏳ **Week 17–18** — Demo videos, portfolio LP polish
+- ✅ **Week 7–9** — Search (⌘K command palette + label filter, membership-scoped server-side), notifications (mention bell + Notification rows + unread badge polling)
+- ✅ **Demo videos** — Boardly 45 s + Knowlex 33 s narrated walkthroughs (VOICEVOX, free tier, fully reproducible pipeline)
+- ✅ **Knowlex MVP through v0.5.2** — full RAG live: ingestion (paragraph-aware 512-char chunking → 768-dim `gemini-embedding-001` → pgvector HNSW cosine kNN), streamed Gemini 2.0 Flash with numbered citations, nightly eval cron + golden v4 OR-mode scoring (ADR-0049 § 7th arc), workspace schema partitioning (ADR-0047 partial), schema-vs-prod drift fix + `vercel-build` migration regime (ADR-0051), drift-detect-v2 via `pg_catalog` assertion gating PRs
+
+### Planned
+
+- 🚧 **Presence indicators / cursor sharing** — Pusher presence channels, follow-up to Week 6
+- ⏳ **Attachments (Cloudflare R2)** — schema-ready at the Prisma layer per [ADR-0008](docs/adr/0008-cloudflare-r2.md); UI wiring follow-up
+- ⏳ **Multi-language** support and **k6 load-test** scenario execution (k6 script exists, measured run pending)
+- ⏳ **Knowlex retrieval extensions** — hybrid search (BM25 + vector via RRF), HyDE, Cohere Rerank, all named in [ADR-0011](docs/adr/0011-hybrid-search-rerank.md) / [ADR-0014](docs/adr/0014-hyde.md)
+- ⏳ **LLM-as-judge `--judge` flag** in `scripts/eval.ts` (gemini-2.5-pro rubric, optional env-toggled CI job so the default eval stays $0)
+- ⏳ **Auth.js on Knowlex + `WorkspaceMember` access-control** (v0.5.4 arc, the access-control half of [ADR-0047](docs/adr/0047-knowlex-workspace-tenancy-plan.md) § Status)
+- ⏳ **HNSW tuning at 10 k-chunk corpus** — measured p95 × `ef_search` × `m` grid in `docs/eval/HNSW_TUNING.md`, hourly background ingest under the 1500 RPD AI Studio cap (v0.6.0)
 
 ## License
 
