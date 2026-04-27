@@ -60,6 +60,7 @@ Once Accepted, an ADR is immutable — later decisions supersede, they do not re
 | [0049](0049-rag-eval-client-retry-contract.md)                  | RAG eval client retry contract — defending nightly cron against Neon Free cold-start (7-arc incident log) | Accepted                                                                           |
 | [0050](0050-knowlex-ingest-deduplication.md)                    | Knowlex ingest deduplication — title-based UPSERT                                                         | Accepted                                                                           |
 | [0051](0051-prisma-migrate-on-vercel-build.md)                  | `prisma migrate deploy` in Vercel build script — closing the v0.5.0 schema-vs-prod drift                  | Accepted                                                                           |
+| [0052](0052-pusher-pivot-from-flyio-socketio.md)                | Pusher Channels chosen over Fly.io + Socket.IO — implementation-time pivot from ADR-0009 + ADR-0004       | Accepted (supersedes ADR-0009; partially supersedes ADR-0004)                      |
 
 ## Implementation-phase addendum (0023–0032)
 

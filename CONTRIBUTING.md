@@ -48,7 +48,7 @@ Any decision that outlives a single PR goes into `docs/adr/`. Use the template i
 
 ## Environment secrets
 
-Never commit real secrets. `.env.example` is the source of truth for which keys exist; `.env` stays untracked. Deployment secrets live in Vercel and Fly.io dashboards.
+Never commit real secrets. `.env.example` is the source of truth for which keys exist; `.env` stays untracked. Deployment secrets live in the Vercel project dashboards (`craftstack-collab` and `craftstack-knowledge`); third-party credentials (Pusher, Resend, Gemini, Sentry, Upstash) are also injected through Vercel env vars per scope (Production / Preview / Development).
 
 ## Benchmark values in README
 

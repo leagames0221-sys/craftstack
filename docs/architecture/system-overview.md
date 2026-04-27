@@ -1,97 +1,95 @@
 # System overview
 
+> **Status (as of v0.5.2)**: this is the deployed architecture. The original ADR-0009 plan included Fly.io + Socket.IO + BullMQ; the implementation pivoted to Pusher Channels for ADR-0046 (zero-cost-by-construction) compliance — recorded in ADR-0052. The diagram + table below reflect what actually runs.
+
 ```mermaid
-graph TB
-  subgraph Edge
-    CDN[Cloudflare DNS + CDN]
-  end
+flowchart LR
+    subgraph client["Browser"]
+        B_UI["Boardly UI<br/>(Next.js 16 client)"]
+        K_UI["Knowlex UI<br/>(Next.js 16 client)"]
+    end
 
-  subgraph "Vercel (Next.js 16)"
-    BoardlyFront[Boardly · SSR + Route Handlers]
-    KnowlexFront[Knowlex · SSR + Route Handlers]
-  end
+    subgraph vercel["Vercel Hobby ($0)"]
+        B_APP["craftstack-collab<br/>Node + Edge runtime"]
+        K_APP["craftstack-knowledge<br/>Node runtime"]
+    end
 
-  subgraph "Fly.io"
-    BoardlyWS[Boardly · Socket.IO server]
-    KnowlexWorker[Knowlex · BullMQ worker]
-  end
+    subgraph neon["Neon Singapore (Free)"]
+        B_DB[("boardly-db<br/>Postgres 16")]
+        K_DB[("knowlex-db<br/>Postgres 16 + pgvector<br/>HNSW cosine index")]
+    end
 
-  subgraph "Data"
-    NeonB[(Neon Postgres<br/>boardly-db)]
-    NeonK[(Neon Postgres + pgvector<br/>knowlex-db)]
-    Upstash[(Upstash Redis<br/>Pub/Sub + Rate Limit)]
-    R2[(Cloudflare R2<br/>Storage)]
-  end
+    subgraph ext["External (all free tier, $0)"]
+        UPSTASH[("Upstash Redis<br/>Tokyo<br/>(rate-limit only)")]
+        PUSHER["Pusher Channels<br/>(Sandbox tier)"]
+        RESEND["Resend email<br/>(env-guarded)"]
+        GEMINI["Google AI Studio<br/>gemini-embedding-001<br/>gemini-2.0-flash"]
+    end
 
-  subgraph "External APIs"
-    Gemini[Gemini Flash + Embedding]
-    Cohere[Cohere Rerank]
-    Resend[Resend Email]
-  end
+    subgraph ghci["GitHub Actions (free)"]
+        CI["ci.yml<br/>lint + typecheck + test<br/>+ knowlex integration<br/>(pgvector service container)<br/>+ drift-detect-v2"]
+        SMOKE["smoke.yml<br/>live smoke every 6 h"]
+        EVAL["eval.yml<br/>nightly RAG eval cron"]
+        CODEQL["codeql.yml<br/>security scan"]
+        SBOM["sbom.yml<br/>CycloneDX on tag"]
+    end
 
-  subgraph "Observability"
-    Sentry[Sentry]
-    Better[Better Stack]
-    Uptime[UptimeRobot]
-  end
+    B_UI -->|"auth · boards · cards"| B_APP
+    K_UI -->|"ingest · ask"| K_APP
+    B_APP --> B_DB
+    K_APP --> K_DB
+    K_APP -->|"768-dim embeddings<br/>+ streamed answer"| GEMINI
+    B_APP -.->|"rate-limit"| UPSTASH
+    B_APP -.->|"realtime fanout<br/>(env-guarded skip)"| PUSHER
+    B_APP -.->|"invitation email<br/>(env-guarded log)"| RESEND
 
-  CDN --> BoardlyFront
-  CDN --> KnowlexFront
-  CDN --> BoardlyWS
-
-  BoardlyFront --> NeonB
-  BoardlyFront --> R2
-  BoardlyWS --> NeonB
-  BoardlyWS <--> Upstash
-
-  KnowlexFront --> NeonK
-  KnowlexFront --> R2
-  KnowlexFront --> Gemini
-  KnowlexFront --> Cohere
-  KnowlexWorker --> NeonK
-  KnowlexWorker --> R2
-  KnowlexWorker --> Gemini
-  KnowlexWorker <--> Upstash
-
-  BoardlyFront -.-> Sentry
-  BoardlyWS -.-> Sentry
-  KnowlexFront -.-> Sentry
-  KnowlexWorker -.-> Sentry
-  BoardlyFront -.-> Better
-  KnowlexFront -.-> Better
-  BoardlyFront -.-> Resend
-  KnowlexFront -.-> Resend
-  Uptime -.-> BoardlyFront
-  Uptime -.-> KnowlexFront
+    SMOKE -.->|"E2E_BASE_URL"| K_APP
+    EVAL -.->|"golden v4 corpus"| K_APP
+    CI -.->|"pgvector service"| K_DB
 ```
 
 ## Separation of concerns
 
-| Layer             | Boardly                                | Knowlex                                      |
-| ----------------- | -------------------------------------- | -------------------------------------------- |
-| SSR / API         | Vercel Hobby                           | Vercel Hobby                                 |
-| Realtime / Worker | Fly.io `shared-cpu-1x` × 1 (Socket.IO) | Fly.io `shared-cpu-1x` × 1 (BullMQ)          |
-| Database          | Neon `boardly-db` (pg_trgm)            | Neon `knowlex-db` (pg_trgm + pgvector + RLS) |
-| Cache / Pub-Sub   | Upstash Redis                          | Upstash Redis (shared)                       |
-| Storage           | Cloudflare R2 bucket `boardly`         | Cloudflare R2 bucket `knowlex`               |
+| Layer           | Boardly                                 | Knowlex                                                |
+| --------------- | --------------------------------------- | ------------------------------------------------------ |
+| SSR / API       | Vercel Hobby (`craftstack-collab`)      | Vercel Hobby (`craftstack-knowledge`)                  |
+| Realtime fanout | Pusher Channels Sandbox (env-guarded)   | n/a (request-response only)                            |
+| Database        | Neon `boardly-db` (Postgres 16)         | Neon `knowlex-db` (Postgres 16 + pgvector HNSW cosine) |
+| Rate limit      | Upstash Redis (Tokyo)                   | In-process per-IP + global budget per ADR-0046         |
+| Email           | Resend (env-guarded; falls back to log) | n/a                                                    |
+| Auth            | Auth.js v5 JWT + GitHub/Google OAuth    | Single-tenant (auth deferred to v0.5.4 per ADR-0047)   |
+| AI              | Gemini Flash via `/playground`          | Gemini Flash + embedding-001                           |
 
-Databases are deliberately separated per app (ADR-0018) so Knowlex pgvector workloads cannot steal capacity from Boardly realtime queries.
+Databases are deliberately separated per app per [ADR-0018](../adr/0018-db-instance-per-app.md) so Knowlex pgvector workloads cannot steal capacity from Boardly transactional queries.
 
 ## Request path examples
 
 ### Boardly: edit a card
 
-1. Browser PATCH `/api/cards/:id` with `version` → Vercel Route Handler
-2. Route handler validates, UPDATE on Neon `boardly-db`, emits event to Upstash via the Fly.io Socket.IO instance
-3. Socket.IO broadcasts to all sockets in the `board:<id>` room across all Fly nodes (Pub/Sub glue)
+1. Browser PATCH `/api/cards/:id` with last-seen `version` → Vercel Route Handler
+2. Route handler validates, runs `updateMany` filtered by `id + version` on Neon `boardly-db`
+3. On success (1 row affected): emits a Pusher Channels event to `board-<id>` channel; on failure (0 rows = stale): returns HTTP 409 `VERSION_MISMATCH` per [ADR-0007](../adr/0007-optimistic-locking.md)
+4. Pusher fanout reaches every connected client subscribed to `board-<id>`; `BoardClient` applies the diff or marks the local entry stale per [ADR-0048](../adr/0048-undo-redo-optimistic-lock-semantics.md)
+5. Pusher emit is wrapped per [ADR-0030](../adr/0030-best-effort-side-effects.md) — a Pusher outage cannot abort the card save
 
 ### Knowlex: ask a question
 
-1. Browser POST `/api/conversations/:id/messages` (SSE)
-2. Server rewrites the query, optionally runs HyDE (Gemini), fans out hybrid retrieve (pgvector + BM25 on Neon), fuses via RRF, reranks via Cohere
-3. Gemini Flash streams the answer; the server parses `<|cite:...|>` tokens into Citation rows
-4. After the stream closes, a Faithfulness pass rescues any unverified sentences
+1. Browser POST `/api/kb/ask` with `{ question }` (SSE response)
+2. Route handler resolves workspaceId via the `resolveWorkspaceId` fallback (single-tenant default `wks_default_v050` per ADR-0047 partial)
+3. Embeds the question via `gemini-embedding-001` at 768 dim (matches stored corpus per ADR-0041)
+4. Runs cosine kNN over pgvector HNSW index on Neon `knowlex-db`
+5. Streams Gemini 2.0 Flash answer with numbered citations (`[1]`, `[2]`, ...) via SSE per ADR-0039 MVP scope
+6. Per-IP and global daily/monthly budget caps apply per [ADR-0043](../adr/0043-knowlex-ops-cost-ci-eval.md) / [ADR-0046](../adr/0046-zero-cost-by-construction.md)
 
-```
+## What is **not** in this diagram (intentional, per ADR-0039 MVP scope)
 
-```
+- **Hybrid retrieval** (BM25 + vector via RRF) — design-phase ambition per ADR-0011, deferred
+- **Cohere Rerank** — ADR-0011, deferred
+- **HyDE** — ADR-0014, deferred
+- **NLI Faithfulness check** — ADR-0013, deferred
+- **PostgreSQL RLS** — ADR-0010, deferred (Knowlex is single-tenant per ADR-0039)
+- **BullMQ worker** — original ADR-0009 component, removed by Pusher pivot (ADR-0052)
+- **Cloudflare R2 storage** — schema-ready at Prisma layer per ADR-0008, UI wiring is a follow-up
+- **Multi-region expansion** — post-v1.0 roadmap
+
+The "what is not" list exists deliberately. A reviewer reading this overview should be able to predict every endpoint that exists vs. every endpoint that doesn't, with no surprise.

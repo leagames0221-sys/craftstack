@@ -1,10 +1,21 @@
 // @ts-check
 //
-// k6 load test for Boardly realtime editing.
-// Targets 200 concurrent WebSocket connections across 20 boards.
-// Thresholds match README claims (p95 < 300ms on Fly.io, success >= 99%).
+// === STATUS: design-phase scaffold, not currently runnable against production ===
 //
-// Run: k6 run -e BASE_URL=https://boardly.app infra/k6/board-load.js
+// This script was written for the original ADR-0009 architecture (Vercel +
+// Fly.io with a self-hosted Socket.IO server on `ws://.../boards`). The
+// implementation pivoted to Pusher Channels during Boardly v0.1.0 (see
+// ADR-0052) — Boardly no longer exposes a WebSocket endpoint to load-test.
+// Pusher Sandbox itself is rate-limited per ADR-0046 free-tier stance, so
+// hammering it from k6 against the live deploy would be self-inflicted DoS.
+//
+// Kept as scaffold so the k6 toolchain entry remains in the repo; a
+// rewritten Pusher-aware load harness (HTTP-fanout latency + connection
+// limits) is on the v0.6.0 roadmap. Do NOT run this file as-is against
+// craftstack-collab.vercel.app — it will fail at the `ws.connect()` call.
+//
+// Run (against a future Pusher-aware rewrite):
+//   k6 run -e BASE_URL=... infra/k6/board-load.js
 
 import { check } from 'k6'
 import ws from 'k6/ws'

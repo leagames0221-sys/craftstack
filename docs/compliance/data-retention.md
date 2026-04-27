@@ -11,7 +11,7 @@
 | Session                | 7 days after expiry            |
 | VerificationToken      | 24 hours                       |
 
-A nightly BullMQ repeatable job at 03:00 JST enumerates expired rows and deletes them. Deletion counts are emitted as a structured log line and visualized on Better Stack.
+> **Implementation status (v0.5.2)**: the soft-delete columns and 30-/90-/365-day windows above are wired at the Prisma schema layer, but the **automated cleanup job is not yet shipped**. The original design-phase plan was a BullMQ repeatable job at 03:00 JST on the Fly.io worker (per ADR-0009), but the Pusher pivot (per ADR-0052) removed Fly.io from the deploy footprint. A Vercel Cron-based equivalent is on the v0.6.0 roadmap; until then, a manual `prisma` script can be run if a physical-delete sweep is needed for a specific GDPR-equivalent erasure request.
 
 ## User erasure requests (GDPR-equivalent)
 
@@ -31,4 +31,4 @@ A nightly BullMQ repeatable job at 03:00 JST enumerates expired rows and deletes
 
 ## Regional residency
 
-v1 serves everyone out of the default Fly.io region (NRT). Expansion plan is documented under ADR-0009 but not implemented.
+v0.5.2 serves all traffic out of Vercel's edge network (region selection is Vercel-managed; the Boardly + Knowlex Vercel projects are configured against Neon Singapore for the data plane). The original design-phase plan was Fly.io NRT region per ADR-0009; superseded by the Pusher pivot per ADR-0052 — Vercel-only deploy is what ships. Multi-region expansion is on the post-v1.0 roadmap.

@@ -28,9 +28,9 @@ I aim to acknowledge reports within 72 hours and to publish a fix or a detailed 
 In scope:
 
 - Code in this repository
-- The Vercel deployment of Boardly
-- The Neon database schema and migrations
-- Any future Fly.io machine once realtime ships
+- The Vercel deployments of Boardly (`craftstack-collab`) and Knowlex (`craftstack-knowledge`)
+- The Neon database schemas and migrations (both `boardly-db` and `knowlex-db`)
+- The Pusher Channels integration that powers Boardly realtime fanout
 
 Out of scope:
 
