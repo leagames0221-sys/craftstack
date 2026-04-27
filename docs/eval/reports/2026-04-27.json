@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "ranAt": "2026-04-27T19:38:54.015Z",
+  "baseUrl": "https://craftstack-knowledge.vercel.app",
+  "goldenVersion": 4,
+  "goldenSize": {
+    "questions": 30,
+    "corpus": 10
+  },
+  "thresholds": {
+    "minPassRate": 0.6,
+    "maxP95LatencyMs": 10000
+  },
+  "aggregate": {
+    "passed": 24,
+    "total": 30,
+    "passRate": 0.8,
+    "passRatePct": 80,
+    "latencyP50Ms": 2311,
+    "latencyP95Ms": 8221,
+    "passRateOk": true,
+    "latencyOk": true,
+    "overallPass": true
+  },
+  "outcomes": [
+    {
+      "id": "q001",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 1730.6145479999977,
+      "reasons": []
+    },
+    {
+      "id": "q002",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 3478.618913000013,
+      "reasons": []
+    },
+    {
+      "id": "q003",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 3246.1976339999965,
+      "reasons": []
+    },
+    {
+      "id": "q004",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 2155.040666999994,
+      "reasons": []
+    },
+    {
+      "id": "q005",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 1344.6490080000076,
+      "reasons": []
+    },
+    {
+      "id": "q006",
+      "category": "reasoning",
+      "passed": true,
+      "latencyMs": 893.39791900001,
+      "reasons": []
+    },
+    {
+      "id": "q007",
+      "category": "reasoning",
+      "passed": true,
+      "latencyMs": 1644.701933000004,
+      "reasons": []
+    },
+    {
+      "id": "q008",
+      "category": "adversarial",
+      "passed": true,
+      "latencyMs": 1355.9552410000178,
+      "reasons": []
+    },
+    {
+      "id": "q009",
+      "category": "adversarial",
+      "passed": true,
+      "latencyMs": 994.1389219999837,
+      "reasons": []
+    },
+    {
+      "id": "q010",
+      "category": "reasoning",
+      "passed": true,
+      "latencyMs": 1354.9758639999782,
+      "reasons": []
+    },
+    {
+      "id": "q011",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 1194.3640700000105,
+      "reasons": []
+    },
+    {
+      "id": "q012",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 1989.8006299999834,
+      "reasons": []
+    },
+    {
+      "id": "q013",
+      "category": "reasoning",
+      "passed": true,
+      "latencyMs": 2888.6619410000276,
+      "reasons": []
+    },
+    {
+      "id": "q014",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 1201.1744999999937,
+      "reasons": []
+    },
+    {
+      "id": "q015",
+      "category": "reasoning",
+      "passed": true,
+      "latencyMs": 2697.4835299999977,
+      "reasons": []
+    },
+    {
+      "id": "q016",
+      "category": "reasoning",
+      "passed": true,
+      "latencyMs": 1599.1455509999942,
+      "reasons": []
+    },
+    {
+      "id": "q017",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 1508.4330860000046,
+      "reasons": []
+    },
+    {
+      "id": "q018",
+      "category": "reasoning",
+      "passed": true,
+      "latencyMs": 1080.1672160000016,
+      "reasons": []
+    },
+    {
+      "id": "q019",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 2617.782819999993,
+      "reasons": []
+    },
+    {
+      "id": "q020",
+      "category": "reasoning",
+      "passed": false,
+      "latencyMs": 6835.583046999993,
+      "reasons": [
+        "missing any of expected substrings (OR-mode): one row, exactly one, single row, O(1), one update, single update"
+      ]
+    },
+    {
+      "id": "q021",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 2307.769463000004,
+      "reasons": []
+    },
+    {
+      "id": "q022",
+      "category": "factual",
+      "passed": false,
+      "latencyMs": 6851.701786999998,
+      "reasons": [
+        "missing any of expected substrings (OR-mode): SHA-256, SHA256, SHA 256, sha-256"
+      ]
+    },
+    {
+      "id": "q023",
+      "category": "reasoning",
+      "passed": true,
+      "latencyMs": 3330.991168000037,
+      "reasons": []
+    },
+    {
+      "id": "q024",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 3789.9580380000407,
+      "reasons": []
+    },
+    {
+      "id": "q025",
+      "category": "factual",
+      "passed": false,
+      "latencyMs": 8288.475075000024,
+      "reasons": [
+        "missing any of expected substrings (OR-mode): craftstack-collab, craftstack-knowledge, collab, knowledge"
+      ]
+    },
+    {
+      "id": "q026",
+      "category": "reasoning",
+      "passed": false,
+      "latencyMs": 8171.004289000004,
+      "reasons": [
+        "missing any of expected substrings (OR-mode): free tier, free-tier, free-tiers, no credit card, no CC"
+      ]
+    },
+    {
+      "id": "q027",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 5243.960907000001,
+      "reasons": []
+    },
+    {
+      "id": "q028",
+      "category": "reasoning",
+      "passed": false,
+      "latencyMs": 8262.664615999965,
+      "reasons": [
+        "missing any of expected substrings (OR-mode): ring buffer, in-memory, memory buffer, buffer, ring-buffer"
+      ]
+    },
+    {
+      "id": "q029",
+      "category": "factual",
+      "passed": true,
+      "latencyMs": 2314.64931899996,
+      "reasons": []
+    },
+    {
+      "id": "q030",
+      "category": "adversarial",
+      "passed": false,
+      "latencyMs": 7018.247574999987,
+      "reasons": [
+        "expected refusal (off-corpus or adversarial) but answer asserted content"
+      ]
+    }
+  ]
+}
