@@ -31,8 +31,9 @@ export const authEdgeConfig = {
     authorized: async ({ auth, request }) => {
       const { pathname } = request.nextUrl;
       // Unauthenticated pages that still flow through the proxy so they
-      // get the nonce-based CSP header. Returning true here short-circuits
-      // the auth gate without changing page-level RBAC.
+      // get the static CSP header set in next.config.ts (rolled back from
+      // nonce + strict-dynamic per ADR-0040). Returning true here short-
+      // circuits the auth gate without changing page-level RBAC.
       if (pathname === "/") return true;
       if (pathname.startsWith("/signin")) return true;
       if (pathname.startsWith("/invite")) return true;
