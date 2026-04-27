@@ -130,32 +130,38 @@ jobs:
           DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
         run: pnpm --filter knowledge exec prisma migrate deploy
 
-      # NOTE on PR-time drift detection (ADR-0051 § Not in scope #2):
+      # ADR-0051 § Drift detection deferred → option 2 (v0.5.3 ship).
       #
-      # `prisma migrate diff --from-migrations --to-schema --exit-code`
-      # was attempted in PR #27 (commits 55e31e6 / 54eca07) but
-      # surfaced **pre-existing structural drift that Prisma cannot
-      # represent**: the v0.4.x HNSW index on `Embedding.embedding`
-      # is created via raw SQL in migration `20260424_hnsw`, but
-      # Prisma's declarative schema language does not natively
-      # express HNSW indexes. Result: every PR would fail drift
-      # detect with `[-] Removed index on columns (embedding)`
-      # even when no schema change was made — a false positive that
-      # blocks all PRs.
+      # Background: PR #27 attempted `prisma migrate diff --from-
+      # migrations --to-schema --exit-code` against a shadow DB but
+      # surfaced a structural false positive — Prisma's declarative
+      # schema language has no syntax for HNSW indexes (the v0.4.x
+      # `20260424_hnsw` migration creates `... USING hnsw` via raw
+      # SQL), so `migrate diff` always reported `[-] Removed index
+      # on (embedding)` regardless of any schema change.
       #
-      # Two paths forward (deferred to v0.5.3):
-      # 1. Snapshot post-migration `prisma db pull` output as a
-      #    canonical reference and diff PR-time DB introspection
-      #    against it (sidesteps schema.prisma's HNSW gap).
-      # 2. Custom Node script that introspects the DB after
-      #    `prisma migrate deploy` and asserts a known-good shape
-      #    (table list, column list, index list including HNSW).
+      # This step replaces that approach with a Node script that
+      # introspects the post-migration DB via pg_catalog and asserts
+      # a known-good shape (tables, columns, indexes-by-access-method,
+      # extensions) declared in `prisma/expected-shape.json`. Because
+      # pg_catalog reports the actual physical state of the DB, HNSW
+      # indexes appear correctly with `amname = 'hnsw'`, sidestepping
+      # Prisma's representation gap entirely.
       #
-      # Until then, the integration tests below provide *indirect*
-      # drift detection: they exercise workspaceId-aware routes that
-      # would fail if the generated client and the migrated DB
-      # diverge. Weaker than a dedicated drift gate but the state
-      # of the art given Prisma's HNSW limitation.
+      # Authoring contract: when a future migration adds a table /
+      # column / index / extension, hand-edit the manifest in the
+      # same PR. The script is the gate that enforces schema +
+      # migration + manifest stay in sync.
+      #
+      # Exit codes:
+      #   0 — DB shape matches manifest
+      #   2 — drift detected (one or more expected items missing)
+      #   1 — connection or query error
+      - name: Verify schema shape (drift detection v2 — pg_catalog assertion)
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/knowlex
+        working-directory: apps/knowledge
+        run: node scripts/verify-schema-shape.mjs
 
       - name: Run integration tests
         env:

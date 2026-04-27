@@ -1,0 +1,41 @@
+{
+  "$comment": "Drift detection v2 manifest (ADR-0051 § Drift detection deferred → option 2). Captures the post-migration physical shape of the Knowlex DB so CI can assert that schema.prisma + migrations + actual DB stay in sync. Update this file in the same PR that adds a migration; the verify-schema-shape.mjs script asserts every entry here exists in the migrated DB and fails CI on drift. Verified against live schema.prisma + migration SQL on 2026-04-27.",
+  "$schemaVersion": 1,
+  "tables": [
+    "Workspace",
+    "Document",
+    "Chunk",
+    "Embedding",
+    "_prisma_migrations"
+  ],
+  "columns": {
+    "Workspace": ["id", "name", "slug", "createdAt"],
+    "Document": [
+      "id",
+      "workspaceId",
+      "title",
+      "content",
+      "charCount",
+      "createdAt",
+      "updatedAt"
+    ],
+    "Chunk": [
+      "id",
+      "documentId",
+      "ordinal",
+      "content",
+      "tokenCount",
+      "createdAt"
+    ],
+    "Embedding": ["chunkId", "model", "dim", "embedding", "createdAt"]
+  },
+  "indexes": [
+    { "name": "Workspace_slug_key", "accessMethod": "btree" },
+    { "name": "Document_createdAt_idx", "accessMethod": "btree" },
+    { "name": "Document_workspaceId_createdAt_idx", "accessMethod": "btree" },
+    { "name": "Chunk_documentId_idx", "accessMethod": "btree" },
+    { "name": "Chunk_documentId_ordinal_key", "accessMethod": "btree" },
+    { "name": "Embedding_embedding_cosine_idx", "accessMethod": "hnsw" }
+  ],
+  "extensions": ["vector"]
+}
