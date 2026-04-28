@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml/badge.svg)](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml)
 [![Security Headers: A](https://img.shields.io/badge/Security%20Headers-A-brightgreen)](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on)
-[![Tests: 239 Vitest + 24 Playwright](https://img.shields.io/badge/tests-239%20%2B%2024-success)](./apps/collab)
+[![Tests: 256 Vitest + 24 Playwright](https://img.shields.io/badge/tests-256%20%2B%2024-success)](./apps/collab)
 [![Knowlex eval (measured)](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fleagames0221-sys%2Fcraftstack%2Fmain%2Fdocs%2Feval%2Fbadge.json)](./docs/eval/reports/)
 [![Infra: $0/mo](https://img.shields.io/badge/infra-%240%2Fmo-blue)](#tech-stack)
 [![Free-tier CI-enforced](https://img.shields.io/badge/free--tier-CI%20enforced-brightgreen)](./docs/adr/0046-zero-cost-by-construction.md)
@@ -111,7 +111,7 @@ craftstack/
 │   └── docker/              # docker-compose + init scripts
 ├── docs/
 │   ├── design/              # 13-part design bible (see docs/design/README.md)
-│   ├── adr/                 # Architecture Decision Records (60 entries)
+│   ├── adr/                 # Architecture Decision Records (61 entries)
 │   ├── api/                 # OpenAPI specs
 │   ├── architecture/        # System diagrams
 │   ├── compliance/          # Data retention policy
@@ -132,7 +132,7 @@ craftstack/
 - **Auth**: Auth.js v5 with JWT session strategy · Google + GitHub OAuth · PrismaAdapter
 - **Deploy**: Vercel Hobby · GitHub Actions CI (lint / typecheck / test / build)
 - **Security headers** — scored **A** on [securityheaders.com](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on). Layers: Content-Security-Policy with explicit Vercel-platform allowlists + `'unsafe-inline'` (W3C-spec rollback from the earlier A+ nonce + `'strict-dynamic'` stance — platform-injected scripts couldn't carry our per-request nonce and hydration broke; see ADR-0040), HSTS 2y preload, X-Frame-Options DENY, Cross-Origin-Opener-Policy same-origin, Cross-Origin-Resource-Policy same-origin, Permissions-Policy denying every unused sensor / media / power API, and Referrer-Policy strict-origin-when-cross-origin
-- **Testing**: Vitest (**239** unit cases across both apps — 174 collab + 65 knowledge) · Playwright (**24** scenarios — smoke, authed E2E (board/dashboard/rate-limits/workspace), a11y + authed-a11y, signin, run with `pnpm --filter collab test:e2e` / `pnpm --filter knowledge test:e2e`) · Knowlex retrieve integration test against a real `pgvector` service container via `docker compose` (`pnpm --filter knowledge test:integration`) · k6 scenario
+- **Testing**: Vitest (**256** unit cases across both apps — 174 collab + 82 knowledge) · Playwright (**24** scenarios — smoke, authed E2E (board/dashboard/rate-limits/workspace), a11y + authed-a11y, signin, run with `pnpm --filter collab test:e2e` / `pnpm --filter knowledge test:e2e`) · Knowlex retrieve integration test against a real `pgvector` service container via `docker compose` (`pnpm --filter knowledge test:integration`) · k6 scenario
 - **Drag & drop**: `@dnd-kit` sortable cards with LexoRank positions + optimistic UI + `VERSION_MISMATCH` rollback
 - **Realtime**: Pusher Channels (free tier) — `board-<id>` fanout for card/list mutations; no-op locally when unconfigured
 - **Invitations**: Token-hashed invitation flow (ADMIN+ creates, accept page binds membership). Resend-backed email delivery with graceful fallback to console log when `RESEND_API_KEY` is unset
@@ -217,7 +217,7 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 | ----------------------- | -------------------------------------------------------------------------------------- |
 | Architecture overview   | [docs/architecture/system-overview.md](docs/architecture/system-overview.md)           |
 | **Audit attestation**   | live single-curl: <https://craftstack-knowledge.vercel.app/api/attestation> (ADR-0056) |
-| Decision records (60)   | [docs/adr/](docs/adr/README.md)                                                        |
+| Decision records (61)   | [docs/adr/](docs/adr/README.md)                                                        |
 | API specs (OpenAPI)     | [collab](docs/api/collab-openapi.yaml) · [knowledge](docs/api/knowledge-openapi.yaml)  |
 | Rate limits             | [docs/api/rate-limits.md](docs/api/rate-limits.md)                                     |
 | STRIDE threat model     | [docs/security/threat-model.md](docs/security/threat-model.md)                         |
@@ -236,7 +236,7 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 ### Shipped
 
 - ✅ **Week 1–2** — Monorepo scaffolding, CI, Docker Compose
-- ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, initial Vitest suite (40 cases at the time, now **239**)
+- ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, initial Vitest suite (40 cases at the time, now **256**)
 - ✅ **Boardly v0.1.0** — Deployed to Vercel + Neon + Upstash; authenticated dashboard, workspace & board CRUD
 - ✅ **Week 4** — Resend-backed workspace invitations with token-hashed accept flow (7-day expiry, revocable, email-matching enforcement)
 - ✅ **Week 5** — Card/List CRUD with optimistic lock, editor modal, `@dnd-kit` drag-and-drop

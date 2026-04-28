@@ -4,6 +4,62 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.13] — 2026-04-28
+
+### Added — LLM-as-judge `--judge` flag: closes ADR-0049 § 8th arc paraphrase-fragility deferral (ADR-0062)
+
+Third graduation in three ships (after T-01 closure / ADR-0060 and I-01 closure / ADR-0061). The named-but-deferred fix from ADR-0049 § 8th arc for substring-OR scoring paraphrase fragility ships as an opt-in faithfulness rubric pass. The honest-disclose TTL discipline (per ADR-0059) is now consistently producing closures, three for three.
+
+#### Module + tests + eval wiring
+
+- `apps/knowledge/src/lib/judge-rubric.ts` (new) — pure module: `buildJudgePrompt`, `parseJudgeResponse`, `aggregateJudgeScores`, `RUBRIC_MIN`, `RUBRIC_MAX`, `DEFAULT_JUDGE_MODEL`.
+- `apps/knowledge/src/lib/judge-rubric.test.ts` (new) — 17 Vitest cases pinning prompt construction, response parsing (clean JSON / quoted scores / code-fenced / trailing prose / unparseable / out-of-range / missing reasoning), aggregate calculation, and the `DEFAULT_JUDGE_MODEL = "gemini-2.5-pro"` invariant.
+- `apps/knowledge/scripts/eval.ts` — wires `--judge` CLI + `EVAL_JUDGE=1` env toggle + per-question `judgeAnswer` call + aggregate into the report JSON.
+
+#### Toggles (equivalent)
+
+```bash
+node --import tsx scripts/eval.ts --judge
+EVAL_JUDGE=1 node --import tsx scripts/eval.ts
+EVAL_JUDGE_MODEL=gemini-2.5-flash node --import tsx scripts/eval.ts --judge
+```
+
+#### Rubric (integer 0..3, not Likert / not prose)
+
+```
+3 = correct, fully grounded in the cited document.
+2 = correct but partial.
+1 = partially wrong (hedges / paraphrases away a load-bearing fact).
+0 = wrong / hallucinated / refuses when the corpus has the answer.
+```
+
+Output: `{"score": N, "reasoning": "<one sentence>"}`. Parser tolerates code-fenced / prose-trailed / quoted-integer responses; non-fatal parse failures yield `score: null`.
+
+#### Aggregation
+
+- Per-question: `outcomes[i].judgeScore` + `outcomes[i].judgeReasoning`.
+- Aggregate: `report.aggregate.judge = { model, meanScore, available, total }`. Mean over available scores only (nulls excluded from denominator).
+- Pass/fail threshold for judge mean is **deferred** to a future ratchet — v0.5.13 reports the mean as advisory only.
+
+#### ADR-0046 compliance preserved
+
+`gemini-2.5-pro` is on AI Studio Free tier at 5 RPM / 25 RPD — sufficient for one full `--judge` run per day. Default-off; nightly cron continues substring-OR scoring at $0/mo. `--judge` is opt-in for periodic review.
+
+#### Numerics ratchet
+
+- ADR count 60 → 61
+- Vitest 239 → 256 (174 collab + 82 knowledge; +17 from `judge-rubric.test.ts`)
+- Banner v0.5.12 → v0.5.13 across 4 docs (portfolio-lp / interview-qa / system-overview / runbook)
+
+### Verification
+
+```bash
+node scripts/check-doc-drift.mjs    # → 0 failures
+node scripts/check-adr-claims.mjs   # → 42/42 (was 37 + 5 ADR-0062 entries); PR-time integrity pass
+node scripts/check-adr-refs.mjs     # → 0 dangling
+pnpm --filter knowledge test        # → 82 passed (was 65, +17 judge-rubric.test.ts)
+```
+
 ## [0.5.12] — 2026-04-28
 
 ### Added — Auth.js on Knowlex + multi-tenant transition: I-01 resolved (ADR-0061)
