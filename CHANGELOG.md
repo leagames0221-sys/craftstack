@@ -4,6 +4,48 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.8] — 2026-04-28
+
+### Added — Drift-audit framework completeness, 13 axes, structural where possible (ADR-0057)
+
+The drift-audit framework was 6 axes by v0.5.7. User-side review on 2026-04-28 identified at least 7 more axes, several with high failure-mode impact. v0.5.8 ships the **13-axis complete framework**: 10 structurally enforced (PR-time CI gates + smoke probes), 3 honestly disclosed in `threat-model.md` as T-07/T-08/T-09. After this release, every claim of `audit-survivable engineering` is backed by either a specific catch or a specific named limitation.
+
+#### Axis 7 — ADR-claim ↔ Implementation (highest impact)
+
+- **`scripts/check-adr-claims.mjs`** (new) — reads `docs/adr/_claims.json`, asserts each load-bearing ADR claim against the actual codebase. Three match modes: `regex` (capture group must equal expected), `contains` (regex must match somewhere), `exists` (file path exists). 22 initial entries covering ADR-0027 / 0034 / 0035 / 0040 / 0041 / 0046 / 0049 / 0051 / 0053 / 0054 / 0056. Adding new claims is one JSON entry. PR-blocking via `doc-drift-detect` job in `ci.yml`.
+- **`docs/adr/_claims.json`** (new) — claim inventory. Specific examples caught:
+  - ADR-0027 says rate limit = 1000/mo / 50/day / 20/day → asserted against `apps/collab/src/lib/rate-limit.ts`
+  - ADR-0046 says `EMERGENCY_STOP` flag → asserted via `contains` check in `apps/knowledge/src/app/api/kb/ask/route.ts`
+  - ADR-0049 says `maxP95LatencyMs: 10000` + `minPassRate: 0.6` → asserted in `docs/eval/golden_qa.json`
+
+#### Axis 3 — internal cross-reference (ADR ID resolution)
+
+- **`scripts/check-adr-refs.mjs`** (new) — walks docs / code / scripts, extracts every `ADR-NNNN` reference, asserts each resolves to an existing `docs/adr/NNNN-*.md`. Catches typos (transposed digits) and dangling refs to renamed/removed ADRs. PR-blocking via `doc-drift-detect`.
+
+#### Axis 12 — external artefact freshness
+
+- **`.github/workflows/smoke.yml`** — new step `curl -fL --head` probes shields.io endpoint badge, both Loom walkthrough URLs, both Vercel deploys. 4xx/5xx fails the smoke run within 6 hours.
+
+#### Axes 8 / 11 / 13 — honest disclose (`docs/security/threat-model.md` T-07/T-08/T-09)
+
+Three new threat-model rows that **explicitly disclose** the limits of structural defence:
+
+- **T-07** (axis 8): tests are name-defined, not behavior-verified — mutation testing deferred to v0.7.0+
+- **T-08** (axis 11): decisions made in code without a corresponding ADR are not auto-detected — manual periodic audit only; the false-positive rate of `feat:` / `fix:` commit grep would exceed signal
+- **T-09** (axis 13): live free-tier quota state (Vercel bandwidth / Neon hours / Pusher / Gemini quota) is not in `/api/attestation` — vendor API tokens cost outweighs benefit at portfolio scale; structural mitigation via ADR-0046 fail-closed regime
+
+Same shape as T-01 (public Pusher channels) and T-06 (badge-vs-cron trade-off): name the trade-off, mitigate where structurally possible, do not pretend the gap doesn't exist.
+
+#### Cross-references + housekeeping
+
+- **`docs/adr/0057-drift-framework-completeness.md`** (new) — full MADR with the 13-axis matrix, decision per axis, alternatives explicitly rejected.
+- **`docs/adr/README.md`** — index entry.
+- **`.github/workflows/ci.yml`** — `doc-drift-detect` job runs `check-adr-refs.mjs` + `check-adr-claims.mjs` after `check-doc-drift.mjs` (no new job, ~1 s extra CI time).
+- **README + portfolio-lp + page.tsx Stat block** — ADR count 55 → 57 (caught by doc-drift-detect, the script's 4th self-test).
+- **Banner v0.5.7 → v0.5.8** across 4 status-bearing docs (caught by doc-drift-detect's CHANGELOG-as-truth banner check).
+
+After this release, `node scripts/check-adr-claims.mjs --list` prints the full inventory of asserted ADR claims. The 13-axis matrix in ADR-0057 is the single source of truth for what's structurally caught vs honestly disclosed.
+
 ## [0.5.7] — 2026-04-28
 
 ### Fixed — `/api/attestation` `tag` field returned `untagged` on the live deploy
