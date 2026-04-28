@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.7] — 2026-04-28
+
+### Fixed — `/api/attestation` `tag` field returned `untagged` on the live deploy
+
+The v0.5.6 deploy of `/api/attestation` reported `"tag": "untagged"` because Vercel's build environment uses a shallow clone with no tag refs fetched, so `git describe --tags --abbrev=0` failed and the script's `safe(...)` wrapper returned the fallback string. Other fields (`commit`, `adrCount`, `runtime.schema.drift`, `cronHealthHint`, etc) were all correct — only the `tag` cosmetic was wrong.
+
+`scripts/generate-attestation-data.mjs` now reads the topmost release from `CHANGELOG.md` (`## [X.Y.Z]` regex match, skipping `[Unreleased]`), the same source-of-truth `scripts/check-doc-drift.mjs` already uses for the status banner check (ADR-0054). PR-time synchronous, environment-independent, and consistent with the existing banner-as-CHANGELOG discipline.
+
+After this ship, `curl https://craftstack-knowledge.vercel.app/api/attestation | jq '.tag'` returns the correct release version (`"v0.5.7"` after this release lands).
+
 ## [0.5.6] — 2026-04-28
 
 ### Added — `/api/attestation` endpoint, single-curl audit-survivability artefact (ADR-0056)

@@ -35,14 +35,18 @@ function safe(fn, fallback) {
   }
 }
 
-const tag = safe(
-  () =>
-    execSync("git describe --tags --abbrev=0", {
-      cwd: ROOT,
-      encoding: "utf8",
-    }).trim(),
-  "untagged",
-);
+// `git describe --tags --abbrev=0` does not work in Vercel's build
+// environment (shallow clone with no tag refs fetched), and the
+// scripts/check-doc-drift.mjs banner check already established
+// CHANGELOG topmost release as the in-PR-synchronous truth source.
+// Use the same source here so the build emits the version the PR is
+// shipping rather than `untagged`.
+const tag = safe(() => {
+  const changelog = readFileSync(resolve(ROOT, "CHANGELOG.md"), "utf8");
+  const m = changelog.match(/^##\s+\[(\d+\.\d+\.\d+)\]/m);
+  if (!m) throw new Error("CHANGELOG topmost release not found");
+  return `v${m[1]}`;
+}, "untagged");
 
 const commit = safe(
   () =>
