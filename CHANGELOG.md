@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.4] — 2026-04-28
+
+### Added — runtime schema canary closing the runtime side of ADR-0051 (ADR-0053)
+
+ADR-0051 ships drift-detect-v2 as a PR-time `pg_catalog` assertion plus the `vercel-build` migration regime — that closes drift at merge-time and at boot-time. The 2026-04-27 06:35 UTC eval crash exhibited a third class the PR-time gate cannot detect: a deploy already on `main` lagging behind the migrations on the live db. v0.5.4 adds the runtime third layer.
+
+- **`apps/knowledge/src/app/api/health/schema/route.ts`** (new) — diffs live `information_schema.columns` against `prisma/schema.prisma` (mirrored in `EXPECTED`). HTTP 503 + per-table missing-column list when drifted; HTTP 200 + `latestMigration` metadata when clean. No-store + `force-dynamic`.
+- **`apps/knowledge/src/app/api/health/schema/expected.test.ts`** (new) — Vitest parses `schema.prisma` and asserts the `EXPECTED` constant matches the schema file model-by-model + catches reverse drift (model added to `schema.prisma` without registration in `EXPECTED`). 5 cases, all green.
+- **`apps/knowledge/tests/smoke/stats.spec.ts`** — third Playwright probe added: `GET /api/health/schema` must return `200`, `body.drift === false`, and per-table `check.missing === []`. Wired into `smoke.yml` 6-hourly cron, so a drift on the live deploy trips within hours instead of waiting for the nightly eval cron.
+- **`docs/security/threat-model.md`** — new T-05 row "Schema-vs-runtime drift on a live deploy (the v0.5.0 → v0.5.2 incident class)" with the canary as mitigation.
+- **`docs/ops/runbook.md` §1 Neon Postgres down** — Triage step 5 added: "First curl when the eval cron is red but `/api/kb/stats` is green" → `curl /api/health/schema` reads the runbook-side mitigation explicit. Root cause follow-up bullet expanded to reference ADR-0053.
+- **`docs/adr/0053-runtime-schema-canary.md`** (new) — full MADR with Context (the gap ADR-0051 left runtime-side), Decision (endpoint + test + smoke), three positive consequences (closes ADR-0051 runtime side / three-layer defence / operator artifact), three negative consequences (hardcoded EXPECTED / endpoint surfaces column list / column-presence not column-type drift).
+- **`docs/adr/README.md`** — index entry added.
+- **README.md / portfolio-lp.md / page.tsx Stat block / docs map** — ADR count 52 → 53.
+
+The smoking-gun condition (`Document.workspaceId does not exist`) is now structurally observable within 6h instead of taking a nightly cron + ~23h to surface. Three-layer defence: PR-time `pg_catalog` assertion + boot-time `vercel-build` migration + runtime canary. Each layer fires at a different latency; no single failure mode silences all three.
+
 ## [0.5.3] — 2026-04-28
 
 ### Added — measured-eval auto-commit + README badge (ADR-0049 § 7th arc Tier C-#2)

@@ -33,6 +33,7 @@ Incident playbook for production services. Every section follows the same shape:
 2. `psql $DIRECT_DATABASE_URL -c "SELECT 1"` from a local shell (use the Neon project that's flagging)
 3. Read the start-of-incident timestamp from UptimeRobot
 4. Confirm via live probe: `curl -sS https://craftstack-knowledge.vercel.app/api/kb/stats` returning a JSON body indicates Knowlex DB is reachable; an HTTP 5xx indicates the outage
+5. **First curl when "the eval cron is red but `/api/kb/stats` is green"**: `curl -sS https://craftstack-knowledge.vercel.app/api/health/schema` (ADR-0053 runtime canary). HTTP 503 with a `missing` column named in the response means the live deploy lags the migrations on `main` — exactly the v0.5.0 → v0.5.2 incident class. The `latestMigration.name` field tells you which migration the live db actually has; cross-reference against `apps/knowledge/prisma/migrations/` to identify which one is missing. Mitigation in this case is a Vercel redeploy of the latest main commit so `vercel-build` (ADR-0051) re-fires `prisma migrate deploy`.
 
 **Mitigation**
 
@@ -43,7 +44,7 @@ Incident playbook for production services. Every section follows the same shape:
 
 - If Neon auto-suspend triggered, verify UptimeRobot is pinging within the 5-minute idle window (ADR-0016).
 - If monthly compute hours exceeded, schedule Neon Pro upgrade (deliberate operator decision; v0.5.2 is at $0/mo per ADR-0046).
-- If schema-vs-prod drift is suspected (the `Document.workspaceId does not exist` class of failure), confirm `_prisma_migrations` table has the latest migration applied and consult ADR-0051 for the `vercel-build` migration regime that prevents re-occurrence.
+- If schema-vs-prod drift is suspected (the `Document.workspaceId does not exist` class of failure), confirm `_prisma_migrations` table has the latest migration applied and consult ADR-0051 for the `vercel-build` migration regime that prevents re-occurrence. Per ADR-0053, the `GET /api/health/schema` endpoint surfaces this exact class of drift in a single curl; the 6-hourly `smoke.yml` cron asserts `drift === false` against the live deploy.
 
 ---
 
