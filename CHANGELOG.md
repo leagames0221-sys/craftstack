@@ -4,6 +4,45 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.15-rc.0] — 2026-04-29
+
+### Added — Calibration record (architectural-gap discovery) — ADR-0064
+
+Calibration attempt for the v0.5.14 hybrid retrieval ship (ADR-0063) was performed on a local Postgres + free-tier Gemini setup. The attempt surfaced an architectural gap rather than producing a numerical lift figure: post-v0.5.12 multi-tenant transition (ADR-0061 line 52) intentionally omits the CI Credentials provider for Knowlex, so the unauthenticated `apps/knowledge/scripts/eval.ts` cannot ingest fresh corpus on a post-v0.5.12 server (returns 401 `UNAUTHENTICATED`). The pre-v0.5.12 baseline at `docs/eval/reports/2026-04-27.json` (passRate 80%, p50 2311ms, p95 8221ms) was captured before the auth gate landed and is therefore not directly re-runnable for hybrid-on/hybrid-off comparison.
+
+#### Decision
+
+The CI Credentials provider for Knowlex is **not** implemented in this ratchet. ADR-0059's 3-trigger ratchet rule (incident / external feedback / 2026-Q3 re-audit window) is satisfied by none of the three valid triggers — a self-audit-discovered gap is the self-audit-loop trap the freeze rule is designed against. ADR-0064 records the gap as a TTL'd graduation-cycle item with named accelerator triggers and a closure path (a next-available-NNNN follow-up that ships the CI Credentials provider for Knowlex by copying the apps/collab triple-gate pattern, producing the lift figure as a byproduct).
+
+#### TTL + accelerator triggers (ADR-0064 § Decision)
+
+- **Hard TTL**: 2026-Q3 re-audit window (ADR-0059 backstop).
+- **Accelerator triggers** (any one fires the closure ratchet ahead of schedule):
+  - External eval reviewer questions absence of calibration data on a hiring-sim run / code review / recruiter probe.
+  - Default-flip request — anyone wants `HYBRID_RETRIEVAL_ENABLED=1` to be the default; calibration data becomes prerequisite.
+  - Authed Playwright suite for Knowlex lands for any other reason (CI Credentials provider becomes byproduct).
+  - Corpus growth past ~100 docs on the live deploy (current 13 docs are too small for unambiguous lift measurement).
+
+#### Companion doc updates
+
+- `docs/adr/0011-hybrid-search-rerank.md` — § Implementation status gains a "Calibration status (2026-04-29 / v0.5.15-rc.0)" block referencing ADR-0064.
+- `docs/adr/0063-hybrid-retrieval-bm25-rrf.md` — § Implementation status gains a "Calibration status (2026-04-29 / v0.5.15-rc.0)" block referencing ADR-0064 + a 401-on-post-v0.5.12 caveat against the existing § Verification "Live exercise" command.
+- `docs/adr/_claims.json` — 4 new ADR-0064 entries asserting the architectural-gap is structurally visible (anchor strings in ADR-0061, eval.ts, ADR-0011, ADR-0063).
+
+#### Tag drift cleanup (bundled in this ratchet)
+
+S266 entry-state check surfaced that v0.5.9 .. v0.5.14 git tags exist locally but were never pushed to origin (the 6-ship arc shipped via PR-merge only, no `git push --tags` between ships). Pushed in this same ratchet so a `git ls-remote --tags origin` from a fresh clone shows the full version history. CHANGELOG topmost-release-version vs latest-git-tag drift closed.
+
+#### On-disk attack-surface reduction
+
+The local `apps/knowledge/.env` `GEMINI_API_KEY` value (pasted from Vercel for the calibration attempt) was cleared post-attempt per the tool-cleanup discipline. The file is gitignore'd so the value was never committed; the clear is an end-of-session housekeeping move that reduces machine-compromise blast radius.
+
+#### Numerics
+
+- ADR count 62 → 63 (ADR-0064 added, no implementation code shipped — this is a calibration-record ratchet not a feature ratchet).
+- Vitest 265 → 265 (no test changes).
+- Banner version: status banners continue to reference v0.5.14 as the last shipped feature release. v0.5.15-rc.0 is a calibration-record / docs ratchet; status banners stay at v0.5.14 until v0.5.15 final or a feature ship advances them.
+
 ## [0.5.14] — 2026-04-28
 
 ### Added — Hybrid retrieval (Postgres FTS + pgvector kNN fused via RRF) — closes ADR-0011 deferred (ADR-0063)

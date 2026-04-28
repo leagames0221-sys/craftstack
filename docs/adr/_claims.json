@@ -333,6 +333,35 @@
       "claim": "FTS migration shipped (additive tsvector column + GIN index)",
       "file": "apps/knowledge/prisma/migrations/20260428_chunk_fts/migration.sql",
       "match": "exists"
+    },
+
+    {
+      "adr": "ADR-0064",
+      "claim": "ADR-0061 names the CI Credentials provider for Knowlex as an 'intentionally not replicated' future follow-up — the architectural gap this calibration attempt surfaced",
+      "file": "docs/adr/0061-knowlex-auth-and-tenancy.md",
+      "match": "contains",
+      "pattern": "intentionally \\*\\*not\\*\\* replicated"
+    },
+    {
+      "adr": "ADR-0064",
+      "claim": "Eval client makes unauthenticated POST to /api/kb/ingest — the gap surface that lands the 401 on a post-v0.5.12 server",
+      "file": "apps/knowledge/scripts/eval.ts",
+      "match": "contains",
+      "pattern": "/api/kb/ingest"
+    },
+    {
+      "adr": "ADR-0064",
+      "claim": "ADR-0011 § Implementation status carries the v0.5.15-rc.0 calibration-status note pointing at ADR-0064",
+      "file": "docs/adr/0011-hybrid-search-rerank.md",
+      "match": "contains",
+      "pattern": "Calibration status \\(2026-04-29 / v0\\.5\\.15-rc\\.0\\)"
+    },
+    {
+      "adr": "ADR-0064",
+      "claim": "ADR-0063 § Calibration status carries the v0.5.15-rc.0 honest-disclose note referencing ADR-0064",
+      "file": "docs/adr/0063-hybrid-retrieval-bm25-rrf.md",
+      "match": "contains",
+      "pattern": "Calibration status \\(2026-04-29 / v0\\.5\\.15-rc\\.0\\)"
     }
   ]
 }
