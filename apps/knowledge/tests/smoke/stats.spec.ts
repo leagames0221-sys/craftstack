@@ -62,4 +62,30 @@ test.describe("knowlex smoke", () => {
     // Embedder identity is stable until a migration.
     expect(body.embeddingModel).toBe("gemini-embedding-001");
   });
+
+  test("GET /api/health/schema returns drift=false (ADR-0053 runtime canary)", async ({
+    request,
+  }) => {
+    // Closes the runtime side of ADR-0051: a Vercel deploy that lags
+    // behind the migrations on `main` will exhibit `drift=true` here
+    // with the missing column named explicitly. The 6-hourly smoke
+    // cron surfaces the gap within hours; the eval cron's nightly
+    // run also catches it but ~12-18h later. Recorded in ADR-0053.
+    const res = await request.get("/api/health/schema");
+    const body = await res.json();
+    expect(
+      res.status(),
+      `schema canary expected 200, got ${res.status()}; payload: ${JSON.stringify(body, null, 2)}`,
+    ).toBe(200);
+    expect(body.drift).toBe(false);
+    // Each declared model must report drift=false individually, so a
+    // mixed result (one drifting table, others fine) cannot pass an
+    // aggregate check that happens to be false.
+    expect(Array.isArray(body.checks)).toBe(true);
+    expect(body.checks.length).toBeGreaterThan(0);
+    for (const check of body.checks) {
+      expect(check.drift, `${check.table}.drift`).toBe(false);
+      expect(check.missing, `${check.table}.missing`).toEqual([]);
+    }
+  });
 });
