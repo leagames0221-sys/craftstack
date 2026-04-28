@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml/badge.svg)](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml)
 [![Security Headers: A](https://img.shields.io/badge/Security%20Headers-A-brightgreen)](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on)
-[![Tests: 206 Vitest + 24 Playwright](https://img.shields.io/badge/tests-206%20%2B%2024-success)](./apps/collab)
+[![Tests: 211 Vitest + 24 Playwright](https://img.shields.io/badge/tests-211%20%2B%2024-success)](./apps/collab)
 [![Knowlex eval (measured)](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fleagames0221-sys%2Fcraftstack%2Fmain%2Fdocs%2Feval%2Fbadge.json)](./docs/eval/reports/)
 [![Infra: $0/mo](https://img.shields.io/badge/infra-%240%2Fmo-blue)](#tech-stack)
 [![Free-tier CI-enforced](https://img.shields.io/badge/free--tier-CI%20enforced-brightgreen)](./docs/adr/0046-zero-cost-by-construction.md)
@@ -132,7 +132,7 @@ craftstack/
 - **Auth**: Auth.js v5 with JWT session strategy · Google + GitHub OAuth · PrismaAdapter
 - **Deploy**: Vercel Hobby · GitHub Actions CI (lint / typecheck / test / build)
 - **Security headers** — scored **A** on [securityheaders.com](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on). Layers: Content-Security-Policy with explicit Vercel-platform allowlists + `'unsafe-inline'` (W3C-spec rollback from the earlier A+ nonce + `'strict-dynamic'` stance — platform-injected scripts couldn't carry our per-request nonce and hydration broke; see ADR-0040), HSTS 2y preload, X-Frame-Options DENY, Cross-Origin-Opener-Policy same-origin, Cross-Origin-Resource-Policy same-origin, Permissions-Policy denying every unused sensor / media / power API, and Referrer-Policy strict-origin-when-cross-origin
-- **Testing**: Vitest (**206** unit cases across both apps — 166 collab + 40 knowledge) · Playwright (**24** scenarios — smoke, authed E2E (board/dashboard/rate-limits/workspace), a11y + authed-a11y, signin, run with `pnpm --filter collab test:e2e` / `pnpm --filter knowledge test:e2e`) · Knowlex retrieve integration test against a real `pgvector` service container via `docker compose` (`pnpm --filter knowledge test:integration`) · k6 scenario
+- **Testing**: Vitest (**211** unit cases across both apps — 166 collab + 45 knowledge) · Playwright (**24** scenarios — smoke, authed E2E (board/dashboard/rate-limits/workspace), a11y + authed-a11y, signin, run with `pnpm --filter collab test:e2e` / `pnpm --filter knowledge test:e2e`) · Knowlex retrieve integration test against a real `pgvector` service container via `docker compose` (`pnpm --filter knowledge test:integration`) · k6 scenario
 - **Drag & drop**: `@dnd-kit` sortable cards with LexoRank positions + optimistic UI + `VERSION_MISMATCH` rollback
 - **Realtime**: Pusher Channels (free tier) — `board-<id>` fanout for card/list mutations; no-op locally when unconfigured
 - **Invitations**: Token-hashed invitation flow (ADMIN+ creates, accept page binds membership). Resend-backed email delivery with graceful fallback to console log when `RESEND_API_KEY` is unset
@@ -235,14 +235,14 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 ### Shipped
 
 - ✅ **Week 1–2** — Monorepo scaffolding, CI, Docker Compose
-- ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, initial Vitest suite (40 cases at the time, now **206**)
+- ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, initial Vitest suite (40 cases at the time, now **211**)
 - ✅ **Boardly v0.1.0** — Deployed to Vercel + Neon + Upstash; authenticated dashboard, workspace & board CRUD
 - ✅ **Week 4** — Resend-backed workspace invitations with token-hashed accept flow (7-day expiry, revocable, email-matching enforcement)
 - ✅ **Week 5** — Card/List CRUD with optimistic lock, editor modal, `@dnd-kit` drag-and-drop
 - ✅ **Week 6** — Pusher Channels realtime fanout (card/list mutations broadcast to peers on the same board)
 - ✅ **Week 7–9** — Search (⌘K command palette + label filter, membership-scoped server-side), notifications (mention bell + Notification rows + unread badge polling)
 - ✅ **Demo videos** — Boardly 45 s + Knowlex 33 s narrated walkthroughs (VOICEVOX, free tier, fully reproducible pipeline)
-- ✅ **Knowlex MVP through v0.5.2** — full RAG live: ingestion (paragraph-aware 512-char chunking → 768-dim `gemini-embedding-001` → pgvector HNSW cosine kNN), streamed Gemini 2.0 Flash with numbered citations, nightly eval cron + golden v4 OR-mode scoring (ADR-0049 § 7th arc), workspace schema partitioning (ADR-0047 partial), schema-vs-prod drift fix + `vercel-build` migration regime (ADR-0051), drift-detect-v2 via `pg_catalog` assertion gating PRs
+- ✅ **Knowlex MVP through v0.5.4** — full RAG live: ingestion (paragraph-aware 512-char chunking → 768-dim `gemini-embedding-001` → pgvector HNSW cosine kNN), streamed Gemini 2.0 Flash with numbered citations, nightly eval cron + golden v4 OR-mode scoring (ADR-0049 § 7th arc) **with green-run report auto-commit + measured-eval README badge** (v0.5.3, ADR-0049 § 7th arc Tier C-#2), workspace schema partitioning (ADR-0047 partial), schema-vs-prod drift fix + `vercel-build` migration regime (ADR-0051), drift-detect-v2 via `pg_catalog` assertion gating PRs, **runtime schema canary at `/api/health/schema`** closing the runtime side of ADR-0051 (v0.5.4, ADR-0053)
 
 ### Planned
 
