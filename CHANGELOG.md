@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.5] — 2026-04-28
+
+### Added — doc-drift-detect CI gate closing the prose-coherence gap (ADR-0054)
+
+Two independent audits surfaced the same drift class within ~36 hours of each other: the v2-methodology hiring sim Run #4 cross-check (Stage 3) and the manual drift audit ratchet (Session 262 PR #42, 11 files of stale `Vitest: 206` numerics after ADR-0053 added 5 cases). Without a structural gate, the next ship reproduces the same drift class. v0.5.5 ships the gate so prose coherence is now PR-blocking, not vibes-based.
+
+This release also self-resolves the v0.5.3-prep cleanup arc's `interview-qa.md` Q29 self-criticism — the "doc-drift-detect CI gate planned for v0.5.4" line now reads "shipped in v0.5.5 as ADR-0054."
+
+- **`scripts/check-doc-drift.mjs`** (new) — truth resolvers + numeric claim checks + status banner check + vendor whitelist check. Truth derived from `ls docs/adr/`, `pnpm --filter * test` (vitest summary line), file walks of `apps/collab/src/app/**/{route.ts,page.tsx}` and `apps/collab/tests/e2e/**/*.spec.ts`, and `git describe --tags --abbrev=0`. Naive `test(`/`it(` parsing miscounts `test.each([...])` so the script invokes vitest itself for the only-source-of-truth property; ~3s overhead.
+- **`.github/workflows/ci.yml`** — new `doc-drift-detect` PR-blocking job. `fetch-depth: 0` + `fetch-tags: true` so `git describe` resolves the latest tag inside the runner.
+- **`docs/adr/0054-doc-drift-detect-ci-gate.md`** (new) — full MADR. Context cross-references the hiring-sim Run #4 doc 52 + Session 262 PR #42 audit ratchet. Decision lists every truth resolver + every claim regex per file. Negative consequences honest about regex maintenance + vitest duplication + tests-as-truth coupling. Alternatives section explicitly rejects templating (Pattern B) and single-source-of-truth `metrics.json` (Pattern C) with reasons.
+- **`docs/adr/README.md`** — index entry for ADR-0054.
+- **`docs/hiring/interview-qa.md` Q29** — self-criticism flipped from "planned for v0.5.4" → "shipped in v0.5.5 as ADR-0054." The Q29 question itself becomes self-resolving — exactly the [ADR-0049 § 7th arc](docs/adr/0049-rag-eval-client-retry-contract.md) pattern (incident-driven ratchet log) applied to hiring docs.
+- **README + portfolio-lp + page.tsx Stat block** — ADR count 53 → 54 (caught by the script itself; the script is its own first regression test).
+
+The script's structural defence catches the drift classes that previously required manual audit: ADR count, Vitest counts (total + per-app subtotals), Boardly route count, Playwright test() count, status banner version, and vendor whitelist (no Socket.IO / BullMQ deps in any package.json — superseded by ADR-0052). New invariants are added by appending one truth resolver function (~10 lines) plus one `claims` array of `(file, regex)` tuples.
+
 ## [0.5.4] — 2026-04-28
 
 ### Added — runtime schema canary closing the runtime side of ADR-0051 (ADR-0053)

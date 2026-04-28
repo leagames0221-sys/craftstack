@@ -125,7 +125,7 @@ export default async function Home() {
           <Stat label="Vitest cases" value="211" />
           <Stat label="Playwright" value="24" />
           <Stat label="Next routes" value="38" />
-          <Stat label="ADRs" value="53" />
+          <Stat label="ADRs" value="54" />
           <Stat label="Security Headers" value="A" />
           <Stat label="Monthly infra" value="$0" />
           <Stat label="Prisma models" value="19 + 4" />

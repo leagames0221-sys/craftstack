@@ -111,7 +111,7 @@ craftstack/
 │   └── docker/              # docker-compose + init scripts
 ├── docs/
 │   ├── design/              # 13-part design bible (see docs/design/README.md)
-│   ├── adr/                 # Architecture Decision Records (53 entries)
+│   ├── adr/                 # Architecture Decision Records (54 entries)
 │   ├── api/                 # OpenAPI specs
 │   ├── architecture/        # System diagrams
 │   ├── compliance/          # Data retention policy
@@ -216,7 +216,7 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 | Area                    | Entry point                                                                           |
 | ----------------------- | ------------------------------------------------------------------------------------- |
 | Architecture overview   | [docs/architecture/system-overview.md](docs/architecture/system-overview.md)          |
-| Decision records (53)   | [docs/adr/](docs/adr/README.md)                                                       |
+| Decision records (54)   | [docs/adr/](docs/adr/README.md)                                                       |
 | API specs (OpenAPI)     | [collab](docs/api/collab-openapi.yaml) · [knowledge](docs/api/knowledge-openapi.yaml) |
 | Rate limits             | [docs/api/rate-limits.md](docs/api/rate-limits.md)                                    |
 | STRIDE threat model     | [docs/security/threat-model.md](docs/security/threat-model.md)                        |
