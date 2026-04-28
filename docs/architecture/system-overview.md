@@ -1,6 +1,6 @@
 # System overview
 
-> **Status (as of v0.5.16)**: this is the deployed architecture. The original ADR-0009 plan included Fly.io + Socket.IO + BullMQ; the implementation pivoted to Pusher Channels for ADR-0046 (zero-cost-by-construction) compliance — recorded in ADR-0052. The diagram + table below reflect what actually runs. v0.5.3 added green-run eval auto-commit + measured-eval README badge (ADR-0049 § 7th arc Tier C-#2); v0.5.4 added the runtime schema canary at `/api/health/schema` closing the runtime side of ADR-0051 (ADR-0053). Knowlex live demo is currently EMERGENCY_STOPPED post 2026-04-29 Gemini Free tier account-level revocation incident — see ADR-0067; the implementation is BYOK-reproducible per README.
+> **Status (as of v0.5.17)**: this is the deployed architecture. The original ADR-0009 plan included Fly.io + Socket.IO + BullMQ; the implementation pivoted to Pusher Channels for ADR-0046 (zero-cost-by-construction) compliance — recorded in ADR-0052. The diagram + table below reflect what actually runs. v0.5.3 added green-run eval auto-commit + measured-eval README badge (ADR-0049 § 7th arc Tier C-#2); v0.5.4 added the runtime schema canary at `/api/health/schema` closing the runtime side of ADR-0051 (ADR-0053). Knowlex live demo is currently EMERGENCY_STOPPED post 2026-04-29 Gemini Free tier account-level revocation incident — see ADR-0067; the implementation is BYOK-reproducible per README.
 
 ```mermaid
 flowchart LR
@@ -50,15 +50,15 @@ flowchart LR
 
 ## Separation of concerns
 
-| Layer           | Boardly                                 | Knowlex                                                |
-| --------------- | --------------------------------------- | ------------------------------------------------------ |
-| SSR / API       | Vercel Hobby (`craftstack-collab`)      | Vercel Hobby (`craftstack-knowledge`)                  |
-| Realtime fanout | Pusher Channels Sandbox (env-guarded)   | n/a (request-response only)                            |
-| Database        | Neon `boardly-db` (Postgres 16)         | Neon `knowlex-db` (Postgres 16 + pgvector HNSW cosine) |
-| Rate limit      | Upstash Redis (Tokyo)                   | In-process per-IP + global budget per ADR-0046         |
-| Email           | Resend (env-guarded; falls back to log) | n/a                                                    |
-| Auth            | Auth.js v5 JWT + GitHub/Google OAuth    | Single-tenant (auth deferred to v0.5.4 per ADR-0047)   |
-| AI              | Gemini Flash via `/playground`          | Gemini Flash + embedding-001                           |
+| Layer           | Boardly                                 | Knowlex                                                                                                                                                   |
+| --------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SSR / API       | Vercel Hobby (`craftstack-collab`)      | Vercel Hobby (`craftstack-knowledge`)                                                                                                                     |
+| Realtime fanout | Pusher Channels Sandbox (env-guarded)   | n/a (request-response only)                                                                                                                               |
+| Database        | Neon `boardly-db` (Postgres 16)         | Neon `knowlex-db` (Postgres 16 + pgvector HNSW cosine)                                                                                                    |
+| Rate limit      | Upstash Redis (Tokyo)                   | In-process per-IP + global budget per ADR-0046                                                                                                            |
+| Email           | Resend (env-guarded; falls back to log) | n/a                                                                                                                                                       |
+| Auth            | Auth.js v5 JWT + GitHub/Google OAuth    | Multi-tenant via Auth.js + Membership demo allow-list per ADR-0061 (v0.5.12, closes I-01); CI Credentials provider for calibration per ADR-0065 (v0.5.15) |
+| AI              | Gemini Flash via `/playground`          | Gemini Flash + embedding-001                                                                                                                              |
 
 Databases are deliberately separated per app per [ADR-0018](../adr/0018-db-instance-per-app.md) so Knowlex pgvector workloads cannot steal capacity from Boardly transactional queries.
 
@@ -75,10 +75,10 @@ Databases are deliberately separated per app per [ADR-0018](../adr/0018-db-insta
 ### Knowlex: ask a question
 
 1. Browser POST `/api/kb/ask` with `{ question }` (SSE response)
-2. Route handler resolves workspaceId via the `resolveWorkspaceId` fallback (single-tenant default `wks_default_v050` per ADR-0047 partial)
+2. Route handler resolves workspaceId via `resolveWorkspaceId` fallback (default `wks_default_v050` demo workspace; multi-tenant `Membership`-based access control per ADR-0061 lets signed-in users target their own workspaces)
 3. Embeds the question via `gemini-embedding-001` at 768 dim (matches stored corpus per ADR-0041)
 4. Runs cosine kNN over pgvector HNSW index on Neon `knowlex-db`
-5. Streams Gemini 2.0 Flash answer with numbered citations (`[1]`, `[2]`, ...) via SSE per ADR-0039 MVP scope
+5. Streams Gemini 2.5 Flash answer with numbered citations (`[1]`, `[2]`, ...) via SSE per ADR-0039 MVP scope
 6. Per-IP and global daily/monthly budget caps apply per [ADR-0043](../adr/0043-knowlex-ops-cost-ci-eval.md) / [ADR-0046](../adr/0046-zero-cost-by-construction.md)
 
 ## What is **not** in this diagram (intentional, per ADR-0039 MVP scope)
@@ -87,7 +87,7 @@ Databases are deliberately separated per app per [ADR-0018](../adr/0018-db-insta
 - **Cohere Rerank** — ADR-0011, deferred
 - **HyDE** — ADR-0014, deferred
 - **NLI Faithfulness check** — ADR-0013, deferred
-- **PostgreSQL RLS** — ADR-0010, deferred (Knowlex is single-tenant per ADR-0039)
+- **PostgreSQL RLS** — ADR-0010, acknowledged-deferred (v0.5.12 multi-tenant transition per ADR-0061 chose application-side enforcement via Auth.js + `Membership` + demo-allow-list pattern over RLS for simpler operator surface; RLS remains a viable future option)
 - **BullMQ worker** — original ADR-0009 component, removed by Pusher pivot (ADR-0052)
 - **Cloudflare R2 storage** — schema-ready at Prisma layer per ADR-0008, UI wiring is a follow-up
 - **Multi-region expansion** — post-v1.0 roadmap
