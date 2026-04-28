@@ -63,6 +63,7 @@ Once Accepted, an ADR is immutable — later decisions supersede, they do not re
 | [0052](0052-pusher-pivot-from-flyio-socketio.md)                | Pusher Channels chosen over Fly.io + Socket.IO — implementation-time pivot from ADR-0009 + ADR-0004          | Accepted (supersedes ADR-0009; partially supersedes ADR-0004)                                               |
 | [0053](0053-runtime-schema-canary.md)                           | Runtime schema canary — closing the runtime side of ADR-0051 (`/api/health/schema` + smoke.yml gate)         | Accepted (companion to ADR-0051; PR-time gate + boot-time migration + runtime canary = three-layer defence) |
 | [0054](0054-doc-drift-detect-ci-gate.md)                        | doc-drift-detect CI gate — closing the prose-coherence gap surfaced by hiring-sim Run #4 + Session 262 audit | Accepted (companion to ADR-0053 — same shape, prose claims instead of schema columns)                       |
+| [0056](0056-attestation-endpoint.md)                            | Attestation endpoint — single-curl audit-survivability artefact (`/api/attestation`)                         | Accepted (companions to ADR-0053 + ADR-0054; runtime cross-check ergonomics flip + T-06 mitigation)         |
 
 ## Implementation-phase addendum (0023–0032)
 

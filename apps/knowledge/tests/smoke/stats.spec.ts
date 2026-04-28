@@ -63,6 +63,36 @@ test.describe("knowlex smoke", () => {
     expect(body.embeddingModel).toBe("gemini-embedding-001");
   });
 
+  test("GET /api/attestation returns structurally complete payload (ADR-0056)", async ({
+    request,
+  }) => {
+    // The attestation endpoint is the single-curl audit artefact:
+    // tag + commit + buildAt + adrCount + lastEvalRun + scope.deferred
+    // + honestScopeNotes + runtime corpus + runtime schema drift +
+    // measurements.daysSinceLastGreenRun + cronHealthHint, all in one
+    // response. This smoke probe asserts the contract surface that
+    // a senior reviewer's curl would exercise; deeper validation of
+    // build-time invariants is in attestation-data.test.ts.
+    const res = await request.get("/api/attestation");
+    expect(res.status(), `attestation expected 200, got ${res.status()}`).toBe(
+      200,
+    );
+    const body = await res.json();
+    expect(typeof body.tag).toBe("string");
+    expect(typeof body.commit).toBe("string");
+    expect(typeof body.buildAt).toBe("string");
+    expect(typeof body.claims.adrCount).toBe("number");
+    expect(body.runtime.schema.drift).toBe(false);
+    expect(body.runtime.corpus.indexType).toBe("hnsw");
+    expect(body.runtime.corpus.expectedDim).toBe(768);
+    expect(Array.isArray(body.scope.deferred)).toBe(true);
+    expect(body.scope.honestScopeNotes.join("\n")).toMatch(/T-06/);
+    // cronHealthHint is one of the three string forms; just assert it's
+    // non-empty so a reviewer always sees the staleness assessment.
+    expect(typeof body.measurements.cronHealthHint).toBe("string");
+    expect(body.measurements.cronHealthHint.length).toBeGreaterThan(0);
+  });
+
   test("GET /api/health/schema returns drift=false (ADR-0053 runtime canary)", async ({
     request,
   }) => {

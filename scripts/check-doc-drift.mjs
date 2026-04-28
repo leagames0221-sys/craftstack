@@ -133,6 +133,21 @@ function latestTag() {
   }).trim();
 }
 
+function latestChangelogVersion() {
+  // The status banners track the version *this PR ships*, not the
+  // last-tagged version, because tags are pushed after merge. Source
+  // the truth from CHANGELOG.md's topmost `## [X.Y.Z]` entry
+  // (skipping `## [Unreleased]`) so banners stay in sync within a PR.
+  const text = read("CHANGELOG.md");
+  const m = text.match(/^##\s+\[(\d+\.\d+\.\d+)\]/m);
+  if (!m) {
+    throw new Error(
+      "could not parse CHANGELOG.md topmost release version (## [X.Y.Z])",
+    );
+  }
+  return `v${m[1]}`;
+}
+
 // ---------------------------------------------------------------------
 // Numeric / version claim checks.
 // ---------------------------------------------------------------------
@@ -144,6 +159,7 @@ const adr = adrCount();
 const routes = boardlyRouteCount();
 const playwright = playwrightTestCount();
 const tag = latestTag();
+const releaseVersion = latestChangelogVersion();
 // Strip leading "v" so the regex captures "0.5.4" not "v0.5.4" — but
 // most banner patterns embed "v" before the number. We assert against
 // the literal `tag` string verbatim.
@@ -156,6 +172,7 @@ console.log(`  Vitest total:            ${totalVitest}`);
 console.log(`  Boardly route+page:      ${routes}`);
 console.log(`  Playwright test() calls: ${playwright}`);
 console.log(`  Latest git tag:          ${tag}`);
+console.log(`  CHANGELOG release ver:   ${releaseVersion}`);
 console.log("");
 console.log("=== Numeric / version claim checks ===");
 
@@ -279,26 +296,37 @@ const statusBannerFiles = [
 ];
 
 let bannerFailures = 0;
+const bannerRegexes = [
+  /\*\*Status \(as of (v\d+\.\d+\.\d+)/, // status banner used by 4 docs
+  /Currently at \*\*(v\d+\.\d+\.\d+)/, // portfolio-lp lead paragraph
+];
+
 for (const file of statusBannerFiles) {
   const text = read(file);
-  const m = text.match(/\*\*Status \(as of (v\d+\.\d+\.\d+)/);
-  if (!m) {
+  let fileFoundAny = false;
+  for (const regex of bannerRegexes) {
+    const m = text.match(regex);
+    if (!m) continue;
+    fileFoundAny = true;
+    if (m[1] !== releaseVersion) {
+      fail(
+        "status banner",
+        `${file}: claims ${m[1]} (${regex.source}), CHANGELOG topmost release is ${releaseVersion}`,
+      );
+      bannerFailures++;
+    }
+  }
+  if (!fileFoundAny) {
     warn(
       "status banner",
-      `${file}: no '**Status (as of vX.Y.Z' banner found`,
+      `${file}: no '**Status (as of vX.Y.Z' or 'Currently at **vX.Y.Z' banner found`,
     );
-    continue;
-  }
-  if (m[1] !== tag) {
-    fail(
-      "status banner",
-      `${file}: claims ${m[1]}, latest tag is ${tag}`,
-    );
-    bannerFailures++;
   }
 }
 if (bannerFailures === 0) {
-  pass(`status banners all reference ${tag}`);
+  pass(
+    `status banners all reference ${releaseVersion} (CHANGELOG topmost release; latest tag is ${tag})`,
+  );
 }
 
 // ---------------------------------------------------------------------
