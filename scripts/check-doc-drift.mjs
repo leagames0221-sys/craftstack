@@ -71,15 +71,26 @@ function vitestCount(app) {
   // reliable truth. CI duplicates the run in the
   // `lint / typecheck / test / build` job, but ~1.5s per app is
   // cheap and the only-source-of-truth property is worth more.
-  const out = execSync(`pnpm --filter ${app} test 2>&1`, {
+  //
+  // NO_COLOR=1 + FORCE_COLOR=0: belt-and-suspenders to keep vitest's
+  // output ANSI-clean. CI runners can leak color codes into the
+  // captured stdout depending on whether the runner has a tty
+  // attached; without this the regex below fails to match and the
+  // gate false-fails.
+  const out = execSync(`pnpm --filter ${app} test`, {
     encoding: "utf8",
     cwd: ROOT,
     stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, NO_COLOR: "1", FORCE_COLOR: "0", CI: "1" },
   });
-  const m = out.match(/Tests\s+(\d+)\s+passed/);
+  // Strip ANSI escape sequences regardless — defense-in-depth in case
+  // some upstream layer ignores NO_COLOR.
+  // eslint-disable-next-line no-control-regex
+  const cleaned = out.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, "");
+  const m = cleaned.match(/Tests\s+(\d+)\s+passed/);
   if (!m) {
     throw new Error(
-      `could not parse vitest output for ${app}; full output:\n${out}`,
+      `could not parse vitest output for ${app}; full output:\n${cleaned}`,
     );
   }
   return parseInt(m[1], 10);
