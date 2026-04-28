@@ -4,6 +4,30 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.6] — 2026-04-28
+
+### Added — `/api/attestation` endpoint, single-curl audit-survivability artefact (ADR-0056)
+
+The third leg of the audit-survivability tripod. PR-time prose drift is caught by ADR-0054 (doc-drift-detect script). Boot-time + runtime schema drift is caught by ADR-0051 + ADR-0053. v0.5.6 ships the **reviewer-ergonomics** leg: a single live URL that returns the full audit payload — tag, commit, buildAt, ADR count, last green eval run, days since last green run, cron health hint, live schema drift state, corpus stats, deferred features list, and honest scope notes — replacing the standard 8-fetch reviewer cross-check (`gh api` + `git log` + 4 markdown reads + 3 endpoint curls) with one URL.
+
+- **`scripts/generate-attestation-data.mjs`** (new) — runs in `postinstall` + `vercel-build`. Reads `git describe --tags --abbrev=0`, `git rev-parse HEAD`, `ls docs/adr/*.md`, file walk of `apps/collab/src/app`, latest `docs/eval/reports/*.json`. Writes `apps/knowledge/src/lib/attestation-data.json` (gitignored — never committed; regenerated on every install).
+- **`apps/knowledge/src/app/api/attestation/route.ts`** (new) — imports the build-time JSON, augments with per-request runtime probes: schema drift (same logic as `/api/health/schema`), corpus stats (same logic as `/api/kb/stats`), `daysSinceLastGreenRun` (now − `lastEvalRun.ranAt`, in days), `cronHealthHint` (three-tier string: fresh < 1.5d / stale 1.5-3d / very stale > 3d). HTTP 200 when schema drift is false, 503 when drifted (mirrors ADR-0053). `force-dynamic` + `cache-control: no-store`.
+- **`apps/knowledge/src/app/api/attestation/attestation-data.test.ts`** (new) — 5 Vitest cases: top-level fields well-formed, claims counts non-negative, scope.deferred non-empty with required fields, honestScopeNotes covers T-01/I-01/T-06, ADR count in JSON matches `ls docs/adr/`.
+- **`apps/knowledge/tests/smoke/stats.spec.ts`** — 4th Playwright probe asserts `/api/attestation` returns 200, well-formed payload, `cronHealthHint` non-empty against the live deploy.
+- **`apps/knowledge/package.json`** — `postinstall` + `build` + `vercel-build` all run the attestation generator.
+- **`.gitignore`** — `apps/knowledge/src/lib/attestation-data.json` excluded.
+- **`docs/adr/0056-attestation-endpoint.md`** (new) — full MADR. Negative consequences honest about gitignored JSON visibility, hardcoded scope.deferred + honestScopeNotes, hardcoded staleness thresholds. Alternatives explicitly reject pre-rendered static JSON, multiple separate endpoints, GraphQL, and Markdown summary.
+- **`docs/adr/README.md`** — index entry.
+- **`docs/security/threat-model.md`** — new T-06 row "README measured-eval badge stays at last-green-state, not last-cron-state (audit-survivability trade-off)" — honest disclose of the structural trade-off in ADR-0049 § 7th arc Tier C-#2 + § 8th arc, mitigated by the attestation endpoint's `cronHealthHint` field.
+- **`docs/adr/0049-rag-eval-client-retry-contract.md` § 8th arc** — appended record of the 2026-04-28 04:00 UTC Run 9 paraphrase fragility recurrence (4/30 = 13.3% after Run 8's 24/30 = 80%). Action items reject prompt tuning (Goodhart trap) in favour of observation + LLM-as-judge follow-up, consistent with ADR-0049 § 6th arc and `run-8-walkthrough.md`.
+- **`README.md` Documentation map** — new "Audit attestation" entry pointing at the live URL.
+- **`docs/hiring/portfolio-lp.md` "How to evaluate this in 10 minutes"** — new step 0 (single-curl audit probe), step 2 expanded to include ADR-0053 / ADR-0054 / ADR-0049 8-arc.
+- **ADR count 54 → 55** across README + portfolio-lp + page.tsx Stat block (caught by doc-drift-detect script — its second self-test).
+
+### Changed — status banner v0.5.4 → v0.5.5 in 4 files (doc-drift-detect catch)
+
+After v0.5.5 was tagged in the previous commit, doc-drift-detect (ADR-0054) immediately flagged that `**Status (as of v0.5.4)**` banners in portfolio-lp / interview-qa / system-overview / runbook were stale relative to `git describe --tags --abbrev=0`. The script's structural defence working in real time. Bumped all four to v0.5.5.
+
 ## [0.5.5] — 2026-04-28
 
 ### Added — doc-drift-detect CI gate closing the prose-coherence gap (ADR-0054)

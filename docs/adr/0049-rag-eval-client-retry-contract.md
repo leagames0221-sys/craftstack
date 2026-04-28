@@ -506,6 +506,28 @@ not in the metric.
   detecting cold-start frequency drift — a poor man's Neon
   observability.
 
+## § 8th arc — Run 9 paraphrase fragility recurrence (2026-04-28)
+
+**Status**: observation, no immediate prompt change. This sub-arc is appended to the incident-driven log per the audit-survivability stance (ADR-0046 § "guarantee is structural, not aspirational"); the discipline is to record what happened even when the right immediate action is "wait and observe," not "tune the prompt."
+
+**Symptom**: 2026-04-28 04:00 UTC scheduled cron run (workflow #25037833601) measured **4/30 (13.3%)** with `latencyP95Ms: 8474`, `latencyP50Ms: 8226`, threshold floor 60% — fail. The previous run (Run 8, manual workflow_dispatch on 2026-04-27 19:38 UTC) measured **24/30 (80%)** under the same scoring rubric, same goldenVersion 4 corpus, same Knowlex deploy, same Gemini 2.0 Flash model, same database state. The drop is ~70 percentage points in ~9 hours of wall-clock time without any deploy or schema change in between.
+
+**Failure shape**: every q016-q030 question except q017 reported `missing any of expected substrings (OR-mode)`. Latencies are unusually uniform (~8200ms across 14 of 15 failed questions), which suggests a Gemini-side rather than retrieval-side cause — a retrieval miss would show short retrieval+stream paths or 0-result hits, not constant ~8s end-to-end. q030 (the adversarial GEMINI_API_KEY question) failed in the same way it failed Run 8: refusal markers absent, no actual key leaked.
+
+**Hypothesis (untested, intentionally)**: this is the same paraphrase fragility class § 6th arc named — Gemini's output distribution shifted over the day so the responses paraphrase the corpus content correctly but no longer trigger any of the OR-mode `expectedSubstringsAny` for the affected questions. The structural problem is the substring-OR scoring's coupling to lexical surface form; the structural fix is the LLM-as-judge `--judge` flag named in § 6th arc Trade-offs (deferred to v0.6.0+).
+
+**Why no prompt tuning now**: prompt-tuning to chase the failing substrings is the Goodhart-the-metric move that [`docs/eval/run-8-walkthrough.md`](../eval/run-8-walkthrough.md) Action items § explicitly rejects. If the cron stabilises (Run 10/11 returns to 60%+), the Run 9 4/30 was a Gemini-distribution outlier and intervention would have over-fitted. If the cron stays at 4/30 across Run 10/11/12, that's signal the substring-OR scoring is structurally unfit for the current model and `--judge` mode is the answer — not regex-fiddling.
+
+**Trade-off, surfaced by this arc**: the auto-commit-on-green policy (§ 7th arc Tier C-#2) means main's `docs/eval/badge.json` stays at Run 8's 24/30 80% even though the most recent cron exhibited 4/30. The README badge is honest about _what was last measured cleanly_, not _what the cron did last night_. This trade-off was previously implicit; this arc makes it explicit and threat-model T-06 disclosures it. The follow-up is `GET /api/attestation` per [ADR-0056](0056-attestation-endpoint.md) which exposes `measurements.daysSinceLastGreenRun` and a `cronHealthHint` field, giving reviewers access to the cron-health dimension separately from the badge.
+
+**Action items** (in order of preference, most are already deferred):
+
+1. Wait. Observe Run 10 (2026-04-29) and Run 11 (2026-04-30). If pass-rate returns to 60%+ on natural cron, this was a Gemini-side outlier and structural intervention was correctly avoided.
+2. If Run 10/11 also red: ship the LLM-as-judge `--judge` flag (deferred from § 6th arc) as a separate post-processing pass. The default eval continues with substring-OR for cheapness; `--judge` becomes opt-in in CI on a periodic cadence.
+3. Do **not** re-run the corpus-tightening fix proposed in `run-8-walkthrough.md` Action items §1 in response to a single-run dip; that was scoped against Run 8's specific 6 failures, not against a 26-failure dip from Gemini distribution drift.
+
+**What this arc does NOT change**: the schema canary (ADR-0053) reports `drift: false`, `/api/kb/stats` reports the corpus is intact (13 docs / 23 chunks / 23 embeddings / hnsw / 768 dim), and the runbook §1 first-curl drift triage path is unchanged. The 4/30 is not a Knowlex regression, it's a measurement-rubric-vs-model-output regression — exactly the class § 6th arc predicted would recur, exactly the class `--judge` mode is designed to absorb.
+
 ## Related
 
 - [ADR-0016](0016-free-tier-constraints.md) — free-tier-only stance, source of the Neon Free choice

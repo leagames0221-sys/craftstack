@@ -67,3 +67,6 @@ scripts/demo-knowlex/out/
 # Attack simulation artefacts — regenerated per run, not committed
 docs/security/ATTACK_SIMULATION_RESULTS.json
 docs/security/ATTACK_SIMULATION_RESULTS.md
+
+# Generated at build time (postinstall + vercel-build), never committed.
+apps/knowledge/src/lib/attestation-data.json
