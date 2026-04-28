@@ -78,6 +78,51 @@ jobs:
         run: pnpm audit --prod --audit-level moderate || true
         continue-on-error: true
 
+  doc-drift-detect:
+    name: doc drift detect
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # PR-blocking guard against prose drift (ADR-0054). Asserts that
+    # embedded numerics (ADR count, Vitest case count, Boardly route
+    # count, Playwright test count) and version banners (Status (as
+    # of vX.Y.Z)) in markdown / TSX prose match what the actual
+    # codebase reports. Closes the prose-coherence gap surfaced by
+    # the v2-methodology hiring sim Run #4 + the manual drift audit
+    # ratchet (Session 262 PR #42).
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # Need git history so `git describe --tags --abbrev=0` resolves
+          # the latest tag in CI (default checkout depth is 1).
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma clients
+        # Vitest invocation inside the script needs the Prisma clients
+        # available (the `EXPECTED ↔ schema.prisma` test imports the
+        # generated client).
+        run: |
+          pnpm --filter collab exec prisma generate
+          pnpm --filter knowledge exec prisma generate
+
+      - name: Run doc-drift-detect
+        run: node scripts/check-doc-drift.mjs
+
   knowledge-integration:
     name: knowlex integration (pgvector)
     runs-on: ubuntu-latest
