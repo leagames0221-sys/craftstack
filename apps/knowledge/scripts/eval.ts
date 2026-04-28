@@ -34,12 +34,20 @@
  * workflow once the corpus grows past this self-contained seed.
  */
 
+import { generateText } from "ai";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
 import { retryFetch } from "../src/lib/eval-retry-fetch";
+import { getGemini } from "../src/lib/gemini";
+import {
+  aggregateJudgeScores,
+  buildJudgePrompt,
+  DEFAULT_JUDGE_MODEL,
+  parseJudgeResponse,
+} from "../src/lib/judge-rubric";
 
 type CorpusEntry = { title: string; content: string };
 type Question =
@@ -79,9 +87,27 @@ type Outcome = {
   passed: boolean;
   latencyMs: number;
   reasons: string[];
+  // ADR-0062 (closes ADR-0049 § 8th arc): optional LLM-as-judge
+  // score. Populated only when `--judge` / `EVAL_JUDGE=1` is set.
+  // null when judge mode is off, or when the judge call returned an
+  // unparseable / out-of-range response (treated as "judge unavailable"
+  // for that question — counted separately in the aggregate).
+  judgeScore?: number | null;
+  judgeReasoning?: string;
 };
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:3001";
+
+// ADR-0062: judge mode is off by default to keep the nightly eval $0/mo
+// per ADR-0046. Opt in via either CLI flag (`--judge`) or env var
+// (`EVAL_JUDGE=1`). The two paths are equivalent so workflows can
+// toggle either way without re-engineering the script.
+const JUDGE_MODE =
+  process.argv.includes("--judge") ||
+  process.env.EVAL_JUDGE === "1" ||
+  process.env.EVAL_JUDGE === "true";
+
+const JUDGE_MODEL = process.env.EVAL_JUDGE_MODEL ?? DEFAULT_JUDGE_MODEL;
 
 /**
  * Spacing between consecutive eval HTTP calls. Knowlex's per-IP
@@ -205,6 +231,47 @@ async function ask(
   return { answer, docs, latencyMs };
 }
 
+/**
+ * ADR-0062 — call the judge model on a single (question, answer,
+ * corpus excerpt) triple and return the parsed rubric score.
+ *
+ * Failure modes are non-fatal: a missing GEMINI_API_KEY returns null
+ * (judge unavailable), a network error is logged + null returned, an
+ * unparseable response yields null via `parseJudgeResponse`. The eval
+ * never fails because of a judge call — judge scores are advisory in
+ * v0.5.13 and `aggregateJudgeScores` excludes nulls from the
+ * denominator so a judge outage doesn't silently lower the mean.
+ */
+async function judgeAnswer(args: {
+  question: string;
+  answer: string;
+  expectedDocumentTitle: string;
+  corpusExcerpt: string;
+  apiKey: string;
+}): Promise<{ score: number | null; reasoning: string }> {
+  const prompt = buildJudgePrompt({
+    question: args.question,
+    answer: args.answer,
+    expectedDocumentTitle: args.expectedDocumentTitle,
+    corpusExcerpt: args.corpusExcerpt,
+  });
+  try {
+    const g = getGemini(args.apiKey);
+    const { text } = await generateText({
+      model: g(JUDGE_MODEL),
+      prompt,
+      temperature: 0,
+      maxOutputTokens: 200,
+    });
+    return parseJudgeResponse(text);
+  } catch (err) {
+    return {
+      score: null,
+      reasoning: `judge-call-failed: ${(err as Error).message.slice(0, 100)}`,
+    };
+  }
+}
+
 function scoreQuestion(q: Question, answer: string, docs: string[]): string[] {
   const reasons: string[] = [];
   const low = answer.toLowerCase();
@@ -277,18 +344,60 @@ async function main() {
   await sleep(INTER_CALL_DELAY_MS);
 
   const outcomes: Outcome[] = [];
+  // ADR-0062 — judge mode. Resolve API key once outside the loop so a
+  // missing key short-circuits judge calls cleanly per question.
+  const judgeApiKey = JUDGE_MODE ? (process.env.GEMINI_API_KEY ?? "") : "";
+  if (JUDGE_MODE) {
+    if (!judgeApiKey) {
+      console.warn(
+        `[eval] --judge enabled but GEMINI_API_KEY missing; judge scores will be null for every question.`,
+      );
+    } else {
+      console.log(
+        `[eval] --judge mode ON (model=${JUDGE_MODEL}); rubric scoring active.`,
+      );
+    }
+  }
+
+  // Pre-build a corpus lookup so the judge prompt can include the
+  // ground-truth document content. The golden corpus is small (~13
+  // entries) so a Map is fine.
+  const corpusByTitle = new Map(golden.corpus.map((c) => [c.title, c.content]));
+
   for (let qi = 0; qi < golden.questions.length; qi++) {
     const q = golden.questions[qi];
     if (qi > 0) await sleep(INTER_CALL_DELAY_MS);
     try {
       const { answer, docs, latencyMs } = await ask(q.question);
       const reasons = scoreQuestion(q, answer, docs);
+      let judgeScore: number | null | undefined;
+      let judgeReasoning: string | undefined;
+      if (JUDGE_MODE && judgeApiKey && q.expectedDocumentTitle) {
+        const verdict = await judgeAnswer({
+          question: q.question,
+          answer,
+          expectedDocumentTitle: q.expectedDocumentTitle,
+          corpusExcerpt: corpusByTitle.get(q.expectedDocumentTitle) ?? "",
+          apiKey: judgeApiKey,
+        });
+        judgeScore = verdict.score;
+        judgeReasoning = verdict.reasoning;
+      } else if (JUDGE_MODE) {
+        // Refusal questions or judge-unavailable: explicit null so the
+        // outcome row carries a deliberate "no judge" signal rather
+        // than an absent field that could be confused with judge-off.
+        judgeScore = null;
+        judgeReasoning = q.expectedDocumentTitle
+          ? "judge api key missing"
+          : "refusal question — no expected document to judge against";
+      }
       outcomes.push({
         id: q.id,
         category: q.category,
         passed: reasons.length === 0,
         latencyMs,
         reasons,
+        ...(JUDGE_MODE ? { judgeScore, judgeReasoning } : {}),
       });
     } catch (err) {
       outcomes.push({
@@ -297,6 +406,9 @@ async function main() {
         passed: false,
         latencyMs: NaN,
         reasons: [`request failed: ${(err as Error).message}`],
+        ...(JUDGE_MODE
+          ? { judgeScore: null, judgeReasoning: "request-failed-before-judge" }
+          : {}),
       });
     }
   }
@@ -345,6 +457,27 @@ async function main() {
     `  latency p95 = ${p95.toFixed(0)} ms (threshold ${golden.thresholds.maxP95LatencyMs} ms)`,
   );
 
+  // ADR-0062 — judge aggregate. Mean over available scores; nulls
+  // (judge unavailable / parse failure / refusal) are excluded from
+  // the denominator. v0.5.13 reports the mean as advisory only — no
+  // pass/fail threshold yet (a future ratchet can promote it to a
+  // hard gate alongside passRate / p95Latency).
+  const judgeAgg = JUDGE_MODE
+    ? aggregateJudgeScores(outcomes.map((o) => o.judgeScore ?? null))
+    : null;
+  if (judgeAgg) {
+    if (judgeAgg.meanScore !== null) {
+      console.log(
+        `  judgeMean = ${judgeAgg.meanScore.toFixed(2)} / 3.00 ` +
+          `(${judgeAgg.available}/${judgeAgg.total} judged; ${JUDGE_MODEL})`,
+      );
+    } else {
+      console.log(
+        `  judgeMean = (unavailable — 0/${judgeAgg.total} judged; check GEMINI_API_KEY / ${JUDGE_MODEL} access)`,
+      );
+    }
+  }
+
   const passRateOk = passRate >= golden.thresholds.minPassRate;
   const latencyOk = p95 <= golden.thresholds.maxP95LatencyMs;
 
@@ -386,6 +519,21 @@ async function main() {
         passRateOk,
         latencyOk,
         overallPass: passRateOk && latencyOk,
+        // ADR-0062 — judge aggregate is null when --judge mode is off
+        // so a downstream consumer can distinguish "judge mode wasn't
+        // run" from "judge mode ran but every call failed" (which
+        // populates judge.meanScore=null with judge.available=0).
+        judge: judgeAgg
+          ? {
+              model: JUDGE_MODEL,
+              meanScore:
+                judgeAgg.meanScore !== null
+                  ? Number(judgeAgg.meanScore.toFixed(3))
+                  : null,
+              available: judgeAgg.available,
+              total: judgeAgg.total,
+            }
+          : null,
       },
       outcomes,
     };

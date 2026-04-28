@@ -259,6 +259,40 @@
       "claim": "Auth.js migration shipped (additive table additions: User/Account/Session/VerificationToken/Membership)",
       "file": "apps/knowledge/prisma/migrations/20260428_auth_tenancy/migration.sql",
       "match": "exists"
+    },
+
+    {
+      "adr": "ADR-0062",
+      "claim": "Judge rubric module (prompt + parser + aggregator) exists",
+      "file": "apps/knowledge/src/lib/judge-rubric.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0062",
+      "claim": "Judge rubric Vitest pinning the prompt + parser + aggregator invariants exists",
+      "file": "apps/knowledge/src/lib/judge-rubric.test.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0062",
+      "claim": "Default judge model is gemini-2.5-pro (stronger than the gemini-2.5-flash generator — invariant pinned by Vitest)",
+      "file": "apps/knowledge/src/lib/judge-rubric.ts",
+      "match": "contains",
+      "pattern": "gemini-2\\.5-pro"
+    },
+    {
+      "adr": "ADR-0062",
+      "claim": "eval.ts honors --judge CLI flag and EVAL_JUDGE env (opt-in, default off per ADR-0046 free-tier compliance)",
+      "file": "apps/knowledge/scripts/eval.ts",
+      "match": "contains",
+      "pattern": "EVAL_JUDGE"
+    },
+    {
+      "adr": "ADR-0062",
+      "claim": "eval.ts imports the judge-rubric module (proves the wiring is real, not stubbed)",
+      "file": "apps/knowledge/scripts/eval.ts",
+      "match": "contains",
+      "pattern": "judge-rubric"
     }
   ]
 }
