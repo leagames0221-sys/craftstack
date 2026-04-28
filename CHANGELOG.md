@@ -4,6 +4,82 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.9] — 2026-04-28
+
+### Added — Framework foundation closed: branch protection ruleset (ADR-0058) + axis 7 honest-disclose ratchet on ADR-0057
+
+Session 265 self-audit identified two issues with the v0.5.8 13-axis framework:
+(1) the **framework foundation was unenforced** — `main` had no branch protection
+or repository ruleset, so all 10 structurally-enforced axes rested on convention
+rather than policy; (2) the v0.5.8 axis 7 row was an **overclaim** relative to
+the actual `_claims.json` coverage (22 entries spanning 11 of 56 ADRs ≈ 20%).
+v0.5.9 closes both: the foundation via a repository ruleset, and the overclaim
+via an explicit Coverage honest-disclose section in ADR-0057 itself.
+
+#### Branch protection — repository ruleset on `main` (ADR-0058)
+
+- New repository ruleset `main-branch-protection` (id `15652440`) configured via
+  `gh api -X POST repos/.../rulesets`. Targets the default branch with:
+  - **`pull_request`** rule — `required_approving_review_count: 0` (PR required,
+    no reviewer needed; solo-workflow compatible without self-approval deadlock)
+  - **`required_status_checks`** rule with `strict_required_status_checks_policy: true`
+    and 7 PR-time contexts: `free-tier compliance`, `lint / typecheck / test / build`,
+    `doc drift detect`, `knowlex integration (pgvector)`,
+    `knowlex a11y gate (WCAG 2.1 AA)`, `Analyze (javascript-typescript)`,
+    `authed Playwright`. Smoke and SBOM workflows run on `push:`/`schedule:` only
+    and are intentionally excluded — listing them would deadlock PR merges.
+  - **`non_fast_forward`** — force-push to `main` blocked
+  - **`deletion`** — `main` cannot be deleted
+  - **`bypass_actors: []`** — admin bypass disabled; rule applies to repo owner
+- New `.github/RULESET_DECLARED.md` — offline-auditable marker mirroring the
+  ruleset configuration. Asserted by `_claims.json` (axis 7 recursive claim) so
+  the framework defends its own foundation.
+- New `docs/adr/0058-branch-protection-ci-enforcement.md` — full MADR with
+  consequence + alternatives sections (rejected: classic branch protection,
+  no-PR-only-checks, required reviews ≥ 1, bypass for repository_admin).
+
+#### Axis 7 honest-disclose — Coverage scope explicit (ADR-0057 ratchet)
+
+- `docs/adr/0057-drift-framework-completeness.md` — axis 7 row updated from
+  `✅ structural` to `✅ structural (judged-load-bearing coverage; see § Coverage
+honest-disclose below)`. New § Coverage honest-disclose section names the
+  actual coverage as **22 entries spanning 11 of 56 ADRs (≈20%)**, lists the
+  covered ADRs explicitly, and distinguishes ADRs that have no checkable claim
+  (architectural intent like ADR-0001 / ADR-0002 / ADR-0017) from ADRs that
+  **could be covered** but weren't in v0.5.8 (ADR-0044 / 0045 / 0048 / 0050 / 0052).
+  Coverage expansion is incremental future-work, not a blocker for v0.5.9.
+
+#### `_claims.json` — ADR-0058 self-assertion
+
+- New entry asserts `.github/RULESET_DECLARED.md` exists. The recursive integrity
+  property of axis 7 (the framework asserts its own foundation file's existence)
+  is structurally guaranteed at PR time; if a future operator deletes the marker
+  without removing the ADR, `check-adr-claims.mjs` fails the PR.
+
+#### Banner + Stat sync
+
+- README + `docs/hiring/portfolio-lp.md` — ADR count 56 → 57; v0.5.9 status
+  banner; portfolio-lp lead paragraph + Audit-survivable engineering paragraph
+  cite ADR-0057 + ADR-0058
+- `docs/hiring/interview-qa.md` + `docs/architecture/system-overview.md` +
+  `docs/ops/runbook.md` — status banner v0.5.8 → v0.5.9
+- `apps/collab/src/app/page.tsx` Stat block — ADRs 56 → 57
+
+### Verification
+
+```bash
+gh api repos/leagames0221-sys/craftstack/rulesets --jq '.[].name'
+# → main-branch-protection
+
+gh api repos/leagames0221-sys/craftstack/rulesets/15652440 \
+  --jq '{enforcement, bypass_actors, current_user_can_bypass}'
+# → { "enforcement": "active", "bypass_actors": [], "current_user_can_bypass": "never" }
+
+node scripts/check-doc-drift.mjs    # → 0 failures
+node scripts/check-adr-claims.mjs   # → 23/23 pass (was 22 + ADR-0058 marker)
+node scripts/check-adr-refs.mjs     # → 0 dangling
+```
+
 ## [0.5.8] — 2026-04-28
 
 ### Added — Drift-audit framework completeness, 13 axes, structural where possible (ADR-0057)

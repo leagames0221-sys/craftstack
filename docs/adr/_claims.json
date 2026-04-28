@@ -161,6 +161,20 @@
       "file": "apps/knowledge/package.json",
       "match": "contains",
       "pattern": "generate-attestation-data.mjs"
+    },
+
+    {
+      "adr": "ADR-0058",
+      "claim": "Branch-protection ruleset declared (offline-auditable marker mirroring the live GitHub ruleset; closes axis 7 recursive integrity for ADR-0057's foundation)",
+      "file": ".github/RULESET_DECLARED.md",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0058",
+      "claim": "Ruleset id 15652440 is recorded in the marker for diff-against-API auditability",
+      "file": ".github/RULESET_DECLARED.md",
+      "match": "contains",
+      "pattern": "15652440"
     }
   ]
 }
