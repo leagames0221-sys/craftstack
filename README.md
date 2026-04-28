@@ -12,9 +12,17 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6)](https://www.typescriptlang.org)
 
-> Full-stack portfolio monorepo — **Boardly** (realtime collaborative kanban with drag-and-drop, multi-tenant workspaces) + **Knowlex** (single-tenant RAG demo on pgvector HNSW + Gemini; workspace schema partitioning shipped per [ADR-0047](docs/adr/0047-knowlex-workspace-tenancy-plan.md) partial in v0.5.0; auth-gated access control deferred to v0.5.4 once Auth.js lands on the Knowlex deploy).
+> Full-stack portfolio monorepo — **Boardly** (realtime collaborative kanban with drag-and-drop, multi-tenant workspaces) + **Knowlex** (multi-tenant RAG on pgvector HNSW + Postgres FTS hybrid via RRF + Gemini; full ADR sequence in [docs/adr/](docs/adr/) — 65 records covering everything from monorepo choice to incident response).
 
 Two production-grade SaaS applications designed and built from schema to deploy, as a solo developer, to demonstrate full-stack × from-scratch engineering capability.
+
+> **Built with AI pair-programming (Claude Code)**. 46 of the 187 commits carry `Co-Authored-By: Claude Opus 4.7 (1M context)` co-authorship marking — explicit evidence of AI-leveraged development at industry-baseline-exceeding engineering quality (65 ADRs, 274 Vitest + 24 Playwright, OpenSSF Scorecard, branch protection ruleset enforced live, real production incident handled per [ADR-0067](docs/adr/0067-gemini-free-tier-account-revocation-incident.md)). The portfolio is itself the live demo of "ship Mid → Senior tier full-stack with AI pair-programming, while preserving honest engineering discipline".
+
+> **5 closed graduation cycles in 5 ships** — T-01 ([ADR-0060](docs/adr/0060-pusher-private-channels-migration.md), v0.5.11) → I-01 ([ADR-0061](docs/adr/0061-knowlex-auth-and-tenancy.md), v0.5.12) → ADR-0049 § 8th arc ([ADR-0062](docs/adr/0062-llm-as-judge-eval-flag.md), v0.5.13) → ADR-0011 deferred ([ADR-0063](docs/adr/0063-hybrid-retrieval-bm25-rrf.md), v0.5.14) → [ADR-0064](docs/adr/0064-hybrid-retrieval-calibration-architectural-gap.md) architectural-gap ([ADR-0065](docs/adr/0065-knowlex-ci-credentials-provider.md), v0.5.15). Each disclose carries a TTL + named accelerator triggers + closure ADR; the ratchet log itself is the brand. Pattern documented in [`KL-build_ci-202604-graduation-cycle`](https://github.com/leagames0221-sys/craftstack/tree/main/docs).
+
+> **Production incident response record (2026-04-29)**. Google AI Studio silently revoked Free tier access at the account level for the Knowlex deploy — diagnosis + containment via [ADR-0046](docs/adr/0046-zero-cost-by-construction.md) `EMERGENCY_STOP` kill-switch (shipped 6 months prior, defense-in-depth working under stress) + scope pivot to BYOK landing recorded end-to-end in [ADR-0067](docs/adr/0067-gemini-free-tier-account-revocation-incident.md). Senior-level signal: real production incident handled with structural discipline, not panic.
+
+> **Framework is structurally enforced, not declared**. Branch protection ruleset on `main` (id `15652440`, [ADR-0058](docs/adr/0058-branch-protection-ci-enforcement.md)) **rejected the author's own `git push origin main` attempts** during ratchets S266 + S267 — see PR [#53](https://github.com/leagames0221-sys/craftstack/pull/53) and [#54](https://github.com/leagames0221-sys/craftstack/pull/54) commit history. The framework foundation axiom (a framework that asserts X must be structurally enforced) operating live, not just on paper.
 
 ## 🎬 Walkthroughs
 
@@ -76,11 +84,11 @@ All production services are free-tier, no credit-card-on-file. Step-by-step sign
 
 **Boardly**: <https://craftstack-collab.vercel.app>
 
-**Knowlex** (grounded RAG, own Vercel deploy): <https://craftstack-knowledge.vercel.app> — **temporarily disabled via `EMERGENCY_STOP=1` ([ADR-0046](docs/adr/0046-zero-cost-by-construction.md) kill-switch); see [ADR-0067](docs/adr/0067-gemini-free-tier-account-revocation-incident.md) for the 2026-04-29 Gemini Free tier account-level revocation incident report**. The implementation is complete (chunking, 768-dim `gemini-embedding-001`, pgvector HNSW cosine kNN per [ADR-0041](docs/adr/0041-knowlex-ivfflat-to-hnsw.md), hybrid Postgres FTS + RRF fusion per [ADR-0063](docs/adr/0063-hybrid-retrieval-bm25-rrf.md), streamed Gemini answers with numbered citations) and runnable from any operator with their own AI Studio API key — see [§ Run Knowlex locally with your own API key (BYOK)](#run-knowlex-locally-with-your-own-api-key-byok) below. The attestation endpoint at [`/api/attestation`](https://craftstack-knowledge.vercel.app/api/attestation) remains live and surfaces the current ADR count, schema state, and last-eval-run baseline.
+**Knowlex** (grounded RAG, own Vercel deploy): <https://craftstack-knowledge.vercel.app> — **🛑 temporarily disabled via `EMERGENCY_STOP=1` ([ADR-0046](docs/adr/0046-zero-cost-by-construction.md) kill-switch); see [ADR-0067](docs/adr/0067-gemini-free-tier-account-revocation-incident.md) for the 2026-04-29 Gemini Free tier account-level revocation incident report. → [Run locally with your own API key (5-step BYOK runbook, ~5 min)](#run-knowlex-locally-with-your-own-api-key-byok)**. The implementation is complete (chunking, 768-dim `gemini-embedding-001`, pgvector HNSW cosine kNN per [ADR-0041](docs/adr/0041-knowlex-ivfflat-to-hnsw.md), hybrid Postgres FTS + RRF fusion per [ADR-0063](docs/adr/0063-hybrid-retrieval-bm25-rrf.md), CI Credentials provider per [ADR-0065](docs/adr/0065-knowlex-ci-credentials-provider.md), streamed Gemini answers with numbered citations). The attestation endpoint at [`/api/attestation`](https://craftstack-knowledge.vercel.app/api/attestation) remains live and surfaces the current ADR count, schema state, and last-eval-run baseline.
 
 ### Run Knowlex locally with your own API key (BYOK)
 
-A Gemini-compatible API key (or a 768-dim free-tier alternative such as Cloudflare Workers AI's `bge-base-en-v1.5`) plus Docker Desktop and Node 20+ is the full setup. Five steps, ~2 minutes:
+A Gemini-compatible API key (or a 768-dim free-tier alternative such as Cloudflare Workers AI's `bge-base-en-v1.5`) plus Docker Desktop and Node 20+ is the full setup. **5-step BYOK runbook (~5 min total: ~30 s Postgres start + ~30 s migrator role + ~2 min `pnpm install` cold + ~30 s `prisma migrate deploy` + ~30 s edit `.env` + start dev server).**:
 
 ```bash
 # 1. Postgres + pgvector (Docker Desktop must be running):
