@@ -4,6 +4,36 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.16] — 2026-04-29
+
+### Changed — Narrative alignment + brand surface front-loading
+
+A docs-only ratchet that aligns the portfolio's surface signal (what a 30-second-probe reviewer sees on README + portfolio-lp top-of-page) with the depth signal (what a deep reviewer who reads ADR sequence + repo structure discovers). Three Senior-tier dimensions that were previously inferred-only become **explicit prose claims** with structural evidence pointers:
+
+#### Refinements
+
+- **Refine 1**: README "Run Knowlex locally" runbook claim corrected from "Five steps, ~2 minutes" to **"5-step BYOK runbook (~5 min total)"** with per-step time estimate. Honest accuracy over aspirational under-count; reviewer who actually runs the recipe gets the timeline they expect.
+- **Refine 2**: Knowlex live-demo URL annotated with **front-loaded BYOK link** (`→ Run locally with your own API key (5-step BYOK runbook, ~5 min)`) so a 30-second probe reviewer sees the BYOK option without having to scroll the README. The EMERGENCY_STOPPED state stays explicit.
+- **Refine 3**: README + portfolio-lp gain the **"Built with AI pair-programming (Claude Code)"** narrative — 46 of 187 commits carrying `Co-Authored-By: Claude Opus 4.7 (1M context)` is now an explicit claim with structural evidence pointers, not an inference left to the reviewer.
+
+#### Brand-surface front-loading
+
+- **Surface 1**: README + portfolio-lp gain the **"5 closed graduation cycles in 5 ships"** callout enumerating T-01 / I-01 / ADR-0049 § 8th arc / ADR-0011 / ADR-0064, each with closure-ADR link. The graduation cycle pattern (`KL-build_ci-202604-graduation-cycle`) is the portfolio's brand-defining engineering-culture artifact; surfacing it explicitly converts depth-reader-only signal to also-30-second-reader signal.
+- **Surface 2**: README + portfolio-lp gain the **"Real production incident response record (2026-04-29)"** callout. ADR-0067 documents the Gemini Free tier revocation diagnosis + ADR-0046 EMERGENCY_STOP containment + BYOK pivot. Senior+ reviewers always ask "have you handled real production incidents?"; this answers that with structural evidence rather than narrative.
+- **Surface 3**: README gains the **"Framework is structurally enforced, not declared"** callout. ADR-0058 branch-protection ruleset rejected the author's own `git push origin main` attempts during ratchets S266 + S267 (PR #53 + #54 commit history). The framework foundation axiom (`KL-postmortem-202604-framework_foundation_axiom`) operating live; rare visibility for a solo portfolio.
+
+#### Why this is a docs-only ratchet, not a feature ratchet
+
+- No code changes. No new tests, no new ADRs (the existing ones are referenced).
+- ADR-0059 § 3-trigger ratchet rule preserved: this ratchet is **external-feedback-shaped** (user surfaced the surface-vs-depth gap and asked whether refinement was worth doing). Not a self-audit-loop trap.
+- Scope deliberately bounded to ~1 page of prose across README + portfolio-lp + CHANGELOG. No risk of cascading changes.
+
+#### Numerics (unchanged)
+
+- ADR count remains 65 (no new ADRs).
+- Vitest remains 274 (no test changes).
+- Banner version: README + portfolio-lp Status block + CHANGELOG topmost release advance to v0.5.16.
+
 ## [0.5.15] — 2026-04-29
 
 ### Added — CI Credentials provider for Knowlex (ADR-0065) — closes ADR-0064 architectural-gap
