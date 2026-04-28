@@ -123,6 +123,19 @@ jobs:
       - name: Run doc-drift-detect
         run: node scripts/check-doc-drift.mjs
 
+      - name: Run ADR ref validator (axis 3, ADR-0057)
+        # Asserts every "ADR-NNNN" reference across docs / code resolves
+        # to an existing ADR file. Catches typos and dangling refs to
+        # ADRs that were never created or were renamed.
+        run: node scripts/check-adr-refs.mjs
+
+      - name: Run ADR-claim ↔ implementation cross-check (axis 7, ADR-0057)
+        # Asserts every load-bearing ADR claim (rate limits, env flags,
+        # endpoint paths, threshold constants) declared in
+        # `docs/adr/_claims.json` matches the actual codebase. Catches
+        # the "ADR says X, code does Y" drift class.
+        run: node scripts/check-adr-claims.mjs
+
   knowledge-integration:
     name: knowlex integration (pgvector)
     runs-on: ubuntu-latest

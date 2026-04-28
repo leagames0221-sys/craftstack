@@ -79,6 +79,29 @@ jobs:
             pnpm --filter knowledge exec playwright install-deps chromium
           fi
 
+      # External-artifact freshness probe (ADR-0057 axis 12). Asserts
+      # that the URLs the README + portfolio-lp depend on are still
+      # reachable: shields.io endpoint badge JSON, the two Loom
+      # walkthrough videos, the live Knowlex deploy. A 404 / 5xx on
+      # any of these silently breaks the README; this catches it.
+      # `--head` for HTTP HEAD only; `-f` so curl exits non-zero on
+      # any 4xx/5xx; `-L` to follow redirects (Loom embed URLs do).
+      - name: Probe external artefacts (ADR-0057 axis 12)
+        run: |
+          set -euo pipefail
+          urls=(
+            "https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fleagames0221-sys%2Fcraftstack%2Fmain%2Fdocs%2Feval%2Fbadge.json"
+            "https://www.loom.com/share/1f6915e588cb4176bfc8272f0f9310bb"
+            "https://www.loom.com/share/acff991e3da94d5aa4e98dcee0b100e2"
+            "https://craftstack-collab.vercel.app/"
+            "https://craftstack-knowledge.vercel.app/"
+          )
+          for u in "${urls[@]}"; do
+            echo "  [HEAD] $u"
+            curl -sS -fL --head --max-time 15 "$u" >/dev/null
+          done
+          echo "All external artefacts reachable."
+
       - name: Run Knowlex live smoke
         env:
           E2E_BASE_URL: https://craftstack-knowledge.vercel.app

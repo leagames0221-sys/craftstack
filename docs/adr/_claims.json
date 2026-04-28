@@ -1,0 +1,166 @@
+{
+  "_comment": "Load-bearing ADR claims, asserted at PR time by scripts/check-adr-claims.mjs. Closes axis 7 of the drift-audit framework (ADR-0057). Each entry names a claim made by an ADR or load-bearing prose doc plus the codebase location where the claim should be visible. Schema: {adr, claim, file, match: 'regex'|'contains'|'exists', pattern, expected (regex only)}. Adding a new claim: append to `claims`. Removing a deprecated ADR: delete its entries. `node scripts/check-adr-claims.mjs --list` prints the inventory.",
+
+  "claims": [
+    {
+      "adr": "ADR-0027",
+      "claim": "Invitation rate limit — globalPerMonth default = 1000",
+      "file": "apps/collab/src/lib/rate-limit.ts",
+      "match": "regex",
+      "pattern": "globalPerMonth: num\\(\"INVITE_LIMIT_GLOBAL_PER_MONTH\", (\\d+)\\)",
+      "expected": "1000"
+    },
+    {
+      "adr": "ADR-0027",
+      "claim": "Invitation rate limit — perWorkspacePerDay default = 50",
+      "file": "apps/collab/src/lib/rate-limit.ts",
+      "match": "regex",
+      "pattern": "perWorkspacePerDay: num\\(\"INVITE_LIMIT_WORKSPACE_PER_DAY\", (\\d+)\\)",
+      "expected": "50"
+    },
+    {
+      "adr": "ADR-0027",
+      "claim": "Invitation rate limit — perUserPerDay default = 20",
+      "file": "apps/collab/src/lib/rate-limit.ts",
+      "match": "regex",
+      "pattern": "perUserPerDay: num\\(\"INVITE_LIMIT_USER_PER_DAY\", (\\d+)\\)",
+      "expected": "20"
+    },
+
+    {
+      "adr": "ADR-0046",
+      "claim": "EMERGENCY_STOP env flag short-circuits Knowlex /api/kb/ask",
+      "file": "apps/knowledge/src/app/api/kb/ask/route.ts",
+      "match": "contains",
+      "pattern": "isEmergencyStopped"
+    },
+    {
+      "adr": "ADR-0046",
+      "claim": "EMERGENCY_STOP module exists",
+      "file": "apps/knowledge/src/lib/emergency-stop.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0046",
+      "claim": "Free-tier compliance check script exists",
+      "file": "scripts/check-free-tier-compliance.mjs",
+      "match": "exists"
+    },
+
+    {
+      "adr": "ADR-0049",
+      "claim": "Eval golden_qa.json declares maxP95LatencyMs = 10000",
+      "file": "docs/eval/golden_qa.json",
+      "match": "regex",
+      "pattern": "\"maxP95LatencyMs\":\\s*(\\d+)",
+      "expected": "10000"
+    },
+    {
+      "adr": "ADR-0049",
+      "claim": "Eval golden_qa.json declares minPassRate = 0.6",
+      "file": "docs/eval/golden_qa.json",
+      "match": "regex",
+      "pattern": "\"minPassRate\":\\s*([\\d.]+)",
+      "expected": "0.6"
+    },
+    {
+      "adr": "ADR-0049",
+      "claim": "Eval retry-fetch helper exists",
+      "file": "apps/knowledge/src/lib/eval-retry-fetch.ts",
+      "match": "exists"
+    },
+
+    {
+      "adr": "ADR-0041",
+      "claim": "knowledge prisma schema declares pgvector extension",
+      "file": "apps/knowledge/prisma/schema.prisma",
+      "match": "contains",
+      "pattern": "pgvector"
+    },
+
+    {
+      "adr": "ADR-0034",
+      "claim": "knowlex a11y gate is wired in ci.yml",
+      "file": ".github/workflows/ci.yml",
+      "match": "contains",
+      "pattern": "knowlex-a11y"
+    },
+    {
+      "adr": "ADR-0034",
+      "claim": "Boardly a11y spec exists",
+      "file": "apps/collab/tests/e2e/a11y.spec.ts",
+      "match": "exists"
+    },
+
+    {
+      "adr": "ADR-0035",
+      "claim": "Boardly OpenAPI spec is hand-written (TypeScript module)",
+      "file": "apps/collab/src/openapi.ts",
+      "match": "exists"
+    },
+
+    {
+      "adr": "ADR-0040",
+      "claim": "README claims Security Headers grade = A (rolled back from A+)",
+      "file": "README.md",
+      "match": "regex",
+      "pattern": "Security[ %20]Headers[%20: -]+([AB]\\+?)",
+      "expected": "A"
+    },
+
+    {
+      "adr": "ADR-0051",
+      "claim": "apps/knowledge vercel-build runs prisma migrate deploy",
+      "file": "apps/knowledge/package.json",
+      "match": "contains",
+      "pattern": "prisma migrate deploy"
+    },
+
+    {
+      "adr": "ADR-0053",
+      "claim": "/api/health/schema route handler exists",
+      "file": "apps/knowledge/src/app/api/health/schema/route.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0053",
+      "claim": "EXPECTED ↔ schema.prisma consistency Vitest exists",
+      "file": "apps/knowledge/src/app/api/health/schema/expected.test.ts",
+      "match": "exists"
+    },
+
+    {
+      "adr": "ADR-0054",
+      "claim": "doc-drift-detect script exists",
+      "file": "scripts/check-doc-drift.mjs",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0054",
+      "claim": "doc-drift-detect job is wired in ci.yml",
+      "file": ".github/workflows/ci.yml",
+      "match": "contains",
+      "pattern": "doc-drift-detect"
+    },
+
+    {
+      "adr": "ADR-0056",
+      "claim": "/api/attestation route handler exists",
+      "file": "apps/knowledge/src/app/api/attestation/route.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0056",
+      "claim": "Attestation data generator script exists",
+      "file": "scripts/generate-attestation-data.mjs",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0056",
+      "claim": "apps/knowledge postinstall regenerates attestation data",
+      "file": "apps/knowledge/package.json",
+      "match": "contains",
+      "pattern": "generate-attestation-data.mjs"
+    }
+  ]
+}

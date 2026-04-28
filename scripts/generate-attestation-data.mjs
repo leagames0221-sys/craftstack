@@ -23,7 +23,7 @@ import {
   readdirSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
 
