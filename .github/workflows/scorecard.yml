@@ -1,0 +1,85 @@
+# OpenSSF Scorecard — repository hygiene baseline.
+#
+# Industry-standard supply-chain + repo-hygiene checks (18 checks total
+# in current Scorecard versions). Replaces what would otherwise have
+# been self-built ratchets for branch-protection live-state monitoring,
+# pinned-dependencies enforcement, security-policy presence, token
+# permissions verification, dangerous-workflows detection, etc.
+#
+# Recorded in ADR-0059 (framework v1.0 hybrid adoption + freeze).
+# Where Scorecard covers an axis structurally, the project relies on
+# Scorecard rather than maintaining a parallel custom check. Custom
+# checks (check-doc-drift / check-adr-claims / check-adr-refs / runtime
+# schema canary / smoke external probes) remain for the drift classes
+# Scorecard does not address (doc-vs-code numerics, ADR-claim ↔
+# implementation, prose banner staleness, schema canary, attestation).
+#
+# Results publish to:
+#   - GitHub Security tab (code scanning alerts, requires Public repo
+#     or GHAS for private)
+#   - https://scorecard.dev (public scorecard for audit-survivability)
+#
+# Schedule: weekly + on push to main. PR-time check is intentionally
+# NOT enabled: Scorecard's own findings can take 5+ minutes and many
+# checks (Dependency-Update-Tool, Maintained, Vulnerabilities) fluctuate
+# based on time-window state, not PR diff. Weekly cadence is the
+# Scorecard project's own recommended posture.
+
+name: OpenSSF Scorecard
+
+on:
+  branch_protection_rule:
+  schedule:
+    - cron: "30 5 * * 1" # Weekly, Monday 05:30 UTC
+  push:
+    branches: [main]
+
+# Declare default permissions as read.
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      # Needed to upload the results to code-scanning dashboard.
+      security-events: write
+      # Needed to publish results and get a badge (see publish_results below).
+      id-token: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Run analysis
+        uses: ossf/scorecard-action@62b2cac7ed8198b15735ed49ab1e5cf35480ba46 # v2.4.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          # Required for Branch-Protection check via GitHub token.
+          # Without this, the Branch-Protection check is skipped.
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          # Publish results to OpenSSF Scorecard public registry — gives
+          # the project a public scorecard.dev page that reviewers can
+          # cite alongside the /api/attestation endpoint.
+          publish_results: true
+
+      # Upload the results as artifacts (optional). Commenting out by
+      # default; the SARIF upload to code-scanning is the primary
+      # surface. Uncomment if artifact-based debugging needed.
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v7
+      #   with:
+      #     name: SARIF file
+      #     path: results.sarif
+      #     retention-days: 5
+
+      # Upload to GitHub Security tab.
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: results.sarif

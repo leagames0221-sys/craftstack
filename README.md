@@ -111,7 +111,7 @@ craftstack/
 │   └── docker/              # docker-compose + init scripts
 ├── docs/
 │   ├── design/              # 13-part design bible (see docs/design/README.md)
-│   ├── adr/                 # Architecture Decision Records (57 entries)
+│   ├── adr/                 # Architecture Decision Records (58 entries)
 │   ├── api/                 # OpenAPI specs
 │   ├── architecture/        # System diagrams
 │   ├── compliance/          # Data retention policy
@@ -217,7 +217,7 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 | ----------------------- | -------------------------------------------------------------------------------------- |
 | Architecture overview   | [docs/architecture/system-overview.md](docs/architecture/system-overview.md)           |
 | **Audit attestation**   | live single-curl: <https://craftstack-knowledge.vercel.app/api/attestation> (ADR-0056) |
-| Decision records (57)   | [docs/adr/](docs/adr/README.md)                                                        |
+| Decision records (58)   | [docs/adr/](docs/adr/README.md)                                                        |
 | API specs (OpenAPI)     | [collab](docs/api/collab-openapi.yaml) · [knowledge](docs/api/knowledge-openapi.yaml)  |
 | Rate limits             | [docs/api/rate-limits.md](docs/api/rate-limits.md)                                     |
 | STRIDE threat model     | [docs/security/threat-model.md](docs/security/threat-model.md)                         |
@@ -244,7 +244,7 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 - ✅ **Week 7–9** — Search (⌘K command palette + label filter, membership-scoped server-side), notifications (mention bell + Notification rows + unread badge polling)
 - ✅ **Demo videos** — Boardly 45 s + Knowlex 33 s narrated walkthroughs (VOICEVOX, free tier, fully reproducible pipeline)
 - ✅ **Knowlex MVP through v0.5.4** — full RAG live: ingestion (paragraph-aware 512-char chunking → 768-dim `gemini-embedding-001` → pgvector HNSW cosine kNN), streamed Gemini 2.0 Flash with numbered citations, nightly eval cron + golden v4 OR-mode scoring (ADR-0049 § 7th arc) **with green-run report auto-commit + measured-eval README badge** (v0.5.3, ADR-0049 § 7th arc Tier C-#2), workspace schema partitioning (ADR-0047 partial), schema-vs-prod drift fix + `vercel-build` migration regime (ADR-0051), drift-detect-v2 via `pg_catalog` assertion gating PRs, **runtime schema canary at `/api/health/schema`** closing the runtime side of ADR-0051 (v0.5.4, ADR-0053)
-- ✅ **Drift-audit framework completeness through v0.5.9** — 13-axis framework, 10 structurally enforced via PR-time gates (doc-drift-detect / runtime schema canary / ADR-claim cross-check / ADR-ref resolution / external-artefact smoke probes / cron health hint), 3 honestly disclosed in the threat-model as T-07/T-08/T-09 (mutation testing / decisions-without-ADR / live quota numbers); axis 7 coverage scope explicitly named as judged-load-bearing 11/56 ADRs in [ADR-0057](docs/adr/0057-drift-framework-completeness.md); framework foundation closed via repository ruleset on `main` per [ADR-0058](docs/adr/0058-branch-protection-ci-enforcement.md) — admin-bypass disabled, force-push and branch-deletion blocked, 7 PR-time CI checks required
+- ✅ **Drift-audit framework v1.0 through v0.5.10** — 13-axis framework, 10 structurally enforced via PR-time gates (doc-drift-detect / runtime schema canary / ADR-claim cross-check / ADR-ref resolution / external-artefact smoke probes / cron health hint), 3 honestly disclosed in the threat-model as T-07/T-08/T-09 with explicit re-evaluation dates; framework foundation closed via repository ruleset on `main` per [ADR-0058](docs/adr/0058-branch-protection-ci-enforcement.md); industry-standard hygiene baseline via [OpenSSF Scorecard](https://scorecard.dev) workflow weekly + on push (Branch-Protection / Pinned-Dependencies / Token-Permissions / Security-Policy / Code-Review / Dangerous-Workflows / CII-Best-Practices); axis 6 cron stale enforcement (`smoke.yml` fails when `daysSinceLastGreenRun > 7`); axis 7 PR-time block forcing new ADRs to update `_claims.json` or carry an explicit `no-claim-needed` marker; framework **frozen at v1.0** per [ADR-0059](docs/adr/0059-framework-v1-hybrid-adoption-and-freeze.md) — future ratchets require external trigger (real incident / reviewer feedback / 2026-Q3 re-audit)
 
 ### Planned
 

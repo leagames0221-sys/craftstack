@@ -102,6 +102,32 @@ jobs:
           done
           echo "All external artefacts reachable."
 
+      # Cron health enforcement (ADR-0059 axis 6 hardening). The
+      # /api/attestation endpoint exposes `measurements.daysSinceLastGreenRun`
+      # — until v0.5.10 this was passive disclosure (a reviewer who
+      # curled the endpoint would see staleness, but no automated gate
+      # caught it). Threshold = 7 days: the eval cron runs nightly, so
+      # 7 consecutive failures is unambiguously broken (vs 1-2 nights
+      # of Neon cold-start flake which ADR-0049 § retry-contract is
+      # designed to absorb). Tripping this fails smoke, surfacing the
+      # eval-pipeline regression in the same workflow that catches
+      # deploy regressions.
+      - name: Cron health threshold (ADR-0059 axis 6)
+        run: |
+          set -euo pipefail
+          payload=$(curl -sS --max-time 15 https://craftstack-knowledge.vercel.app/api/attestation)
+          days=$(echo "$payload" | jq -r '.measurements.daysSinceLastGreenRun // "null"')
+          if [ "$days" = "null" ]; then
+            echo "::warning::no daysSinceLastGreenRun in /api/attestation; eval may never have run"
+          else
+            echo "  daysSinceLastGreenRun = $days"
+            # bc is preinstalled on ubuntu-latest. Threshold = 7 days.
+            if [ "$(echo "$days > 7" | bc -l)" = "1" ]; then
+              echo "::error::eval cron has been red for $days days; investigate docs/eval/reports/"
+              exit 1
+            fi
+          fi
+
       - name: Run Knowlex live smoke
         env:
           E2E_BASE_URL: https://craftstack-knowledge.vercel.app
