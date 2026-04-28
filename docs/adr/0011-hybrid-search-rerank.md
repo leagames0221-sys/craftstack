@@ -4,7 +4,9 @@
 - Date: 2026-04-22 (proposed) / 2026-04-28 (hybrid + RRF shipped via ADR-0063)
 - Tags: search, rag, retrieval
 
-> **Implementation status (v0.5.14)**: hybrid retrieval (Postgres FTS via `tsvector` + GIN index, fused with pgvector cosine kNN via Reciprocal Rank Fusion) shipped behind `HYBRID_RETRIEVAL_ENABLED=1` env flag — default off until a calibration run measures the lift on the golden corpus. Cohere Rerank deferred (billable API key would break ADR-0046 free-tier-by-construction). The "Context Precision 0.62 → 0.89" target below remains a design target until a future calibration ADR (next available NNNN) measures the actual hybrid lift; the nightly eval cron continues running pure cosine kNN as the comparable baseline.
+> **Implementation status (v0.5.14)**: hybrid retrieval (Postgres FTS via `tsvector` + GIN index, fused with pgvector cosine kNN via Reciprocal Rank Fusion) shipped behind `HYBRID_RETRIEVAL_ENABLED=1` env flag — default off until a calibration run measures the lift on the golden corpus. Cohere Rerank deferred (billable API key would break ADR-0046 free-tier-by-construction). The "Context Precision 0.62 → 0.89" target below remains a design target until the next-available-NNNN follow-up measures the actual hybrid lift; the nightly eval cron continues running pure cosine kNN as the comparable baseline.
+>
+> **Calibration status (2026-04-29 / v0.5.15-rc.0)**: a calibration attempt was made and surfaced an architectural gap — post-v0.5.12 multi-tenant transition (ADR-0061 line 52) intentionally omits the CI Credentials provider for Knowlex, so the unauthenticated `apps/knowledge/scripts/eval.ts` cannot ingest fresh corpus on a post-v0.5.12 server. See [ADR-0064](0064-hybrid-retrieval-calibration-architectural-gap.md) for the full discovery + TTL + accelerator triggers + closure path (a next-available-NNNN follow-up that ships the CI Credentials provider for Knowlex and produces the lift figure as a byproduct).
 
 ## Context
 

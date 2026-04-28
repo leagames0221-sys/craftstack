@@ -114,6 +114,11 @@ Shipped in v0.5.14:
 - `apps/knowledge/src/app/api/health/schema/route.ts` — schema canary `EXPECTED.Chunk` extended with `tsv`.
 - This ADR.
 - `docs/adr/0011-hybrid-search-rerank.md` — § Status updated from "Accepted (planned)" to "Fully Accepted (hybrid + RRF shipped v0.5.14 / ADR-0063; Cohere Rerank still deferred)".
+
+### Calibration status (2026-04-29 / v0.5.15-rc.0)
+
+A calibration attempt at v0.5.15-rc.0 surfaced an architectural gap: post-v0.5.12 multi-tenant transition (ADR-0061 line 52) intentionally omits the CI Credentials provider for Knowlex, so the unauthenticated `apps/knowledge/scripts/eval.ts` cannot ingest fresh corpus on a post-v0.5.12 server. The hybrid lift figure named as a v0.6.0 follow-up in this ADR's § Negative consequence #1 is therefore not yet produced. The closure path is a next-available-NNNN follow-up that ships the CI Credentials provider for Knowlex (copying the apps/collab triple-gate pattern from ADR-0038) and produces the lift figure as a byproduct. Full discovery + TTL + accelerator triggers in [ADR-0064](0064-hybrid-retrieval-calibration-architectural-gap.md). Until that ADR ships, the calibration command in § Verification "Live exercise" below returns 401 on the first ingest call against a post-v0.5.12 server (prod or local-with-fresh-DB).
+
 - `docs/adr/README.md` — index entry.
 - `CHANGELOG.md` — v0.5.14 entry.
 - `docs/adr/_claims.json` — ADR-0063 entries (RRF module exists, retrieve.ts contains hybrid wiring, schema canary covers tsv column, FTS migration shipped).
