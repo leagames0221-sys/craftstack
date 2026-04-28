@@ -4,6 +4,50 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.17] — 2026-04-29
+
+### Changed — Stale-reference cleanup + Gemini model version sync + tag drift fix
+
+A second docs-only ratchet (post-v0.5.16 narrative alignment) catching three classes of drift that a deep reviewer would detect against the actual ADR sequence. External-feedback-shaped: surfaced by an explicit critical-issue scan against the as-of-v0.5.16 portfolio prose.
+
+#### Class 1: "Single-tenant" / "deferred to v0.5.4" stale claims (post-v0.5.12 ADR-0061 should be multi-tenant)
+
+ADR-0061 v0.5.12 shipped Auth.js + `Membership` + demo allow-list = **multi-tenant** access control. The following stale claims contradicting that closure were updated:
+
+- `README.md:135` Apps table Knowlex row — was `Single-tenant RAG demo ... auth-gated access control deferred to v0.5.4 (next arc)`; now `Multi-tenant RAG ... access control via Auth.js + Membership demo allow-list per ADR-0061 (v0.5.12) + hybrid retrieval per ADR-0063 + CI Credentials provider per ADR-0065`.
+- `docs/hiring/portfolio-lp.md:26` Knowlex section header — was `🟠 Knowlex — Single-tenant RAG demo`; now `🟠 Knowlex — Multi-tenant RAG (with hybrid retrieval + judge mode + CI auth)`.
+- `docs/hiring/portfolio-lp.md:28` body — was `access control deferred to v0.5.4 once Auth.js lands`; now references ADR-0061/0063/0065/0067 accurately.
+- `docs/hiring/portfolio-lp.md:11` status block — Knowlex multi-tenant capability + hybrid retrieval inline.
+- `docs/hiring/interview-qa.md` Q5 / Q9 / Q11 / Q23 — single-tenant references contextually updated to reflect ADR-0061 transition (historical "was single-tenant per ADR-0039 MVP scope" preserved where temporally accurate).
+- `docs/architecture/system-overview.md:60` Auth row — was `Single-tenant (auth deferred to v0.5.4 per ADR-0047)`; now multi-tenant per ADR-0061 + CI Credentials provider per ADR-0065.
+- `docs/architecture/system-overview.md:78` request-path narrative — workspaceId resolution updated for multi-tenant.
+- `docs/architecture/system-overview.md:90` RLS deferred-reasoning — was `Knowlex is single-tenant per ADR-0039`; now correctly cites ADR-0061's choice of application-side enforcement over RLS.
+
+#### Class 2: Gemini model version sync (`Gemini 2.0 Flash` → `Gemini 2.5 Flash`)
+
+The streaming generation model was advanced to Gemini 2.5 Flash (alongside Gemini 2.5 Pro for `--judge` mode rubric per ADR-0062). All `Gemini 2.0 Flash` references across `README.md`, `docs/hiring/portfolio-lp.md`, `docs/hiring/interview-qa.md`, `docs/architecture/system-overview.md`, `docs/ops/runbook.md` updated. The ADR-0067 incident also implicitly affects which model gets called once an operator runs the BYOK recipe; the runbook + ADR documentation already covers BYOK with any Gemini-compatible key.
+
+#### Class 3: Git tag drift cleanup
+
+S266 entry-state surfaced and fixed a v0.5.9..v0.5.14 git tag drift (tags existed locally but were never pushed to origin). The same drift reappeared for v0.5.15 + v0.5.16: both shipped via squash-merged PRs (#54, #55) with no `git tag` step in either ratchet's chain. This ratchet retroactively creates and pushes:
+
+- `v0.5.15` annotated tag pointing at squash commit `6573391` (ADR-0065 + ADR-0067 ship).
+- `v0.5.16` annotated tag pointing at squash commit `9aa8bd4` (narrative alignment).
+
+Origin tag list now spans `v0.5.0..v0.5.16` continuously. A reviewer running `git tag --list` sees the full version history matching the CHANGELOG.
+
+#### Why this is a docs-only ratchet, not a feature ratchet
+
+- No code changes. No new tests, no new ADRs.
+- ADR-0059 § 3-trigger ratchet rule preserved: this ratchet is **external-feedback-shaped** (a critical-issue scan surfaced specific drift instances). Not self-audit-loop.
+- Three classes of drift, all mechanical to fix; bounded scope.
+
+#### Numerics (unchanged)
+
+- ADR count remains 65.
+- Vitest remains 274.
+- Banner version: README + portfolio-lp Status block + CHANGELOG topmost release advance to v0.5.17.
+
 ## [0.5.16] — 2026-04-29
 
 ### Changed — Narrative alignment + brand surface front-loading
