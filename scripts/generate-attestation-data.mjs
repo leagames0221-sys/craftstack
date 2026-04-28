@@ -140,16 +140,18 @@ const deferred = [
     adr: "ADR-0047",
     reason: "deferred until Auth.js lands on Knowlex",
   },
-  {
-    feature: "Pusher private/presence channels",
-    adr: "T-01",
-    reason: "v0.6.0 roadmap; current public channels are honest scope note",
-  },
+  // T-01 (Pusher private/presence channels) was on this list through v0.5.10
+  // and was resolved in v0.5.11 — see ADR-0060. Kept removed here so the
+  // /api/attestation `scope.deferred` array reflects current reality.
 ];
 
 // --- Honest scope notes (snapshot of threat-model self-disclosure) -
 const honestScopeNotes = [
-  "T-01: Boardly Pusher channels are public; defence is access-control-by-id-secrecy until v0.6.0 private auth lands",
+  // T-01 was here from v0.5.4 through v0.5.10 ("Boardly Pusher channels are
+  // public; defence is access-control-by-id-secrecy until v0.6.0 private
+  // auth lands"). Resolved in v0.5.11 per ADR-0060 (private-board-<id>
+  // channels with server-signed auth route). Removed here so the live
+  // /api/attestation honestScopeNotes accurately reflects the closed set.
   "I-01: Knowlex is single-tenant per ADR-0039; auth-gated access deferred",
   "T-06: README measured-eval badge stays at last-green-state, not last-cron-state (auto-commit fires only on success per ADR-0049 § 7th arc Tier C-#2). See `measurements.daysSinceLastGreenRun` + `measurements.cronHealthHint` in this same payload for cron-health dimension",
 ];

@@ -11,6 +11,7 @@ import {
   useTransition,
 } from "react";
 import { getPusherClient } from "@/lib/pusher-client";
+import { boardChannelName } from "@/lib/pusher";
 import {
   DndContext,
   DragOverlay,
@@ -95,7 +96,7 @@ export function BoardClient({
   useEffect(() => {
     const client = getPusherClient();
     if (!client) return;
-    const channel = client.subscribe(`board-${boardId}`);
+    const channel = client.subscribe(boardChannelName(boardId));
     const refreshIfIdle = () => {
       if (!activeCardIdRef.current) router.refresh();
     };
@@ -139,7 +140,7 @@ export function BoardClient({
     }
     return () => {
       channel.unbind_all();
-      client.unsubscribe(`board-${boardId}`);
+      client.unsubscribe(boardChannelName(boardId));
     };
   }, [boardId, router]);
 

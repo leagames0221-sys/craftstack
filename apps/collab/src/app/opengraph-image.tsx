@@ -90,7 +90,7 @@ export default function OpenGraphImage() {
           "Gemini Flash",
           "Pusher",
           "A Security",
-          "216 tests",
+          "224 tests",
         ].map((t) => (
           <div
             key={t}

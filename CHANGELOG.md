@@ -4,6 +4,66 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.11] — 2026-04-28
+
+### Added — Pusher private channels migration: T-01 resolved (ADR-0060)
+
+First product feature ship after the ADR-0059 framework v1.0 freeze. Closes T-01 honest-disclose (public Pusher channels) by migrating board fanout to auth-required private channels.
+
+#### Channel migration
+
+- `apps/collab/src/lib/pusher.ts` — refactored: `getPusherServer()` exported, new helpers `boardChannelName(boardId)` and `parseBoardChannel(name)` centralise the channel-name contract. `broadcastBoard()` uses the helper. Channel name now `private-board-<id>` (was `board-<id>` in v0.5.10 and earlier).
+- `apps/collab/src/lib/pusher-client.ts` — configures `authEndpoint: "/api/pusher/auth"` so private subscribes trigger server-side authorization. The Auth.js session cookie is sent automatically (same-origin POST).
+- `apps/collab/src/app/w/[slug]/b/[boardId]/BoardClient.tsx` — subscribes via the `boardChannelName()` helper instead of a hardcoded string. Server-emit and client-subscribe share the same function.
+
+#### New auth route
+
+- `apps/collab/src/app/api/pusher/auth/route.ts` (new) — `POST` handler with a four-step gate:
+  1. Auth.js session verified (401 if missing)
+  2. Form body parsed (`socket_id` + `channel_name`); 400 on malformed body
+  3. Channel name matched against `private-board-<id>` allow-list — every other `private-*` request rejected with 403 `UNSUPPORTED_CHANNEL`. The route is **not** a generic Pusher signing oracle.
+  4. Workspace-membership check via Prisma; 403 `BOARD_NOT_FOUND` or `NOT_A_MEMBER` on negative cases. 503 `PUSHER_NOT_CONFIGURED` if env is missing (defends against a misconfigured deploy looking like an auth denial).
+- 200 with `pusher.authorizeChannel(socketId, channelName)` signed token on success.
+
+#### Test additions
+
+- `apps/collab/src/lib/pusher.test.ts` (new) — 8 Vitest cases pinning `boardChannelName` round-trip and `parseBoardChannel` allow-list (legacy public name rejected, unrelated `private-*` rejected, separator-smuggling defended, empty-id rejected). The helpers are the single contract surface for three independent files; pinning them prevents silent drift.
+
+#### Numerics ratchet (doc-drift consequence)
+
+- Vitest total 216 → 224 (174 collab + 50 knowledge); README badge URL + interview-qa + portfolio-lp + page.tsx Stat block + layout.tsx description + opengraph-image.tsx all updated
+- Boardly route+page count 38 → 39 (new auth route); page.tsx Stat block updated
+- ADR count 58 → 59
+- Banners 4 docs (portfolio-lp / interview-qa / system-overview / runbook): v0.5.10 → v0.5.11
+
+#### Threat-model
+
+- T-01 status: "honest scope note" → **"Resolved in v0.5.11 (ADR-0060)"**. The migration demonstrates that honest-disclose is a temporary discipline (per ADR-0059 honest-disclose TTL pattern), not a permanent dodge — the first concrete instance of T-NN graduating from disclose to closure.
+
+### Verification
+
+```bash
+node scripts/check-doc-drift.mjs   # → 0 failures
+node scripts/check-adr-claims.mjs  # → 26/26 (was 24 + ADR-0060 entries); PR-time integrity pass
+node scripts/check-adr-refs.mjs    # → 0 dangling
+pnpm --filter collab test          # → 174 passed (was 166, +8 pusher.test.ts)
+pnpm --filter knowledge test       # → 50 passed
+```
+
+Live (post-merge):
+
+```bash
+# Member subscribe → 200 + signed token
+curl -X POST https://craftstack-collab.vercel.app/api/pusher/auth \
+  -H "Cookie: <session>" \
+  --data 'socket_id=1.2&channel_name=private-board-<id>'
+# → 200, body: {"auth": "..."}
+
+# Non-member or unauthorised → 403
+# Unrelated private channel → 403 UNSUPPORTED_CHANNEL
+# Unauthenticated → 401
+```
+
 ## [0.5.10] — 2026-04-28
 
 ### Added — Framework v1.0: hybrid Scorecard adoption + axes 6/7 future-drift closure + freeze (ADR-0059)

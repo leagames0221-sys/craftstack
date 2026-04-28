@@ -1,6 +1,6 @@
 # Runbook
 
-> **Status (as of v0.5.10)**: this runbook covers the **deployed** architecture (Vercel + Pusher Channels + Neon + Upstash + Gemini). The original ADR-0009 plan included Fly.io + self-hosted Socket.IO + BullMQ; that pivot to Pusher is recorded in [ADR-0052](../adr/0052-pusher-pivot-from-flyio-socketio.md), and any prior Fly.io-specific procedures (`flyctl status`, Fly machine restart, BullMQ dead-letter queue) are not applicable here. Incident response runs through Vercel + Pusher + Neon dashboards. v0.5.4 added the runtime schema canary at `/api/health/schema` referenced from §1 step 5 (ADR-0053).
+> **Status (as of v0.5.11)**: this runbook covers the **deployed** architecture (Vercel + Pusher Channels + Neon + Upstash + Gemini). The original ADR-0009 plan included Fly.io + self-hosted Socket.IO + BullMQ; that pivot to Pusher is recorded in [ADR-0052](../adr/0052-pusher-pivot-from-flyio-socketio.md), and any prior Fly.io-specific procedures (`flyctl status`, Fly machine restart, BullMQ dead-letter queue) are not applicable here. Incident response runs through Vercel + Pusher + Neon dashboards. v0.5.4 added the runtime schema canary at `/api/health/schema` referenced from §1 step 5 (ADR-0053).
 
 Incident playbook for production services. Every section follows the same shape:
 **Symptoms → Triage → Mitigation → Root cause follow-up.**
