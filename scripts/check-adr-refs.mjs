@@ -18,7 +18,7 @@
 //
 // Run locally: node scripts/check-adr-refs.mjs
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -37,40 +37,28 @@ const scanDirs = ["docs", "README.md", "CHANGELOG.md", "apps", "scripts"];
 const refRegex = /\bADR-(\d{4})\b/g;
 const refs = new Map(); // id → array of {file, lineNumber}
 
-function walk(p) {
-  let stat;
-  try {
-    stat = statSync(p);
-  } catch {
-    return;
-  }
-  if (stat.isDirectory()) {
-    if (
-      p.endsWith("node_modules") ||
-      p.endsWith(".next") ||
-      p.endsWith("dist") ||
-      p.endsWith("build")
-    )
-      return;
-    for (const e of readdirSync(p)) walk(join(p, e));
-    return;
-  }
-  if (
-    !(
-      p.endsWith(".md") ||
-      p.endsWith(".ts") ||
-      p.endsWith(".tsx") ||
-      p.endsWith(".mjs") ||
-      p.endsWith(".js") ||
-      p.endsWith(".json") ||
-      p.endsWith(".yml") ||
-      p.endsWith(".yaml")
-    )
-  )
-    return;
+// Race-free walk: use `readdirSync(..., { withFileTypes: true })` which
+// returns Dirent objects; no separate statSync call (avoids TOCTOU
+// flagged by CodeQL js/file-system-race). Top-level `walk(path)` first
+// classifies its target by trying readdir + falling back to file read.
+const SCAN_EXTS = new Set([
+  ".md",
+  ".ts",
+  ".tsx",
+  ".mjs",
+  ".js",
+  ".json",
+  ".yml",
+  ".yaml",
+]);
+const SKIP_DIR_NAMES = new Set(["node_modules", ".next", "dist", "build"]);
+
+function processFile(p) {
   // Ignore the ADR files themselves — they reference themselves
   // legitimately and contain rendered MADR template text.
   if (p.includes("docs/adr/") || p.includes("docs\\adr\\")) return;
+  const dotIdx = p.lastIndexOf(".");
+  if (dotIdx < 0 || !SCAN_EXTS.has(p.slice(dotIdx))) return;
   let text;
   try {
     text = readFileSync(p, "utf8");
@@ -85,6 +73,30 @@ function walk(p) {
     const lineNumber = text.slice(0, match.index).split("\n").length;
     const rel = p.replace(`${ROOT}\\`, "").replace(`${ROOT}/`, "");
     refs.get(id).push({ file: rel.replaceAll("\\", "/"), lineNumber });
+  }
+}
+
+function walk(p) {
+  // Single readdir call returns Dirents that already carry the
+  // file-vs-directory bit, so there's no separate statSync race
+  // (CodeQL js/file-system-race). If `p` itself is a file (e.g.,
+  // README.md / CHANGELOG.md passed at the top level), readdir throws
+  // ENOTDIR and we fall through to processFile.
+  let entries;
+  try {
+    entries = readdirSync(p, { withFileTypes: true });
+  } catch {
+    processFile(p);
+    return;
+  }
+  for (const e of entries) {
+    const child = join(p, e.name);
+    if (e.isDirectory()) {
+      if (SKIP_DIR_NAMES.has(e.name)) continue;
+      walk(child);
+    } else if (e.isFile()) {
+      processFile(child);
+    }
   }
 }
 
