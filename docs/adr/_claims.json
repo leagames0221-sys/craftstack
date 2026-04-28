@@ -362,6 +362,69 @@
       "file": "docs/adr/0063-hybrid-retrieval-bm25-rrf.md",
       "match": "contains",
       "pattern": "Calibration status \\(2026-04-29 / v0\\.5\\.15-rc\\.0\\)"
+    },
+
+    {
+      "adr": "ADR-0065",
+      "claim": "Knowlex Credentials provider exports e2eGateOpen predicate for unit-test pinning",
+      "file": "apps/knowledge/src/auth/config.ts",
+      "match": "contains",
+      "pattern": "export function e2eGateOpen"
+    },
+    {
+      "adr": "ADR-0065",
+      "claim": "Knowlex Credentials provider gate uses constant-time secret comparison (timingSafeEqual)",
+      "file": "apps/knowledge/src/auth/config.ts",
+      "match": "contains",
+      "pattern": "timingSafeEqual"
+    },
+    {
+      "adr": "ADR-0065",
+      "claim": "Knowlex Credentials provider Vitest pinning the gate predicate exists",
+      "file": "apps/knowledge/src/auth/config.test.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0065",
+      "claim": "Knowlex next.config.ts carries the build-time assertion blocking VERCEL=1 + E2E_ENABLED=1",
+      "file": "apps/knowledge/next.config.ts",
+      "match": "contains",
+      "pattern": "Knowlex CI-only Credentials provider must never"
+    },
+    {
+      "adr": "ADR-0065",
+      "claim": "eval.ts carries the CI session acquisition dance (CSRF + signin + cookie injection)",
+      "file": "apps/knowledge/scripts/eval.ts",
+      "match": "contains",
+      "pattern": "acquireE2ESession"
+    },
+
+    {
+      "adr": "ADR-0067",
+      "claim": "Knowlex EMERGENCY_STOP module exists (the kill-switch this incident exercised)",
+      "file": "apps/knowledge/src/lib/emergency-stop.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0067",
+      "claim": "README documents the live-demo EMERGENCY_STOPPED state with link to ADR-0067",
+      "file": "README.md",
+      "match": "contains",
+      "pattern": "temporarily disabled via .EMERGENCY_STOP=1."
+    },
+    {
+      "adr": "ADR-0067",
+      "claim": "README documents the BYOK runbook for operators to run Knowlex locally with their own key",
+      "file": "README.md",
+      "match": "contains",
+      "pattern": "Run Knowlex locally with your own API key"
+    },
+    {
+      "adr": "ADR-0067",
+      "claim": "ADR-0064 § Status reflects the BYOK landing post-incident",
+      "file": "docs/adr/0064-hybrid-retrieval-calibration-architectural-gap.md",
+      "match": "contains",
+      "pattern": "BYOK-reproducible"
     }
   ]
 }

@@ -4,7 +4,52 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
-## [0.5.15-rc.0] — 2026-04-29
+## [0.5.15] — 2026-04-29
+
+### Added — CI Credentials provider for Knowlex (ADR-0065) — closes ADR-0064 architectural-gap
+
+`apps/knowledge` gains the CI-only Credentials provider that ADR-0061 line 52 named as a deferred follow-up. Mirrors apps/collab's ADR-0038 triple-gate (`VERCEL!=1 + E2E_ENABLED=1 + E2E_SHARED_SECRET >= 16 bytes`) with one Knowlex-specific delta (auto-upsert E2E user in `authorize()` rather than seeding via `prisma/seed.ts`) and one additional defense layer (build-time assertion in `next.config.ts` that fails `next build` if VERCEL=1 + E2E_ENABLED=1 is misconfigured).
+
+End-to-end verified during this ratchet: the eval client successfully signed in as `e2e+owner@e2e.example` on first attempt before the unrelated ADR-0067 incident hit (`[eval] CI auth dance complete`). The architectural-gap half of ADR-0064's closure path is structurally closed.
+
+`apps/knowledge/scripts/eval.ts` gains the matching CSRF + signin dance (`acquireE2ESession`) + cookie injection in both `ingestCorpus` and `ask`, mirroring apps/collab's `tests/e2e/setup-auth.ts`. 9 Vitest cases pin the gate predicate semantics (VERCEL=1 / E2E_ENABLED unset / "true" vs "1" / secret < 16 / all-green / gate ordering) + the email allowlist contents.
+
+### Added — Gemini Free tier account-level revocation incident (ADR-0067) — production response
+
+A 2026-04-29 production incident: the Google AI Studio account associated with the Knowlex live demo had its Free tier silently revoked by Google. No notification, no email, no dashboard banner — only the AI Studio Usage page surfaced "Project quota tier unavailable. Please contact your project administrator for assistance." Both the original `craftstack-knowlex` project and a freshly-created `craftstack-knowlex-v2` showed `Billing Tier: Set up billing | Unavailable` within ~1 minute of creation, confirming account-level enforcement rather than project-specific abuse-detection. Trigger remained opaque per Google's standard abuse-detection policy of not disclosing what tripped the system. Diagnostic probes (Vercel function logs, AI Studio Project listing, AI Studio Usage page) ruled out cumulative-account-history but could not differentiate among policy sweep / multi-geo IP fingerprint / content-safety filter cascade as the actual trigger.
+
+#### Containment via ADR-0046 EMERGENCY_STOP kill-switch
+
+The `EMERGENCY_STOP=1` env var on the Knowlex Vercel project Environment Variables short-circuits both `/api/kb/ask` and `/api/kb/ingest` to a 503 with `{"code":"EMERGENCY_STOPPED"}` instead of the cascading 500s the broken Gemini key produces. This converts the live-demo state from "broken" to "intentionally disabled, see ADR-0067" — an explicit, reviewer-readable engineering signal rather than confusing breakage. The kill-switch was shipped 6 months ago for exactly this contingency (ADR-0046); the design held under stress.
+
+#### Calibration scope pivot — BYOK landing
+
+ADR-0064's lift-figure half cannot ship in this ratchet because the eval flow needs a working LLM key. Instead of bundling alt-LLM provider migration into the same ratchet (which would violate ADR-0059 § 3-trigger ratchet rule + scope discipline), the calibration is **reframed as BYOK-reproducible**: any operator with a Gemini-compatible API key (or 768-dim free-tier alternative such as Cloudflare Workers AI's `bge-base-en-v1.5`) can run `pnpm --filter knowledge eval` locally and produce the lift figure. README's new § "Run Knowlex locally with your own API key (BYOK)" documents the 5-line setup.
+
+The 5th graduation cycle structure is preserved: ADR-0064 disclose → ADR-0065 architectural-gap closure → ADR-0067 incident response → BYOK landing as the closure path. Recovery ratchet (alt-LLM provider migration) is named as needs-driven optional follow-up, not a hard commitment.
+
+#### Companion doc updates
+
+- `docs/adr/0064-hybrid-retrieval-calibration-architectural-gap.md` — § Status updated: architectural-gap half closed by ADR-0065; lift-figure half BYOK-reproducible per ADR-0067.
+- `docs/adr/README.md` — index entries for ADR-0065 + ADR-0067.
+- `docs/adr/_claims.json` — 9 new entries (ADR-0065 ×5 anchors + ADR-0067 ×4 anchors).
+- `README.md` — Knowlex live-demo section replaced with EMERGENCY_STOPPED + BYOK runbook + ADR-0067 link; ADR count 63 → 65; Vitest 265 → 274; tests badge 265+24 → 274+24.
+- `docs/hiring/portfolio-lp.md` — same pivot wording; ADR count + Vitest sync.
+- `apps/collab/src/app/page.tsx` — Stat row ADR count 63 → 65; Vitest 265 → 274.
+- `apps/knowledge/.env` — `GEMINI_API_KEY` value cleared post-incident (gitignore'd, never committed).
+
+#### User-side production action (this ratchet's release prerequisite)
+
+- Set `EMERGENCY_STOP=1` on the Knowlex Vercel project Environment Variables (Production + Preview) and trigger a redeploy. ADR-0067 § Decision item 1 documents the runbook.
+- Verify post-redeploy: `curl https://craftstack-knowledge.vercel.app/api/kb/ask -X POST -H "content-type: application/json" -d '{"question":"x"}'` → expect 503 with `{"code":"EMERGENCY_STOPPED"}`.
+
+#### Numerics
+
+- ADR count 63 → **65** (ADR-0065 + ADR-0067 added; the next-available-NNNN slot is reserved for the optional alt-LLM-migration recovery ratchet, named in ADR-0067 § Decision item 3 as needs-driven follow-up).
+- Vitest 265 → **274** (174 collab + 100 knowledge; +9 from `apps/knowledge/src/auth/config.test.ts` pinning the Credentials provider gate).
+- Banner version: README + portfolio-lp Status block + CHANGELOG topmost release advance to v0.5.15.
+
+## [0.5.15-rc.0] — 2026-04-29 (superseded by [0.5.15] in same ratchet)
 
 ### Added — Calibration record (architectural-gap discovery) — ADR-0064
 

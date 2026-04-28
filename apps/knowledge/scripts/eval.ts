@@ -126,6 +126,138 @@ const INTER_CALL_DELAY_MS = 7000;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * ADR-0065 — CI-only Credentials provider session acquisition.
+ *
+ * Post-v0.5.12 (ADR-0061), `/api/kb/ingest` requires an authenticated
+ * Auth.js session because anonymous writes are explicitly disallowed
+ * (cost-attack closure). For the calibration eval to seed corpus, we
+ * sign in via the CI-only Credentials provider gated by the triple
+ * `VERCEL!=1 + E2E_ENABLED=1 + E2E_SHARED_SECRET >= 16 bytes`.
+ *
+ * The dance mirrors apps/collab/tests/e2e/setup-auth.ts:
+ *   1. GET /api/auth/csrf to obtain the CSRF token + the host cookie.
+ *   2. POST /api/auth/callback/e2e with form-encoded credentials +
+ *      CSRF token; capture the Set-Cookie session token.
+ *   3. GET /api/auth/session with the merged cookie jar to verify
+ *      the session is live and the email matches.
+ *
+ * On a server without the provider registered (= triple gate false),
+ * step 2 returns a redirect/error. On a misconfigured server (e.g.
+ * E2E_ENABLED set but secret too short) the provider isn't registered
+ * either. Both fail loudly here rather than silently letting the
+ * eval flow attempt unauthenticated ingest.
+ */
+const E2E_EMAIL = "e2e+owner@e2e.example";
+const E2E_SECRET = process.env.E2E_SHARED_SECRET ?? "";
+
+function parseSetCookie(setCookieHeaders: string[] | string | null): string {
+  // Auth.js sends multiple Set-Cookie headers (csrf-token, callback-url,
+  // session-token, etc). Reduce them to the `name=value` pairs needed
+  // for subsequent Cookie request headers. We don't need to honor
+  // Domain/Path/Secure/SameSite flags because every request stays on
+  // the same origin (BASE_URL).
+  const headers = Array.isArray(setCookieHeaders)
+    ? setCookieHeaders
+    : setCookieHeaders
+      ? [setCookieHeaders]
+      : [];
+  return headers
+    .map((h) => h.split(";", 1)[0]?.trim())
+    .filter(Boolean)
+    .join("; ");
+}
+
+function mergeCookies(...jars: string[]): string {
+  // Merge multiple cookie jars, later values override earlier ones for
+  // the same name (so the final session-token wins after the redirect).
+  const map = new Map<string, string>();
+  for (const jar of jars) {
+    if (!jar) continue;
+    for (const pair of jar.split(";")) {
+      const trimmed = pair.trim();
+      if (!trimmed) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq < 0) continue;
+      map.set(trimmed.slice(0, eq), trimmed.slice(eq + 1));
+    }
+  }
+  return [...map.entries()].map(([k, v]) => `${k}=${v}`).join("; ");
+}
+
+async function acquireE2ESession(): Promise<string | null> {
+  if (!E2E_SECRET || E2E_SECRET.length < 16) {
+    console.warn(
+      `[eval] E2E_SHARED_SECRET unset or < 16 bytes — skipping CI auth dance. ` +
+        `Anonymous /api/kb/ingest will return 401 against a post-v0.5.12 server. ` +
+        `Set E2E_SHARED_SECRET on both the server process AND this script env to enable calibration runs.`,
+    );
+    return null;
+  }
+
+  // 1) CSRF.
+  const csrfRes = await fetch(`${BASE_URL}/api/auth/csrf`);
+  if (!csrfRes.ok) {
+    throw new Error(`[eval] CSRF fetch failed: ${csrfRes.status}`);
+  }
+  const csrfBody = (await csrfRes.json()) as { csrfToken?: string };
+  const csrfToken = csrfBody.csrfToken;
+  if (!csrfToken) {
+    throw new Error(`[eval] CSRF response missing csrfToken field`);
+  }
+  const csrfCookies = parseSetCookie(csrfRes.headers.getSetCookie?.() ?? null);
+
+  // 2) Credentials callback. Use form-encoding (Auth.js expects it).
+  const form = new URLSearchParams({
+    csrfToken,
+    email: E2E_EMAIL,
+    secret: E2E_SECRET,
+    callbackUrl: BASE_URL,
+  });
+  const signinRes = await fetch(`${BASE_URL}/api/auth/callback/e2e`, {
+    method: "POST",
+    redirect: "manual",
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      cookie: csrfCookies,
+    },
+    body: form.toString(),
+  });
+  // Auth.js returns 302/303 on success.
+  if (signinRes.status >= 400) {
+    const text = await signinRes.text().catch(() => "");
+    throw new Error(
+      `[eval] credentials callback failed: ${signinRes.status} ${text.slice(0, 200)}. ` +
+        `Verify E2E_ENABLED=1 + E2E_SHARED_SECRET on the server process and that the ` +
+        `Credentials provider is registered (check server logs for ` +
+        `"E2E credentials provider REGISTERED").`,
+    );
+  }
+  const signinCookies = parseSetCookie(
+    signinRes.headers.getSetCookie?.() ?? null,
+  );
+  const merged = mergeCookies(csrfCookies, signinCookies);
+
+  // 3) Verify the session.
+  const sessionRes = await fetch(`${BASE_URL}/api/auth/session`, {
+    headers: { cookie: merged },
+  });
+  const session = (await sessionRes.json()) as {
+    user?: { email?: string };
+  } | null;
+  if (session?.user?.email !== E2E_EMAIL) {
+    throw new Error(
+      `[eval] session verification failed: expected ${E2E_EMAIL}, got ${
+        session?.user?.email ?? "<none>"
+      }`,
+    );
+  }
+  console.log(
+    `[eval] CI auth dance complete — signed in as ${E2E_EMAIL} for the calibration run.`,
+  );
+  return merged;
+}
+
 // ADR-0049 § 7th arc (v0.5.1): expanded REFUSAL_MARKERS for soft-refusal
 // phrasing observed in run 6 outputs against q008/q009/q030. Gemini 2.0
 // Flash with temperature 0.7 phrases refusals more naturally — "I cannot
@@ -176,7 +308,20 @@ function loadGolden(): GoldenSet {
   return JSON.parse(body) as GoldenSet;
 }
 
-async function ingestCorpus(corpus: CorpusEntry[]) {
+async function ingestCorpus(
+  corpus: CorpusEntry[],
+  sessionCookie: string | null,
+) {
+  // Auth header: post-v0.5.12 ingest requires a signed-in session
+  // (ADR-0061 cost-attack closure). The cookie is acquired upstream
+  // via the CI-only Credentials provider (ADR-0065). Anonymous calls
+  // get 401; the eval can still run against a server that has the
+  // provider unregistered (e.g. for read-only paths) but ingest will
+  // fail loudly.
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  if (sessionCookie) headers.cookie = sessionCookie;
   for (let i = 0; i < corpus.length; i++) {
     const doc = corpus[i];
     if (i > 0) await sleep(INTER_CALL_DELAY_MS);
@@ -185,7 +330,7 @@ async function ingestCorpus(corpus: CorpusEntry[]) {
       `${BASE_URL}/api/kb/ingest`,
       {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers,
         body: JSON.stringify(doc),
       },
       { label: `ingest "${doc.title}"` },
@@ -201,14 +346,23 @@ async function ingestCorpus(corpus: CorpusEntry[]) {
 
 async function ask(
   question: string,
+  sessionCookie: string | null,
 ): Promise<{ answer: string; docs: string[]; latencyMs: number }> {
+  // /api/kb/ask works anonymously against the demo workspace per
+  // ADR-0061 § Demo split, but we forward the cookie when available
+  // so calibration runs are session-attached end-to-end (consistent
+  // with how a future authed UI would call the same endpoint).
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  if (sessionCookie) headers.cookie = sessionCookie;
   const t0 = performance.now();
   const res = await retryFetch(
     fetch,
     `${BASE_URL}/api/kb/ask`,
     {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers,
       body: JSON.stringify({ question }),
     },
     { label: `ask "${question.slice(0, 40)}..."` },
@@ -330,8 +484,14 @@ async function main() {
     `[eval] base=${BASE_URL} questions=${golden.questions.length} corpus=${golden.corpus.length}`,
   );
 
+  // ADR-0065: acquire CI session cookie before any ingest call. Returns
+  // null if E2E_SHARED_SECRET is unset (eval still runs read-only paths
+  // unauthenticated; ingest will then 401 on a post-v0.5.12 server).
+  console.log("[eval] acquiring CI session...");
+  const sessionCookie = await acquireE2ESession();
+
   console.log("[eval] seeding corpus...");
-  await ingestCorpus(golden.corpus);
+  await ingestCorpus(golden.corpus, sessionCookie);
 
   // Bridge sleep between ingest phase and ask phase. Without this, the
   // first ask follows immediately after the last ingest and counts as
@@ -368,7 +528,7 @@ async function main() {
     const q = golden.questions[qi];
     if (qi > 0) await sleep(INTER_CALL_DELAY_MS);
     try {
-      const { answer, docs, latencyMs } = await ask(q.question);
+      const { answer, docs, latencyMs } = await ask(q.question, sessionCookie);
       const reasons = scoreQuestion(q, answer, docs);
       let judgeScore: number | null | undefined;
       let judgeReasoning: string | undefined;
