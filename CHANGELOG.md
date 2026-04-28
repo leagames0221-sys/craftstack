@@ -4,6 +4,88 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.14] — 2026-04-28
+
+### Added — Hybrid retrieval (Postgres FTS + pgvector kNN fused via RRF) — closes ADR-0011 deferred (ADR-0063)
+
+Fourth graduation in four ships (after T-01 / I-01 / ADR-0049 § 8th arc closures in v0.5.11 / v0.5.12 / v0.5.13). The largest deferred ADR-0039 item — ADR-0011's hybrid retrieval plan — ships as a complement to v0.5.13's `--judge` mode: hybrid retrieval fixes lexical recall on keyword-heavy queries (proper nouns / API names / error codes); `--judge` fixes scoring on paraphrase-heavy queries. Both are needed for a RAG system robust across query distributions.
+
+#### Schema migration (additive)
+
+`apps/knowledge/prisma/migrations/20260428_chunk_fts/migration.sql`:
+
+```sql
+ALTER TABLE "Chunk"
+  ADD COLUMN "tsv" tsvector
+    GENERATED ALWAYS AS (to_tsvector('english', "content")) STORED;
+
+CREATE INDEX "Chunk_tsv_gin_idx" ON "Chunk" USING GIN ("tsv");
+```
+
+Generated tsvector column maintained by Postgres on every insert/update (no app-side trigger). GIN index for sub-millisecond `@@` lookups. Storage cost ~150-300 bytes per 512-char chunk; negligible at portfolio-scale corpora.
+
+#### Lexical retrieval
+
+- `plainto_tsquery('english', $query)` for tokenization + stop-word removal (natural-language questions, no FTS-syntax obligations).
+- `ts_rank_cd` (cover-density rank) over plain `ts_rank` because cover-density rewards passages where query terms appear close together — closer to BM25's proximity component.
+- Same workspace-pre-filter shape as the existing pgvector path so the access layer (ADR-0061) holds.
+
+#### RRF fusion module
+
+- `apps/knowledge/src/server/rrf.ts` (new) — Reciprocal Rank Fusion at the application layer. Discards scores entirely; fuses on rank with `1 / (k + rank)` contribution from each list. `RRF_K = 60` per Cormack et al. (2009) canonical default. Weight + custom-k support; per-source rank provenance for debug.
+- `apps/knowledge/src/server/rrf.test.ts` (new) — 9 Vitest cases pinning fusion invariants: rank preservation in single-list mode, score equivalence on symmetric merges, two-list dominance over one-list, per-source provenance, weight bias, limit option, custom k, empty-list handling, id-collision semantics.
+
+#### retrieve.ts wiring
+
+- `retrieveVector` + `retrieveLexical` helpers (extracted/new). Both honor the workspace pre-filter from ADR-0047/0061.
+- `HYBRID_RETRIEVAL_ENABLED=1` env flag — **default off**.
+- Hybrid path: both lists return up to 2K candidates; `fuseRRF` combines; top-K materialised back from union; vector row preferred for the cosine distance, lexical row falls back.
+- `RetrievedChunk.hybridSources?: Record<string, number>` — per-source rank provenance for debug.
+
+#### Schema canary
+
+- `EXPECTED.Chunk` extended with the `tsv` column (ADR-0057 axis 2). A stale Vercel build that didn't run the migration trips the 6-hourly smoke.
+
+#### Default-off discipline (ADR-0046 + run-to-run comparability)
+
+- Default off so the v0.5.13 baseline retrieval is preserved; nightly eval cron continues running pure cosine kNN until a future calibration ADR (next available NNNN) measures the hybrid lift on the golden corpus.
+- No new ops surface — Postgres native FTS uses the same Neon connection / auth / backup as the existing schema.
+- ADR-0046 free-tier compliance preserved.
+- Cohere Rerank still deferred — billable API key would break ADR-0046; revisit if a future need arises.
+
+#### Numerics ratchet
+
+- ADR count 61 → 62
+- Vitest 256 → 265 (174 collab + 91 knowledge; +9 from `rrf.test.ts`)
+- Banner v0.5.13 → v0.5.14 across 4 docs (portfolio-lp / interview-qa / system-overview / runbook)
+- ADR-0011 status: "Accepted (planned)" → "Fully Accepted" (hybrid + RRF shipped via ADR-0063; Cohere Rerank explicitly remaining deferred)
+
+### Live exercise (post-merge, on demand)
+
+```bash
+HYBRID_RETRIEVAL_ENABLED=1 \
+  EVAL_JUDGE=1 \
+  GEMINI_API_KEY=<your AI Studio key> \
+  E2E_BASE_URL=https://craftstack-knowledge.vercel.app \
+  pnpm --filter knowledge eval
+
+# Calibration: compare aggregate.passRate / aggregate.judge.meanScore
+# against the same eval run with HYBRID_RETRIEVAL_ENABLED unset.
+# If hybrid measurably wins, a future ADR (next available NNNN) promotes the flag default
+# to `1` with the calibration data.
+```
+
+`RetrievedChunk` objects now expose `hybridSources` showing which list(s) surfaced each chunk and at what rank inside each.
+
+### Verification
+
+```bash
+node scripts/check-doc-drift.mjs    # → 0 failures (ADR 62, Vitest 265, banner v0.5.14)
+node scripts/check-adr-claims.mjs   # → all pass; ADR-0063 has 6 _claims.json entries
+node scripts/check-adr-refs.mjs     # → 0 dangling
+pnpm --filter knowledge test        # → 91 passed (was 82, +9 rrf.test.ts)
+```
+
 ## [0.5.13] — 2026-04-28
 
 ### Added — LLM-as-judge `--judge` flag: closes ADR-0049 § 8th arc paraphrase-fragility deferral (ADR-0062)

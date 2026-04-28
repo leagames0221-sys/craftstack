@@ -293,6 +293,46 @@
       "file": "apps/knowledge/scripts/eval.ts",
       "match": "contains",
       "pattern": "judge-rubric"
+    },
+
+    {
+      "adr": "ADR-0063",
+      "claim": "RRF fusion module exists",
+      "file": "apps/knowledge/src/server/rrf.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0063",
+      "claim": "RRF fusion Vitest pinning the rank-only fusion invariants exists",
+      "file": "apps/knowledge/src/server/rrf.test.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0063",
+      "claim": "retrieve.ts honors HYBRID_RETRIEVAL_ENABLED env flag (opt-in, default off for run-to-run eval comparability)",
+      "file": "apps/knowledge/src/server/retrieve.ts",
+      "match": "contains",
+      "pattern": "HYBRID_RETRIEVAL_ENABLED"
+    },
+    {
+      "adr": "ADR-0063",
+      "claim": "Lexical retrieval uses Postgres FTS via plainto_tsquery + ts_rank_cd (BM25-equivalent in spirit)",
+      "file": "apps/knowledge/src/server/retrieve.ts",
+      "match": "contains",
+      "pattern": "plainto_tsquery"
+    },
+    {
+      "adr": "ADR-0063",
+      "claim": "Schema canary EXPECTED includes the tsv tsvector column (axis 2 of ADR-0057 covers the migration)",
+      "file": "apps/knowledge/src/app/api/health/schema/route.ts",
+      "match": "contains",
+      "pattern": "\"tsv\""
+    },
+    {
+      "adr": "ADR-0063",
+      "claim": "FTS migration shipped (additive tsvector column + GIN index)",
+      "file": "apps/knowledge/prisma/migrations/20260428_chunk_fts/migration.sql",
+      "match": "exists"
     }
   ]
 }
