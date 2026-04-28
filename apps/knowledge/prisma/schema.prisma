@@ -20,13 +20,80 @@ datasource db {
 }
 
 // -------------------------------------------------------------------
-//  Workspace — tenant boundary (ADR-0047 v0.5.0 partial implementation).
+//  Auth.js v5 tables (User / Account / Session / VerificationToken).
 //
-//  Schema partitioning ships in v0.5.0 with a `default` workspace and
-//  every existing Document backfilled to it. Member-based access
-//  control (WorkspaceMember + auth-gated route guards) is deferred to
-//  v0.5.2 once Auth.js lands on the Knowlex deploy. See ADR-0047
-//  Status block for the partial-acceptance framing.
+//  Shipped in v0.5.12 (ADR-0061) — closes the access-control half of
+//  ADR-0047 § Status (deferred since v0.5.0 schema partitioning).
+//  Mirrors the apps/collab Auth.js setup so the two apps share the
+//  same provider configuration patterns; data is per-app (separate
+//  Neon databases per ADR-0018).
+// -------------------------------------------------------------------
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts    Account[]
+  sessions    Session[]
+  memberships Membership[]
+
+  @@index([email])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// -------------------------------------------------------------------
+//  Workspace — tenant boundary.
+//
+//  History:
+//    v0.5.0: schema partitioning shipped (single `wks_default_v050`
+//      demo workspace, every Document backfilled). ADR-0047 partial.
+//    v0.5.12: WorkspaceMember + auth-gated route guards shipped via
+//      ADR-0061 (this migration). The demo workspace stays
+//      anonymously readable via `wks_default_v050` allowlist in
+//      `requireWorkspaceMember` / `requireDemoOrMember`; signed-in
+//      users get their own personal workspace and authed-only access
+//      to it. Closes I-01 honest-disclose.
 // -------------------------------------------------------------------
 model Workspace {
   id        String   @id @default(cuid())
@@ -35,6 +102,31 @@ model Workspace {
   createdAt DateTime @default(now())
 
   documents Document[]
+  members   Membership[]
+}
+
+// -------------------------------------------------------------------
+//  Membership — user × workspace × role.
+//
+//  Role is a free-string column (not an enum) for forward
+//  compatibility; current values are "OWNER" / "EDITOR" / "VIEWER"
+//  with the same semantics as apps/collab's RBAC ladder per
+//  ADR-0023. The Knowlex MVP only checks "any membership" for
+//  now (ADR-0061 § Scope); finer-grained role gates are a v0.6.0+
+//  candidate alongside the read-only viewer-of-shared-workspace flow.
+// -------------------------------------------------------------------
+model Membership {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        String   @default("OWNER")
+  joinedAt    DateTime @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
 }
 
 // -------------------------------------------------------------------

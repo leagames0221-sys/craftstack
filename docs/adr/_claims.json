@@ -195,6 +195,70 @@
       "claim": "Channel-name helpers are pinned by Vitest (single contract surface for server-emit / client-subscribe / auth-route allow-list)",
       "file": "apps/collab/src/lib/pusher.test.ts",
       "match": "exists"
+    },
+
+    {
+      "adr": "ADR-0061",
+      "claim": "Knowlex Auth.js v5 NextAuthConfig exists",
+      "file": "apps/knowledge/src/auth/config.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0061",
+      "claim": "Knowlex Auth.js entrypoint exports auth/handlers/signIn/signOut",
+      "file": "apps/knowledge/src/auth/index.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0061",
+      "claim": "Workspace-access helpers (requireDemoOrMember + requireMemberForWrite) exist",
+      "file": "apps/knowledge/src/auth/access.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0061",
+      "claim": "Demo workspace allowlist is hardcoded to wks_default_v050 (deliberate, not env-flag-driven)",
+      "file": "apps/knowledge/src/auth/access.ts",
+      "match": "contains",
+      "pattern": "wks_default_v050"
+    },
+    {
+      "adr": "ADR-0061",
+      "claim": "Knowlex Auth.js catch-all route handler exists",
+      "file": "apps/knowledge/src/app/api/auth/[...nextauth]/route.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0061",
+      "claim": "Knowlex /signin page exists",
+      "file": "apps/knowledge/src/app/signin/page.tsx",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0061",
+      "claim": "Membership table declared in Knowlex Prisma schema",
+      "file": "apps/knowledge/prisma/schema.prisma",
+      "match": "contains",
+      "pattern": "model Membership"
+    },
+    {
+      "adr": "ADR-0061",
+      "claim": "Schema canary EXPECTED includes Membership table (axis 2 coverage extended)",
+      "file": "apps/knowledge/src/app/api/health/schema/route.ts",
+      "match": "contains",
+      "pattern": "Membership: \\["
+    },
+    {
+      "adr": "ADR-0061",
+      "claim": "Auth/access matrix pinned by Vitest (15 cases: read/write × demo/non-demo × authed/anonymous)",
+      "file": "apps/knowledge/src/auth/access.test.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0061",
+      "claim": "Auth.js migration shipped (additive table additions: User/Account/Session/VerificationToken/Membership)",
+      "file": "apps/knowledge/prisma/migrations/20260428_auth_tenancy/migration.sql",
+      "match": "exists"
     }
   ]
 }
