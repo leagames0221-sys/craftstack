@@ -48,6 +48,37 @@ export const EXPECTED = {
   ],
   Chunk: ["id", "documentId", "ordinal", "content", "tokenCount", "createdAt"],
   Embedding: ["chunkId", "model", "dim", "embedding", "createdAt"],
+  // Auth.js v5 tables shipped in v0.5.12 (ADR-0061). Closes the
+  // access-control half of ADR-0047 § Status. Each row mirrors the
+  // schema.prisma model 1:1 — the expected.test.ts cross-checks both
+  // directions so a column add/drop without an EXPECTED update fails
+  // CI immediately.
+  User: [
+    "id",
+    "email",
+    "emailVerified",
+    "name",
+    "image",
+    "createdAt",
+    "updatedAt",
+  ],
+  Account: [
+    "id",
+    "userId",
+    "type",
+    "provider",
+    "providerAccountId",
+    "refresh_token",
+    "access_token",
+    "expires_at",
+    "token_type",
+    "scope",
+    "id_token",
+    "session_state",
+  ],
+  Session: ["id", "sessionToken", "userId", "expires"],
+  VerificationToken: ["identifier", "token", "expires"],
+  Membership: ["id", "userId", "workspaceId", "role", "joinedAt"],
 } as const;
 
 type SchemaCheck = {

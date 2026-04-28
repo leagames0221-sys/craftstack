@@ -4,6 +4,88 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.12] — 2026-04-28
+
+### Added — Auth.js on Knowlex + multi-tenant transition: I-01 resolved (ADR-0061)
+
+Second T-NN/I-NN graduation in two ships (after ADR-0060 closing T-01). Closes the access-control half of [ADR-0047](docs/adr/0047-knowlex-workspace-tenancy-plan.md) (deferred since the v0.5.0 schema-partitioning ratchet, ~6 months on the books). The ADR-0059 honest-disclose TTL pattern is producing actual closures, not perpetual dodge.
+
+#### Schema migration (additive only)
+
+- `apps/knowledge/prisma/migrations/20260428_auth_tenancy/migration.sql` (new) — adds 5 tables: `User`, `Account`, `Session`, `VerificationToken` (Auth.js v5 standard), `Membership` (user × workspace × role). The seeded `wks_default_v050` demo workspace from the v0.5.0 migration is untouched. No column changes; no existing-row mutations. Backward-compatible with v0.5.0 → v0.5.11 deployed state.
+- `apps/knowledge/prisma/schema.prisma` — corresponding model definitions; `Workspace` gains a `members Membership[]` relation.
+
+#### Auth.js v5 setup (mirrors apps/collab)
+
+- `apps/knowledge/src/auth/{config,index}.ts` (new) — `NextAuthConfig` with Google + GitHub OAuth, JWT session strategy, `PrismaAdapter`. CI-only Credentials provider intentionally not replicated (ADR-0061 § Scope).
+- `apps/knowledge/src/app/api/auth/[...nextauth]/route.ts` (new) — Auth.js catch-all handlers.
+- `apps/knowledge/src/app/signin/page.tsx` (new) — minimal signin UI (Google + GitHub buttons).
+
+#### Two-shape access layer (preserves live demo)
+
+The Knowlex demo at `craftstack-knowledge.vercel.app/` has been a public RAG demo since v0.3.x. Auth-gating it would destroy the brand signal a hiring reviewer probes in 30 seconds. v0.5.12 ships a **demo-readable + authed-writable** split:
+
+- **`requireDemoOrMember`** (read paths — `/api/kb/ask`, future `/api/kb/stats`, `/api/kb/documents`):
+  - Demo workspace (`wks_default_v050`): returns `kind: "anonymous-demo"` for any caller. **No session check, no DB query.** Live demo continues.
+  - Other workspace: returns `kind: "member"` only when the signed-in user has a `Membership` row. 401 anonymous, 403 non-member.
+- **`requireMemberForWrite`** (write paths — `/api/kb/ingest`):
+  - **Always requires a signed-in session, even for the demo workspace.** Anonymous writes are explicitly disallowed (closes the cost-attack vector named in ADR-0046).
+  - Demo workspace + signed-in user: an OWNER `Membership` is auto-created (idempotent upsert) so the user can exercise the full ingest flow without first creating a personal workspace. v0.6.0+ candidate: per-user "create personal workspace" UX.
+  - Other workspace + signed-in user: requires existing `Membership` row.
+
+#### Wiring
+
+- `apps/knowledge/src/auth/access.ts` (new) — `requireDemoOrMember`, `requireMemberForWrite`, `WorkspaceAccessError`, `DEMO_WORKSPACE_ID` constant.
+- `apps/knowledge/src/auth/access.test.ts` (new) — 15 Vitest cases pinning the read/write × demo/non-demo × authed/anonymous × member/non-member matrix.
+- `apps/knowledge/src/app/api/kb/ask/route.ts` — `requireDemoOrMember` wired after `resolveWorkspaceId`.
+- `apps/knowledge/src/app/api/kb/ingest/route.ts` — `requireMemberForWrite` wired after `resolveWorkspaceId`.
+
+#### Schema canary extension (axis 2 coverage)
+
+- `apps/knowledge/src/app/api/health/schema/route.ts` — `EXPECTED` constant extended with the 5 new tables. The companion `expected.test.ts` cross-checks both directions: every row in `EXPECTED` exists in `schema.prisma`, and every model in `schema.prisma` is in `EXPECTED`. A future column drop without an `EXPECTED` update fails CI immediately.
+
+#### Threat-model + ADR-0047 status update
+
+- `docs/security/threat-model.md` — I-01 status changed from "single-tenant honest scope note" to **"Resolved in v0.5.12 (ADR-0061)"**.
+- `docs/adr/0047-knowlex-workspace-tenancy-plan.md` — § Status changed from **Partially Accepted** to **Fully Accepted**.
+- `scripts/generate-attestation-data.mjs` — `Auth-gated Knowlex` removed from `scope.deferred`; `I-01` removed from `honestScopeNotes`. Both removals are structurally asserted by `attestation-data.test.ts` (the test was tightened to assert T-01 + I-01 are now ABSENT, so re-introducing either disclosure without re-shipping the migration would fail at PR time).
+
+#### Numerics ratchet
+
+- ADR count 59 → 60
+- Vitest 224 → 239 (174 collab + 65 knowledge; +15 from `access.test.ts`)
+- Banner v0.5.11 → v0.5.12 across 4 docs (portfolio-lp / interview-qa / system-overview / runbook)
+
+### Live activation prerequisites (post-merge)
+
+The PR ships code + migration. Live activation on the knowlex Vercel project requires env config (Settings → Environment Variables):
+
+```
+AUTH_SECRET=<openssl rand -base64 32>
+GOOGLE_CLIENT_ID=<from Google Cloud Console>
+GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
+GITHUB_CLIENT_ID=<from GitHub OAuth App>
+GITHUB_CLIENT_SECRET=<from GitHub OAuth App>
+```
+
+Until configured:
+
+- Demo workspace `/api/kb/ask` continues to work (no session lookup needed)
+- `/api/kb/ingest` returns 500 (Auth.js boots but signin can't complete)
+- `/api/auth/*` returns 500
+- Sign-in UI is unreachable
+
+This is honest-disclosed in ADR-0061 § Negative.
+
+### Verification
+
+```bash
+node scripts/check-doc-drift.mjs    # → 0 failures (ADR 60, Vitest 239, banner v0.5.12)
+node scripts/check-adr-claims.mjs   # → all pass; ADR-0061 has 10 _claims.json entries
+node scripts/check-adr-refs.mjs     # → 0 dangling
+pnpm test                           # → 239 passed (174 collab + 65 knowledge, +15 access.test.ts)
+```
+
 ## [0.5.11] — 2026-04-28
 
 ### Added — Pusher private channels migration: T-01 resolved (ADR-0060)

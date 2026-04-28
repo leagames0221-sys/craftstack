@@ -1,6 +1,6 @@
 # ADR-0047: Knowlex workspace tenancy — plan and scoped migration
 
-- Status: **Partially Accepted (2026-04-26, status revised 2026-04-28)** — schema partitioning shipped in **v0.5.0**; member-based access control deferred to **v0.5.4** once Auth.js lands on the Knowlex deploy. (Original deferral target was v0.5.2; revised because v0.5.2 scope was redirected to schema-vs-prod drift forensic per [ADR-0051](0051-prisma-migrate-on-vercel-build.md).)
+- Status: **Fully Accepted (2026-04-28)** — schema partitioning shipped in **v0.5.0**; member-based access control shipped in **v0.5.12** per [ADR-0061](0061-knowlex-auth-and-tenancy.md), closing I-01. (Original access-control deferral target was v0.5.2; revised to v0.5.4 because v0.5.2 scope was redirected to schema-vs-prod drift forensic per [ADR-0051](0051-prisma-migrate-on-vercel-build.md); actual closure landed v0.5.12 alongside ADR-0061.)
 - Date: 2026-04-24 (proposed) / 2026-04-26 (partial implementation)
 - Tags: knowlex, tenancy, schema, migration, scope
 - Supersedes (on the schema dimension only): the "no tenancy in the MVP" clause of [ADR-0039](0039-knowlex-mvp-scope.md)

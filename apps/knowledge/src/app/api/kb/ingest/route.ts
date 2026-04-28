@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { requireMemberForWrite, WorkspaceAccessError } from "@/auth/access";
 import {
   emergencyStopResponse,
   isEmergencyStopped,
@@ -98,6 +99,30 @@ export async function POST(req: Request) {
   }
 
   const workspaceId = resolveWorkspaceId(parsed.data.workspaceId);
+
+  // ADR-0061: write paths always require a signed-in session, even for
+  // the demo workspace (closes the cost-attack vector where anyone
+  // could fill the demo corpus). Auto-grants OWNER membership on the
+  // demo workspace so signed-in reviewers can exercise the full ingest
+  // flow without first creating a personal workspace. Closes the write
+  // half of I-01.
+  try {
+    await requireMemberForWrite(workspaceId);
+  } catch (err) {
+    if (err instanceof WorkspaceAccessError) {
+      return Response.json(
+        {
+          code: err.code,
+          message:
+            err.code === "UNAUTHENTICATED"
+              ? "Sign in to ingest documents."
+              : "You are not a member of this workspace.",
+        },
+        { status: err.status },
+      );
+    }
+    throw err;
+  }
 
   try {
     const result = await ingestDocument({

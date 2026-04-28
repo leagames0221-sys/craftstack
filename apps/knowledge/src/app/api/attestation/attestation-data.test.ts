@@ -42,18 +42,20 @@ describe("attestation-data.json (build-time generated)", () => {
     }
   });
 
-  it("honestScopeNotes covers I-01 and T-06 (the currently disclosed trade-offs)", () => {
-    // T-01 was on this list through v0.5.10 and was resolved in v0.5.11
-    // (ADR-0060 — Pusher private channels migration). This test was
-    // deliberately tightened from "T-01 + I-01 + T-06 must all be present"
-    // to "I-01 + T-06 must be present and T-01 must be absent" so the
-    // resolution of T-01 is itself structurally asserted: a future
-    // re-introduction of the public-channel scope note (without re-shipping
-    // the migration) would fail this check at PR time.
+  it("honestScopeNotes covers T-06 and excludes T-01 + I-01 (both graduated)", () => {
+    // History of this assertion:
+    //   v0.5.4-v0.5.10: required T-01 + I-01 + T-06 all present.
+    //   v0.5.11 (ADR-0060): T-01 resolved → tightened to "T-01 absent
+    //     + I-01 + T-06 present".
+    //   v0.5.12 (ADR-0061): I-01 resolved → tightened to "T-01 absent
+    //     + I-01 absent + T-06 present".
+    // The absence assertions structurally pin both graduations: a
+    // future re-introduction of either disclosure (without
+    // re-shipping the migration) would fail this check at PR time.
     const notes = attestationData.scope.honestScopeNotes.join("\n");
-    expect(notes).toMatch(/I-01/);
     expect(notes).toMatch(/T-06/);
     expect(notes).not.toMatch(/T-01/);
+    expect(notes).not.toMatch(/I-01/);
   });
 
   it("ADR count in attestation matches `ls docs/adr/00*.md` ground truth", () => {

@@ -1,6 +1,7 @@
 import { streamText } from "ai";
 import { z } from "zod";
 
+import { requireDemoOrMember, WorkspaceAccessError } from "@/auth/access";
 import {
   emergencyStopResponse,
   isEmergencyStopped,
@@ -106,6 +107,29 @@ export async function POST(req: Request) {
   }
 
   const workspaceId = resolveWorkspaceId(parsed.data.workspaceId);
+
+  // ADR-0061: workspace-scoped access. The demo workspace
+  // (wks_default_v050) stays anonymously readable to preserve the live
+  // demo. Any other workspace requires a Membership row for the
+  // signed-in user; anonymous callers are 401 and signed-in non-members
+  // are 403. Closes the read half of I-01 (single-tenant honest scope).
+  try {
+    await requireDemoOrMember(workspaceId);
+  } catch (err) {
+    if (err instanceof WorkspaceAccessError) {
+      return Response.json(
+        {
+          code: err.code,
+          message:
+            err.code === "UNAUTHENTICATED"
+              ? "Sign in to query a non-demo workspace."
+              : "You are not a member of this workspace.",
+        },
+        { status: err.status },
+      );
+    }
+    throw err;
+  }
 
   let hits;
   try {
