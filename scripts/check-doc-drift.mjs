@@ -24,12 +24,8 @@
 // blocking unrelated PRs.
 
 import { execSync } from "node:child_process";
-import {
-  readFileSync,
-  readdirSync,
-  statSync,
-} from "node:fs";
-import { resolve, join } from "node:path";
+import { readFileSync, readdirSync } from "node:fs";
+import { join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
 let failures = 0;
