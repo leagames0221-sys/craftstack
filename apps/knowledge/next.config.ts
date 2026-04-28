@@ -1,6 +1,26 @@
 import type { NextConfig } from "next";
 
 /**
+ * Build-time assertion (ADR-0065): the CI-only Credentials provider
+ * must NEVER be enabled on a Vercel-hosted deploy. The runtime gate in
+ * `src/auth/config.ts` (`e2eGateOpen`) is the primary defense — this
+ * build-time assertion is a redundant structural check that fails the
+ * `next build` step itself if a misconfigured env somehow makes it
+ * through. Belt-and-braces: a single env-var typo cannot silently
+ * re-enable anonymous-write paths in production.
+ */
+if (process.env.VERCEL === "1" && process.env.E2E_ENABLED === "1") {
+  throw new Error(
+    "[next.config] FATAL: E2E_ENABLED=1 is set on a Vercel-hosted build " +
+      "(VERCEL=1). The Knowlex CI-only Credentials provider must never " +
+      "register on production. Unset E2E_ENABLED on the Vercel project " +
+      "Environment Variables page (or remove it from any vercel.json env " +
+      "block). See ADR-0065 § Build-time assertion + ADR-0061 line 32 " +
+      "(anonymous writes are explicitly disallowed).",
+  );
+}
+
+/**
  * Static security headers applied to every Knowlex response. Mirrors
  * the Boardly stance (see `apps/collab/next.config.ts` + ADR-0040) so
  * both deployments answer securityheaders.com with the same A-grade
