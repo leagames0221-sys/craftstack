@@ -19,21 +19,21 @@ The full 13-axis framework is enumerated below. **10 are structurally caught**; 
 
 ### The 13 axes
 
-| #   | Axis                                                                     | Mechanism                                                                        | Status                  |
-| --- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | ----------------------- |
-| 1   | Doc vs Implementation (numerics)                                         | `scripts/check-doc-drift.mjs` (PR-blocking)                                      | ✅ ADR-0054             |
-| 2   | Implementation vs Live Production (schema)                               | `GET /api/health/schema` + smoke probe                                           | ✅ ADR-0053             |
-| 3   | Doc vs Doc internal cross-ref (ADR ID resolution)                        | `scripts/check-adr-refs.mjs` (PR-blocking)                                       | ✅ **this ADR**         |
-| 4   | Forward-dated banner staleness                                           | banner check in doc-drift-detect (CHANGELOG-as-truth)                            | ✅ ADR-0054 (revised)   |
-| 5   | Roadmap vs Shipped (Planned items still listed after ship)               | partial: doc-drift-detect numeric Roadmap claims; full check is manual review    | 🟡 partial              |
-| 6   | Operational temporal (cron health, badge staleness)                      | `cronHealthHint` field in `/api/attestation`                                     | ✅ ADR-0056 + T-06      |
-| 7   | **ADR-claim vs Implementation (rate limits, env flags, paths)**          | **`scripts/check-adr-claims.mjs` against `docs/adr/_claims.json` (PR-blocking)** | ✅ **this ADR**         |
-| 8   | Test name vs Test behavior (a test that claims to cover X may not)       | manual review + canary `expected.test.ts` pattern                                | 🟡 T-07 honest disclose |
-| 9   | OpenAPI spec vs Runtime endpoint shape                                   | smoke tests assert response shape; spec-driven contract testing deferred         | 🟡 partial              |
-| 10  | Staleness without drift (Loom video filmed at v0.x.x, UI moved on)       | manual cadence; attestation `videoMetadata` deferred                             | 🟡 partial (acceptable) |
-| 11  | Completeness gap (decisions made in code without an ADR)                 | manual periodic audit                                                            | 🟡 T-08 honest disclose |
-| 12  | External artefact freshness (shields.io, Loom, Vercel deploys reachable) | smoke.yml `curl -fL --head` probe of every load-bearing external URL             | ✅ **this ADR**         |
-| 13  | Cost / quota live state (Vercel bandwidth, Neon hours, Pusher quota)     | structural mitigation via ADR-0046 fail-closed regime; live numbers deferred     | 🟡 T-09 honest disclose |
+| #   | Axis                                                                     | Mechanism                                                                        | Status                                                                               |
+| --- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 1   | Doc vs Implementation (numerics)                                         | `scripts/check-doc-drift.mjs` (PR-blocking)                                      | ✅ ADR-0054                                                                          |
+| 2   | Implementation vs Live Production (schema)                               | `GET /api/health/schema` + smoke probe                                           | ✅ ADR-0053                                                                          |
+| 3   | Doc vs Doc internal cross-ref (ADR ID resolution)                        | `scripts/check-adr-refs.mjs` (PR-blocking)                                       | ✅ **this ADR**                                                                      |
+| 4   | Forward-dated banner staleness                                           | banner check in doc-drift-detect (CHANGELOG-as-truth)                            | ✅ ADR-0054 (revised)                                                                |
+| 5   | Roadmap vs Shipped (Planned items still listed after ship)               | partial: doc-drift-detect numeric Roadmap claims; full check is manual review    | 🟡 partial                                                                           |
+| 6   | Operational temporal (cron health, badge staleness)                      | `cronHealthHint` field in `/api/attestation`                                     | ✅ ADR-0056 + T-06                                                                   |
+| 7   | **ADR-claim vs Implementation (rate limits, env flags, paths)**          | **`scripts/check-adr-claims.mjs` against `docs/adr/_claims.json` (PR-blocking)** | ✅ **this ADR (judged-load-bearing coverage; see § Coverage honest-disclose below)** |
+| 8   | Test name vs Test behavior (a test that claims to cover X may not)       | manual review + canary `expected.test.ts` pattern                                | 🟡 T-07 honest disclose                                                              |
+| 9   | OpenAPI spec vs Runtime endpoint shape                                   | smoke tests assert response shape; spec-driven contract testing deferred         | 🟡 partial                                                                           |
+| 10  | Staleness without drift (Loom video filmed at v0.x.x, UI moved on)       | manual cadence; attestation `videoMetadata` deferred                             | 🟡 partial (acceptable)                                                              |
+| 11  | Completeness gap (decisions made in code without an ADR)                 | manual periodic audit                                                            | 🟡 T-08 honest disclose                                                              |
+| 12  | External artefact freshness (shields.io, Loom, Vercel deploys reachable) | smoke.yml `curl -fL --head` probe of every load-bearing external URL             | ✅ **this ADR**                                                                      |
+| 13  | Cost / quota live state (Vercel bandwidth, Neon hours, Pusher quota)     | structural mitigation via ADR-0046 fail-closed regime; live numbers deferred     | 🟡 T-09 honest disclose                                                              |
 
 ### What ships in this ADR
 
@@ -80,11 +80,25 @@ Three new threat-model rows that **explicitly disclose** the limits of what the 
 
 Same shape as T-01 (public Pusher channels) and T-06 (badge-vs-cron trade-off): name the trade-off, mitigate where structurally possible, do not pretend the gap doesn't exist.
 
+### Coverage honest-disclose (axis 7) — added in v0.5.9 per Session 265 audit
+
+The Session 265 self-audit identified that this ADR's original wording — "axis 7 ✅ structurally enforced" — was an **overclaim relative to actual `_claims.json` coverage**. As shipped in v0.5.8, `_claims.json` had 22 claim entries spanning **11 of 56 ADRs (≈20%)**: ADR-0027 / 0034 / 0035 / 0040 / 0041 / 0046 / 0049 / 0051 / 0053 / 0054 / 0056. The remaining 45 ADRs had no axis-7 assertion.
+
+The 11 covered ADRs were not arbitrary — they were the load-bearing numeric / path / env-flag claims that a senior reviewer would most plausibly probe (rate-limit defaults, kill-switch flag, eval thresholds, hand-written OpenAPI presence, security-header grade, schema canary route handler). The 45 uncovered ADRs include genuine "no checkable claim" cases (architectural intent like ADR-0001 monorepo / ADR-0002 Prisma / ADR-0017 release-order; design records that don't assert specific code shapes) **and** cases that would benefit from `_claims.json` entries but didn't get them in v0.5.8 (ADR-0044 Knowlex parity, ADR-0045 demo mode, ADR-0048 undo/redo semantics, ADR-0050 ingest dedup, ADR-0052 Pusher pivot).
+
+**Honest-disclose stance** (v0.5.9):
+
+- This ADR's axis 7 row is now `✅ structural (judged-load-bearing)` — the qualifier explicitly names the coverage as judgement-based, not exhaustive.
+- A future reviewer who runs `node scripts/check-adr-claims.mjs --list` sees the inventory and can map covered → uncovered ADRs in seconds.
+- Coverage expansion to additional ADRs is tracked as future-work and will land incrementally without further ADRs (it is JSON entry maintenance, not architectural change).
+
+**What this is not**: a retraction of the structural status. The 11 covered ADRs are exactly the high-credibility-risk surface (numerics + paths + flags). A senior reviewer probing those gets a structural answer. The honest-disclose is about the **scope of "structural"** — covering the ADRs whose drift would damage trust most, not all 56.
+
 ## Consequences
 
 ### Positive
 
-- **Closes the highest-impact unclassified axis (7)** — the "ADR says 1000/mo but code does 800/mo" drift class, which was the single biggest credibility risk if a senior reviewer probed any ADR's specific numerics. 22 claims now PR-asserted; new claims are one JSON entry away.
+- **Closes the highest-impact unclassified axis (7)** — the "ADR says 1000/mo but code does 800/mo" drift class, which was the single biggest credibility risk if a senior reviewer probed any ADR's specific numerics. 22 claims spanning 11 judged-load-bearing ADRs are now PR-asserted; new claims are one JSON entry away. (Coverage scope honestly disclosed in § Coverage honest-disclose above — Session 265 ratchet.)
 - **Closes the dangling-reference class (3)** — typos like `[ADR-0019](../adr/0091-...)` (transposed digits) or references to renamed ADRs get caught at PR-time.
 - **Closes the external-artefact-rot class (12)** — Loom video deletion, shields.io breakage, Vercel suspension all surface within 6h via smoke instead of being discovered by a reviewer.
 - **Names the structural-impossible class (8/11/13)** — explicit threat-model disclosure converts hidden gaps to visible ones. A reviewer who asks "what about test mutation coverage?" gets a specific answer naming the cost trade-off, not a hand-wave.
