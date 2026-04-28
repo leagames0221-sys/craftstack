@@ -175,6 +175,26 @@
       "file": ".github/RULESET_DECLARED.md",
       "match": "contains",
       "pattern": "15652440"
+    },
+
+    {
+      "adr": "ADR-0060",
+      "claim": "Pusher private-channel auth route exists",
+      "file": "apps/collab/src/app/api/pusher/auth/route.ts",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0060",
+      "claim": "Server-side broadcast uses the private-board- channel prefix (defence-in-depth, not access-control-by-id-secrecy)",
+      "file": "apps/collab/src/lib/pusher.ts",
+      "match": "contains",
+      "pattern": "private-board-"
+    },
+    {
+      "adr": "ADR-0060",
+      "claim": "Channel-name helpers are pinned by Vitest (single contract surface for server-emit / client-subscribe / auth-route allow-list)",
+      "file": "apps/collab/src/lib/pusher.test.ts",
+      "match": "exists"
     }
   ]
 }
