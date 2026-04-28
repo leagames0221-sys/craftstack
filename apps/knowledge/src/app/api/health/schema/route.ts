@@ -46,7 +46,20 @@ export const EXPECTED = {
     "createdAt",
     "updatedAt",
   ],
-  Chunk: ["id", "documentId", "ordinal", "content", "tokenCount", "createdAt"],
+  Chunk: [
+    "id",
+    "documentId",
+    "ordinal",
+    "content",
+    "tokenCount",
+    "createdAt",
+    // ADR-0063 hybrid retrieval — generated tsvector column maintained
+    // by Postgres on insert/update via the 20260428_chunk_fts migration.
+    // The schema canary asserts the column exists post-deploy so a
+    // stale Vercel build that didn't run the migration trips the
+    // 6-hourly smoke (axis 2 of ADR-0057).
+    "tsv",
+  ],
   Embedding: ["chunkId", "model", "dim", "embedding", "createdAt"],
   // Auth.js v5 tables shipped in v0.5.12 (ADR-0061). Closes the
   // access-control half of ADR-0047 § Status. Each row mirrors the

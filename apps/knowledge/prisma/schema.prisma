@@ -159,6 +159,13 @@ model Chunk {
   tokenCount Int
   createdAt  DateTime @default(now())
 
+  // ADR-0063 hybrid retrieval (closes ADR-0011 deferred). Generated
+  // tsvector maintained by Postgres on every insert/update via the
+  // 20260428_chunk_fts migration. Queried via raw SQL with @@ operator
+  // and ranked by ts_rank_cd; not used through Prisma's typed client
+  // (the Unsupported wrapper is sufficient for migrate-deploy parity).
+  tsv Unsupported("tsvector")?
+
   document  Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
   embedding Embedding?
 

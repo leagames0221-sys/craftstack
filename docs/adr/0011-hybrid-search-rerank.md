@@ -1,10 +1,10 @@
 # ADR-0011: Hybrid search (pgvector + BM25 + RRF) with rerank
 
-- Status: **Accepted (planned)** — design-phase decision; **deferred for v0.5.2** per [ADR-0039](0039-knowlex-mvp-scope.md) MVP scope (pure pgvector HNSW cosine kNN ships; hybrid + RRF + Cohere rerank remain on roadmap)
-- Date: 2026-04-22
+- Status: **Fully Accepted (2026-04-28)** — hybrid + RRF shipped in **v0.5.14** per [ADR-0063](0063-hybrid-retrieval-bm25-rrf.md); Cohere Rerank still deferred (requires billable API key, conflicts with [ADR-0046](0046-zero-cost-by-construction.md) — separate honest-disclose entry will catalogue the cost / brand trade-off if a future need arises).
+- Date: 2026-04-22 (proposed) / 2026-04-28 (hybrid + RRF shipped via ADR-0063)
 - Tags: search, rag, retrieval
 
-> **Implementation status (v0.5.2)**: not implemented. ADR-0039 explicitly defers hybrid retrieval / Cohere Rerank / cross-encoder fallback to a later arc. The MVP demonstrates the full ingest → embed → store → retrieve → stream pipeline with pure cosine kNN, sufficient for the corpus sizes that fit a portfolio demo. The "Context Precision 0.62 → 0.89" measurement below is a design target, not a current measurement — the nightly RAG eval cron measures the v0.5.2 pure-cosine-kNN system; see [`docs/eval/`](../eval/) for actual numbers.
+> **Implementation status (v0.5.14)**: hybrid retrieval (Postgres FTS via `tsvector` + GIN index, fused with pgvector cosine kNN via Reciprocal Rank Fusion) shipped behind `HYBRID_RETRIEVAL_ENABLED=1` env flag — default off until a calibration run measures the lift on the golden corpus. Cohere Rerank deferred (billable API key would break ADR-0046 free-tier-by-construction). The "Context Precision 0.62 → 0.89" target below remains a design target until a future calibration ADR (next available NNNN) measures the actual hybrid lift; the nightly eval cron continues running pure cosine kNN as the comparable baseline.
 
 ## Context
 

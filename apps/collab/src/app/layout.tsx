@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s · craftstack",
   },
   description:
-    "Two production-grade SaaS applications designed and built from schema to deploy. Boardly (realtime kanban) + Knowlex (streaming AI knowledge retrieval). Grade-A security headers, 256 Vitest + 24 Playwright tests, $0/month infra.",
+    "Two production-grade SaaS applications designed and built from schema to deploy. Boardly (realtime kanban) + Knowlex (streaming AI knowledge retrieval). Grade-A security headers, 265 Vitest + 24 Playwright tests, $0/month infra.",
   openGraph: {
     title: "craftstack — Full-stack monorepo portfolio",
     description:
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "craftstack",
     description:
-      "Two SaaS apps, built from schema to deploy. Grade-A security headers, 256 Vitest tests, zero-dollar infra.",
+      "Two SaaS apps, built from schema to deploy. Grade-A security headers, 265 Vitest tests, zero-dollar infra.",
   },
   robots: { index: true, follow: true },
 };
