@@ -1,8 +1,8 @@
 # Portfolio
 
-Two production-grade SaaS apps, designed and shipped from schema to deploy by a single developer. Currently at **v0.5.3** with measured production reliability — not aspirational targets.
+Two production-grade SaaS apps, designed and shipped from schema to deploy by a single developer. Currently at **v0.5.4** with measured production reliability — not aspirational targets.
 
-> **Status (as of v0.5.3, 2026-04-28)**: Both apps are live with full feature sets. Boardly serves authenticated dashboard + workspaces + boards + DnD + Pusher realtime + invitations + mentions + notifications + command palette + activity log. Knowlex serves end-to-end RAG (ingest → HNSW kNN → streamed citations) with workspace schema partitioning per [ADR-0047](../adr/0047-knowlex-workspace-tenancy-plan.md) (auth-gated access control deferred to v0.5.4 once Auth.js lands on Knowlex). Numbers below are real: **53 ADRs** documenting actual decisions, **206 Vitest + 24 Playwright** + integration + a11y + nightly eval cron with green-run report auto-commit (v0.5.3 ship), **$0/mo infra** under CI-enforced free-tier compliance per [ADR-0046](../adr/0046-zero-cost-by-construction.md). The README's measured-eval badge sources from `docs/eval/badge.json` regenerated on every green eval run.
+> **Status (as of v0.5.4, 2026-04-28)**: Both apps are live with full feature sets. Boardly serves authenticated dashboard + workspaces + boards + DnD + Pusher realtime + invitations + mentions + notifications + command palette + activity log. Knowlex serves end-to-end RAG (ingest → HNSW kNN → streamed citations) with workspace schema partitioning per [ADR-0047](../adr/0047-knowlex-workspace-tenancy-plan.md) (auth-gated access control deferred once Auth.js lands on Knowlex). Numbers below are real: **53 ADRs** documenting actual decisions, **211 Vitest + 24 Playwright** + integration + a11y + nightly eval cron with green-run report auto-commit (v0.5.3 ship) + runtime schema canary at `/api/health/schema` (v0.5.4, ADR-0053), **$0/mo infra** under CI-enforced free-tier compliance per [ADR-0046](../adr/0046-zero-cost-by-construction.md). The README's measured-eval badge sources from `docs/eval/badge.json` regenerated on every green eval run.
 
 ## 🟣 Boardly — Realtime collaborative kanban
 
@@ -38,7 +38,7 @@ Live at <https://craftstack-knowledge.vercel.app>. Workspace schema partitioning
 
 **Free-tier operations, $0/mo by construction, CI-enforced.** [`scripts/check-free-tier-compliance.mjs`](../../scripts/check-free-tier-compliance.mjs) runs as a PR-blocking `free-tier-compliance` gate; introducing paid-plan `vercel.json`, billable SDKs, or leaked secret patterns fails the merge. `EMERGENCY_STOP=1` env flag short-circuits every write + AI endpoint per [ADR-0046](../adr/0046-zero-cost-by-construction.md). STRIDE threat model covers the cost-attack class as `C-01..C-06`.
 
-**Test discipline by surface.** 166 Vitest in collab + 40 in knowledge = **206 unit cases**, **24 Playwright** (smoke / authed E2E across board/dashboard/rate-limits/workspace / a11y + authed-a11y / signin), Knowlex retrieve integration test against real `pgvector` service container, axe-core a11y gate as PR-blocking on every public + authenticated page, nightly RAG eval cron with v4 substring-OR + AND-proper-noun + adversarial scoring.
+**Test discipline by surface.** 166 Vitest in collab + 45 in knowledge = **211 unit cases**, **24 Playwright** (smoke / authed E2E across board/dashboard/rate-limits/workspace / a11y + authed-a11y / signin), Knowlex retrieve integration test against real `pgvector` service container, axe-core a11y gate as PR-blocking on every public + authenticated page, nightly RAG eval cron with v4 substring-OR + AND-proper-noun + adversarial scoring + runtime schema canary `/api/health/schema` asserted by smoke (ADR-0053).
 
 ## Stack (as actually deployed)
 

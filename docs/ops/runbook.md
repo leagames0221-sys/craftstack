@@ -1,6 +1,6 @@
 # Runbook
 
-> **Status (as of v0.5.2)**: this runbook covers the **deployed** architecture (Vercel + Pusher Channels + Neon + Upstash + Gemini). The original ADR-0009 plan included Fly.io + self-hosted Socket.IO + BullMQ; that pivot to Pusher is recorded in [ADR-0052](../adr/0052-pusher-pivot-from-flyio-socketio.md), and any prior Fly.io-specific procedures (`flyctl status`, Fly machine restart, BullMQ dead-letter queue) are not applicable here. Incident response runs through Vercel + Pusher + Neon dashboards.
+> **Status (as of v0.5.4)**: this runbook covers the **deployed** architecture (Vercel + Pusher Channels + Neon + Upstash + Gemini). The original ADR-0009 plan included Fly.io + self-hosted Socket.IO + BullMQ; that pivot to Pusher is recorded in [ADR-0052](../adr/0052-pusher-pivot-from-flyio-socketio.md), and any prior Fly.io-specific procedures (`flyctl status`, Fly machine restart, BullMQ dead-letter queue) are not applicable here. Incident response runs through Vercel + Pusher + Neon dashboards. v0.5.4 added the runtime schema canary at `/api/health/schema` referenced from §1 step 5 (ADR-0053).
 
 Incident playbook for production services. Every section follows the same shape:
 **Symptoms → Triage → Mitigation → Root cause follow-up.**
@@ -43,7 +43,7 @@ Incident playbook for production services. Every section follows the same shape:
 **Root cause follow-up**
 
 - If Neon auto-suspend triggered, verify UptimeRobot is pinging within the 5-minute idle window (ADR-0016).
-- If monthly compute hours exceeded, schedule Neon Pro upgrade (deliberate operator decision; v0.5.2 is at $0/mo per ADR-0046).
+- If monthly compute hours exceeded, schedule Neon Pro upgrade (deliberate operator decision; the project remains at $0/mo by construction per ADR-0046).
 - If schema-vs-prod drift is suspected (the `Document.workspaceId does not exist` class of failure), confirm `_prisma_migrations` table has the latest migration applied and consult ADR-0051 for the `vercel-build` migration regime that prevents re-occurrence. Per ADR-0053, the `GET /api/health/schema` endpoint surfaces this exact class of drift in a single curl; the 6-hourly `smoke.yml` cron asserts `drift === false` against the live deploy.
 
 ---

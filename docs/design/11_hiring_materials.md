@@ -3,7 +3,7 @@ name: 面接/採用向け成果物(Q&A + LP + デモ絵コンテ)
 type: project
 ---
 
-> ⚠️ **設計フェーズ文書 (2026-04-22)** — v0.5.2 reality に整合した hiring materials は [`docs/hiring/portfolio-lp.md`](../hiring/portfolio-lp.md) (Pusher / 単一テナント / 52 ADR / 206 + 24 tests) と [`docs/hiring/interview-qa.md`](../hiring/interview-qa.md) (30 Q v0.5.2 reality 整合済) を参照。当ファイルは設計時点の draft で、上記 hiring docs が authoritative。
+> ⚠️ **設計フェーズ文書 (2026-04-22)** — current reality に整合した hiring materials は [`docs/hiring/portfolio-lp.md`](../hiring/portfolio-lp.md) と [`docs/hiring/interview-qa.md`](../hiring/interview-qa.md) を参照 (Pusher / 単一テナント、その他具体数値は authoritative docs と README badges を一次ソースに)。当ファイルは設計時点の draft で、上記 hiring docs が authoritative。具体数値は本 banner に書かない (drift 防止 — README / portfolio-lp 更新時にここを書き換える運用は人手依存で fragile)。
 
 # 採用担当向け資産
 
