@@ -60,8 +60,18 @@ export const ALLOWED_E2E_EMAILS = new Set([
  * three conditions hold (no Vercel, E2E enabled, secret >= 16 bytes).
  * The provider registration calls this; on prod it returns false
  * regardless of any other env state.
+ *
+ * Param type is `Record<string, string | undefined>` rather than
+ * `NodeJS.ProcessEnv` so Vitest cases can pass narrow env shapes
+ * (`{ VERCEL: "1", E2E_ENABLED: "1", ... }`) without satisfying the
+ * `NODE_ENV` required-field that recent @types/node versions added to
+ * the global ProcessEnv interface. The function only reads the three
+ * keys it documents above; widening the param type to a plain string
+ * map preserves the runtime contract while keeping the test ergonomic.
  */
-export function e2eGateOpen(env: NodeJS.ProcessEnv = process.env): boolean {
+export function e2eGateOpen(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
   if (env.VERCEL === "1") return false;
   if (env.E2E_ENABLED !== "1") return false;
   const expected = env.E2E_SHARED_SECRET;
