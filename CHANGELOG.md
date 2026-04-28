@@ -4,6 +4,66 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.10] — 2026-04-28
+
+### Added — Framework v1.0: hybrid Scorecard adoption + axes 6/7 future-drift closure + freeze (ADR-0059)
+
+Session 265 audit identified that the v0.5.9 framework, while structurally complete, was at risk of an **audit-of-audit loop**: each session's self-audit produced new findings, each finding produced a new ratchet, each ratchet introduced a new meta-gap. v0.5.10 escapes the loop by (a) adopting the OpenSSF Scorecard standard for hygiene axes the project was duplicating, (b) closing the highest-probability future-drift modes on the project-specific axes (6 + 7), (c) **freezing the framework at v1.0** with a date-bound + incident-driven re-audit rule.
+
+#### OpenSSF Scorecard adoption (industry baseline)
+
+- `.github/workflows/scorecard.yml` (new) — weekly + on push to main + on `branch_protection_rule` events. Publishes SARIF to GitHub Security tab + the public scorecard.dev registry.
+- Coverage delegated to Scorecard (drops self-built duplicate ratchets):
+  - Branch-Protection live-state monitoring (was: `_claims.json` ADR-0058 marker + planned `--strict` mode)
+  - Pinned-Dependencies (GH Actions SHA pinning) — was: future-work flagged in ADR-0058
+  - Dependency-Update-Tool (Dependabot)
+  - Token-Permissions (`permissions: contents: read`)
+  - Security-Policy presence — `SECURITY.md` already in place; footer updated with v0.5.10 review date
+  - License presence — MIT
+  - Code-Review on `main` — enforced by ADR-0058 ruleset
+  - Dangerous-Workflows / CII-Best-Practices
+
+#### Axis 7 — ADR-add-without-claim PR-time block (closes future-drift)
+
+- `scripts/check-adr-claims.mjs` (modified) — when a PR adds a new `docs/adr/NNNN-*.md`, the script asserts that **either** the same PR touches `_claims.json` **or** the new ADR contains a literal `<!-- no-claim-needed: <reason> -->` marker. Without one of those, the PR fails. Closes the highest-probability axis-7 future-drift mode: a maintainer (or AI session) writes a new ADR but forgets to add a claim, silently shrinking coverage from "11/56" toward "11/N" as ADRs accumulate.
+- Architectural-intent ADRs (ADR-0001 monorepo, ADR-0002 Prisma, ADR-0017 release-order) are the canonical opt-out case; concrete-decision ADRs land with a claim.
+
+#### Axis 6 — cron stale enforcement (passive disclosure → active gate)
+
+- `.github/workflows/smoke.yml` (modified) — 6-hourly smoke now curls `/api/attestation`, reads `measurements.daysSinceLastGreenRun`, fails the smoke job when > 7 days. Threshold rationale: ADR-0049 § retry-contract absorbs 1-2 nights of Neon cold-start flake; 7 consecutive nights is unambiguously broken.
+
+#### Honest-disclose TTL on T-07 / T-08 / T-09
+
+- `docs/security/threat-model.md` (modified) — each honest-disclose row now carries a **Re-evaluation date**:
+  - T-07 (mutation testing): v0.7.0 ship or 2026-Q3, whichever first
+  - T-08 (decisions without ADR): v0.6.0 ship or 2026-06-30
+  - T-09 (live quota): v0.7.0 ship or 2026-Q3
+- Without TTLs, an honest-disclose can become a permanent dodge. With TTLs, the discipline is "name + mitigate + commit to revisit."
+
+#### Framework freeze at v1.0 + future-ratchet trigger rule
+
+- The drift-audit framework is **frozen at v1.0** as of v0.5.10 ship.
+- Future ratchet expansion requires one of:
+  1. **Real incident** — a measured failure where the absent axis would have caught it
+  2. **External reviewer feedback** — hiring reviewer / contributor / peer review naming a specific gap (self-audit-driven discovery does NOT qualify)
+  3. **Re-evaluation date** — mandatory re-audit window: **2026-Q3** (2026-09-30)
+- Recorded in [ADR-0059](docs/adr/0059-framework-v1-hybrid-adoption-and-freeze.md).
+
+#### Banner + Stat sync
+
+- README + `docs/hiring/portfolio-lp.md` — ADR count 57 → 58
+- `apps/collab/src/app/page.tsx` Stat block — ADRs 57 → 58
+- 4 status banner files — v0.5.9 → v0.5.10
+
+### Verification
+
+```bash
+node scripts/check-doc-drift.mjs         # → 0 failures
+node scripts/check-adr-claims.mjs        # → 24/24 claim(s), 0 failure(s); PR-time integrity: pass
+node scripts/check-adr-refs.mjs          # → 0 dangling
+grep -c "Re-evaluation date" docs/security/threat-model.md   # → 3
+```
+
 ## [0.5.9] — 2026-04-28
 
 ### Added — Framework foundation closed: branch protection ruleset (ADR-0058) + axis 7 honest-disclose ratchet on ADR-0057

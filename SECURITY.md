@@ -41,3 +41,10 @@ Out of scope:
 ## Thanks
 
 Security researchers and friendly observers who report issues responsibly are acknowledged in release notes (with permission).
+
+---
+
+This policy is reviewed annually (or sooner if the threat model
+materially changes). **Last reviewed**: 2026-04-28 (v0.5.10 ship,
+alongside OpenSSF Scorecard adoption per
+[ADR-0059](docs/adr/0059-framework-v1-hybrid-adoption-and-freeze.md)).

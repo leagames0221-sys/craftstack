@@ -21,6 +21,7 @@
 //               node scripts/check-adr-claims.mjs --list
 // Exit code: 0 if every claim holds, 1 if any claim drifts.
 
+import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -138,8 +139,90 @@ for (const c of data.claims) {
   fail(`${label}: unknown match type "${c.match}"`);
 }
 
+// ---------------------------------------------------------------------
+// PR-time integrity: new ADR must touch _claims.json OR carry an
+// explicit no-claim-needed opt-out marker.
+//
+// Closes the axis-7 future-drift mode named in ADR-0059: a new ADR
+// landing without a claims.json update silently shrinks coverage from
+// the maintainer's perspective (count stays same / total grows), and
+// the framework's "judged-load-bearing" assertion drifts toward
+// vacuous over time. This check forces an explicit decision per new
+// ADR — either add the claim, or declare the ADR has no checkable
+// claim and name why.
+//
+// The git diff resolves added ADR files since the merge base with
+// origin/main; on a local dev shell with no git remote, this no-ops.
+// The CI runner has origin/main fetched, so the check is active
+// PR-time but graceful elsewhere.
+//
+// Opt-out marker: include the literal HTML comment
+//     <!-- no-claim-needed: <reason> -->
+// anywhere in the ADR body. Architectural-intent ADRs (ADR-0001
+// monorepo, ADR-0017 release-order, etc.) are the canonical case.
+// ---------------------------------------------------------------------
+
+console.log("\n=== PR-time integrity: new ADRs must update _claims.json ===");
+
+let addedAdrs = [];
+let claimsTouched = false;
+let gitAvailable = true;
+try {
+  // --diff-filter=A = added files only; the merge-base with origin/main
+  // is the right base for a feature-branch PR and benign for main pushes
+  // (returns nothing).
+  const baseRef = "origin/main";
+  const addedRaw = execSync(
+    `git diff --name-only --diff-filter=A ${baseRef}...HEAD -- docs/adr`,
+    { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+  addedAdrs = addedRaw
+    .split("\n")
+    .map((s) => s.trim())
+    .filter((s) => /^docs\/adr\/\d{4}-.*\.md$/.test(s));
+
+  const touchedRaw = execSync(
+    `git diff --name-only ${baseRef}...HEAD -- docs/adr/_claims.json`,
+    { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+  );
+  claimsTouched = touchedRaw.trim().length > 0;
+} catch {
+  // No git, no origin/main, or commit graph trimmed (shallow clone
+  // without enough history). Don't false-fail; the structural defence
+  // is layered (PR review + CI + this check), and skipping when git
+  // can't compute the diff is preferable to a false red.
+  gitAvailable = false;
+}
+
+if (!gitAvailable) {
+  console.log(
+    "  ⓘ skipped (git diff against origin/main unavailable; this is fine outside of CI)",
+  );
+} else if (addedAdrs.length === 0) {
+  console.log("  ✓ no new ADRs in this PR — nothing to enforce");
+} else {
+  console.log(
+    `  • ${addedAdrs.length} new ADR(s) added in this PR; _claims.json ${claimsTouched ? "WAS" : "WAS NOT"} touched`,
+  );
+  for (const adrPath of addedAdrs) {
+    const text = readFileSync(resolve(ROOT, adrPath), "utf8");
+    const optedOut = /<!--\s*no-claim-needed\s*:/.test(text);
+    if (claimsTouched || optedOut) {
+      pass(
+        `${adrPath}  (${claimsTouched ? "_claims.json updated" : "no-claim-needed marker present"})`,
+      );
+    } else {
+      fail(
+        `${adrPath}: new ADR without _claims.json update or 'no-claim-needed' marker. ` +
+          `Either add a claim entry to docs/adr/_claims.json, or include ` +
+          `'<!-- no-claim-needed: <reason> -->' in the ADR body to declare it has no checkable claim.`,
+      );
+    }
+  }
+}
+
 console.log(
-  `\n=== ADR-claim summary: ${data.claims.length - failures}/${data.claims.length} pass, ${failures} failure(s) ===`,
+  `\n=== ADR-claim summary: ${data.claims.length - failures}/${data.claims.length} claim(s), ${failures} failure(s) ===`,
 );
 if (failures > 0) {
   console.error(
