@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml/badge.svg)](https://github.com/leagames0221-sys/craftstack/actions/workflows/ci.yml)
 [![Security Headers: A](https://img.shields.io/badge/Security%20Headers-A-brightgreen)](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on)
-[![Tests: 274 Vitest + 24 Playwright](https://img.shields.io/badge/tests-274%20%2B%2024-success)](./apps/collab)
+[![Tests: 276 Vitest + 24 Playwright](https://img.shields.io/badge/tests-276%20%2B%2024-success)](./apps/collab)
 [![Knowlex eval (measured)](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fleagames0221-sys%2Fcraftstack%2Fmain%2Fdocs%2Feval%2Fbadge.json)](./docs/eval/reports/)
 [![Infra: $0/mo](https://img.shields.io/badge/infra-%240%2Fmo-blue)](#tech-stack)
 [![Free-tier CI-enforced](https://img.shields.io/badge/free--tier-CI%20enforced-brightgreen)](./docs/adr/0046-zero-cost-by-construction.md)
@@ -16,7 +16,7 @@
 
 Two production-grade SaaS applications designed and built from schema to deploy, as a solo developer, to demonstrate full-stack × from-scratch engineering capability.
 
-> **Built with AI pair-programming (Claude Code)**. 46 of the 187 commits carry `Co-Authored-By: Claude Opus 4.7 (1M context)` co-authorship marking — explicit evidence of AI-leveraged development at industry-baseline-exceeding engineering quality (65 ADRs, 274 Vitest + 24 Playwright, OpenSSF Scorecard, branch protection ruleset enforced live, real production incident handled per [ADR-0067](docs/adr/0067-gemini-free-tier-account-revocation-incident.md)). The portfolio is itself the live demo of "ship Mid → Senior tier full-stack with AI pair-programming, while preserving honest engineering discipline".
+> **Built with AI pair-programming (Claude Code)**. 46 of the 187 commits carry `Co-Authored-By: Claude Opus 4.7 (1M context)` co-authorship marking — explicit evidence of AI-leveraged development at industry-baseline-exceeding engineering quality (66 ADRs, 276 Vitest + 24 Playwright, OpenSSF Scorecard, branch protection ruleset enforced live, real production incident handled per [ADR-0067](docs/adr/0067-gemini-free-tier-account-revocation-incident.md)). The portfolio is itself the live demo of "ship Mid → Senior tier full-stack with AI pair-programming, while preserving honest engineering discipline".
 
 > **5 closed graduation cycles in 5 ships** — T-01 ([ADR-0060](docs/adr/0060-pusher-private-channels-migration.md), v0.5.11) → I-01 ([ADR-0061](docs/adr/0061-knowlex-auth-and-tenancy.md), v0.5.12) → ADR-0049 § 8th arc ([ADR-0062](docs/adr/0062-llm-as-judge-eval-flag.md), v0.5.13) → ADR-0011 deferred ([ADR-0063](docs/adr/0063-hybrid-retrieval-bm25-rrf.md), v0.5.14) → [ADR-0064](docs/adr/0064-hybrid-retrieval-calibration-architectural-gap.md) architectural-gap ([ADR-0065](docs/adr/0065-knowlex-ci-credentials-provider.md), v0.5.15). Each disclose carries a TTL + named accelerator triggers + closure ADR; the ratchet log itself is the brand. Pattern documented in [`KL-build_ci-202604-graduation-cycle`](https://github.com/leagames0221-sys/craftstack/tree/main/docs).
 
@@ -152,7 +152,7 @@ craftstack/
 │   └── docker/              # docker-compose + init scripts
 ├── docs/
 │   ├── design/              # 13-part design bible (see docs/design/README.md)
-│   ├── adr/                 # Architecture Decision Records (65 entries)
+│   ├── adr/                 # Architecture Decision Records (66 entries)
 │   ├── api/                 # OpenAPI specs
 │   ├── architecture/        # System diagrams
 │   ├── compliance/          # Data retention policy
@@ -172,8 +172,8 @@ craftstack/
 - **Database**: PostgreSQL 16 on Neon (Singapore) · Prisma 7 with `@prisma/adapter-pg`
 - **Auth**: Auth.js v5 with JWT session strategy · Google + GitHub OAuth · PrismaAdapter
 - **Deploy**: Vercel Hobby · GitHub Actions CI (lint / typecheck / test / build)
-- **Security headers** — scored **A** on [securityheaders.com](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on). Layers: Content-Security-Policy with explicit Vercel-platform allowlists + `'unsafe-inline'` (W3C-spec rollback from the earlier A+ nonce + `'strict-dynamic'` stance — platform-injected scripts couldn't carry our per-request nonce and hydration broke; see ADR-0040), HSTS 2y preload, X-Frame-Options DENY, Cross-Origin-Opener-Policy same-origin, Cross-Origin-Resource-Policy same-origin, Permissions-Policy denying every unused sensor / media / power API, and Referrer-Policy strict-origin-when-cross-origin
-- **Testing**: Vitest (**274** unit cases across both apps — 174 collab + 100 knowledge) · Playwright (**24** scenarios — smoke, authed E2E (board/dashboard/rate-limits/workspace), a11y + authed-a11y, signin, run with `pnpm --filter collab test:e2e` / `pnpm --filter knowledge test:e2e`) · Knowlex retrieve integration test against a real `pgvector` service container via `docker compose` (`pnpm --filter knowledge test:integration`) · k6 scenario
+- **Security headers** — scored **A** on [securityheaders.com](https://securityheaders.com/?q=https%3A%2F%2Fcraftstack-collab.vercel.app%2F&followRedirects=on). Layers: Content-Security-Policy with explicit Vercel-platform allowlists + `'unsafe-inline'` + `'unsafe-eval'` (W3C-spec rollback from the earlier A+ nonce + `'strict-dynamic'` stance — platform-injected scripts couldn't carry our per-request nonce and hydration broke. `'unsafe-eval'` retained because Vercel Speed Insights uses `eval()` at runtime; see ADR-0040 § Decision + § Consequences. Both directives' presence is now structurally pinned by `scripts/check-csp-coherence.mjs` per ADR-0068 § Finding C closure.), HSTS 2y preload, X-Frame-Options DENY, Cross-Origin-Opener-Policy same-origin, Cross-Origin-Resource-Policy same-origin, Permissions-Policy denying every unused sensor / media / power API, and Referrer-Policy strict-origin-when-cross-origin
+- **Testing**: Vitest (**276** unit cases across both apps — 174 collab + 102 knowledge) · Playwright (**24** scenarios — smoke, authed E2E (board/dashboard/rate-limits/workspace), a11y + authed-a11y, signin, run with `pnpm --filter collab test:e2e` / `pnpm --filter knowledge test:e2e`) · Knowlex retrieve integration test against a real `pgvector` service container via `docker compose` (`pnpm --filter knowledge test:integration`) · k6 scenario
 - **Drag & drop**: `@dnd-kit` sortable cards with LexoRank positions + optimistic UI + `VERSION_MISMATCH` rollback
 - **Realtime**: Pusher Channels (free tier) — `board-<id>` fanout for card/list mutations; no-op locally when unconfigured
 - **Invitations**: Token-hashed invitation flow (ADMIN+ creates, accept page binds membership). Resend-backed email delivery with graceful fallback to console log when `RESEND_API_KEY` is unset
@@ -258,7 +258,7 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 | ----------------------- | -------------------------------------------------------------------------------------- |
 | Architecture overview   | [docs/architecture/system-overview.md](docs/architecture/system-overview.md)           |
 | **Audit attestation**   | live single-curl: <https://craftstack-knowledge.vercel.app/api/attestation> (ADR-0056) |
-| Decision records (65)   | [docs/adr/](docs/adr/README.md)                                                        |
+| Decision records (66)   | [docs/adr/](docs/adr/README.md)                                                        |
 | API specs (OpenAPI)     | [collab](docs/api/collab-openapi.yaml) · [knowledge](docs/api/knowledge-openapi.yaml)  |
 | Rate limits             | [docs/api/rate-limits.md](docs/api/rate-limits.md)                                     |
 | STRIDE threat model     | [docs/security/threat-model.md](docs/security/threat-model.md)                         |
@@ -277,7 +277,7 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 ### Shipped
 
 - ✅ **Week 1–2** — Monorepo scaffolding, CI, Docker Compose
-- ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, initial Vitest suite (40 cases at the time, now **274**)
+- ✅ **Week 3** — Prisma schema (17 models), Auth.js v5 OAuth (Google+GitHub), 4-tier RBAC, initial Vitest suite (40 cases at the time, now **276**)
 - ✅ **Boardly v0.1.0** — Deployed to Vercel + Neon + Upstash; authenticated dashboard, workspace & board CRUD
 - ✅ **Week 4** — Resend-backed workspace invitations with token-hashed accept flow (7-day expiry, revocable, email-matching enforcement)
 - ✅ **Week 5** — Card/List CRUD with optimistic lock, editor modal, `@dnd-kit` drag-and-drop

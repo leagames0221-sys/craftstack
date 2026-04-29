@@ -16,6 +16,17 @@ const withBundleAnalyzer = bundleAnalyzer({
  * chunks) which don't carry our nonce, and hydration failed silently on
  * every interactive page. Rolled back to a static CSP here. Mild grade
  * regression to A; interactive surfaces work.
+ *
+ * Both `'unsafe-inline'` AND `'unsafe-eval'` appear in `script-src`:
+ *   - `'unsafe-inline'`: Next bundler emits inline bootstrap scripts
+ *     that don't carry a stable hash across deploys
+ *   - `'unsafe-eval'`: Vercel Speed Insights uses `eval` / `new Function`
+ *     at runtime
+ * Both are documented in ADR-0040 § Decision + § Consequences and
+ * pinned by `scripts/check-csp-coherence.mjs` (ADR-0068 § Finding C
+ * closure) — which asserts the README CSP description mentions every
+ * load-bearing directive present in this constant. If you change the
+ * CSP here, expect the gate to fail until you also update README:175.
  */
 const CSP = [
   "default-src 'self'",

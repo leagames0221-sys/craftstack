@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -74,5 +74,96 @@ describe("attestation-data.json (build-time generated)", () => {
       return;
     }
     expect(attestationData.claims.adrCount).toBe(actualCount);
+  });
+
+  // --- ADR-0068 § Finding A reflexivity gate ----------------------------
+  // The Run #5 hiring-sim drift class: `/api/attestation.scope.deferred[]`
+  // listed "Hybrid search (BM25 + vector via RRF)" with `adr: ADR-0011`,
+  // but ADR-0011's Status field said "Fully Accepted (2026-04-28) — hybrid
+  // + RRF shipped in v0.5.14". The endpoint built to expose audit-survivable
+  // truth was lying about a feature whose own ADR says it shipped. This
+  // assertion structurally pins the rule: no `scope.deferred[]` entry's
+  // ADR may have a Status field whose first non-empty line begins with
+  // "Fully Accepted" or "Accepted (shipped)" — those statuses indicate
+  // the feature is live, not deferred. Cohere Rerank stays in scope.deferred[]
+  // because its ADR status now reads "Fully Accepted ... Cohere Rerank still
+  // deferred" — the test below tolerates that pattern by also requiring the
+  // status text to mention the entry's `feature` keyword if Status looks
+  // closed; an entry whose feature word appears alongside "still deferred"
+  // / "deferred" / "not shipped" in the status passes.
+  it("scope.deferred[] entries do not contradict their ADR Status (Run #5 / ADR-0068 § Finding A)", () => {
+    const adrDir = resolve(__dirname, "../../../../../../docs/adr");
+    let adrFiles: string[];
+    try {
+      adrFiles = readdirSync(adrDir).filter((f) => /^\d{4}-.*\.md$/.test(f));
+    } catch {
+      // If docs/adr is unreachable, skip rather than false-fail.
+      return;
+    }
+    const adrIdToFile = new Map<string, string>();
+    for (const f of adrFiles) {
+      const m = f.match(/^(\d{4})-/);
+      if (m) adrIdToFile.set(`ADR-${m[1]}`, f);
+    }
+    const failures: string[] = [];
+    for (const entry of attestationData.scope.deferred) {
+      const file = adrIdToFile.get(entry.adr);
+      if (!file) continue; // unknown ADR — covered by check-adr-refs.mjs
+      const adrPath = resolve(adrDir, file);
+      const adrText = readFileSync(adrPath, "utf8");
+      // Pull the Status line. Format from the ADR template:
+      //   `- Status: **<status text>** ...`
+      const statusMatch = adrText.match(
+        /^- Status:\s*\*\*([^*]+)\*\*([^\n]*)/m,
+      );
+      const statusText = statusMatch
+        ? `${statusMatch[1]} ${statusMatch[2]}`
+        : (adrText.match(/^- Status:\s*([^\n]+)/m)?.[1] ?? "");
+      // Heuristic: if the Status line says "Fully Accepted" or "Accepted (shipped)"
+      // AND does NOT also explicitly carve out the feature as still-deferred,
+      // the deferred entry is contradicting its own ADR.
+      const looksClosed =
+        /Fully Accepted/i.test(statusText) ||
+        /Accepted \(shipped\)/i.test(statusText);
+      if (!looksClosed) continue;
+      // Extract the first significant word of the feature for the carve-out check.
+      // E.g., "Cohere Rerank" → "Cohere"; "Hybrid search (BM25 + vector via RRF)" → "Hybrid".
+      const featureKeyword = entry.feature.split(/[\s(]/)[0];
+      const explicitlyCarvedOut = new RegExp(
+        `${featureKeyword}[^.]*?(still deferred|deferred|not shipped|requires.*key)`,
+        "i",
+      ).test(statusText);
+      if (!explicitlyCarvedOut) {
+        failures.push(
+          `scope.deferred[] entry "${entry.feature}" (${entry.adr}) contradicts ADR Status "${statusText.trim()}". ` +
+            `Either remove the deferred entry (feature shipped) or update the ADR Status to explicitly carve out this feature as still deferred.`,
+        );
+      }
+    }
+    expect(failures, failures.join("\n")).toEqual([]);
+  });
+
+  it("scope.shippedFlagGated[] entries each reference a closingAdr distinct from the original adr (Run #5 / ADR-0068 § Finding A)", () => {
+    // Audit-survivable shape for the new section: each entry must record
+    // the original deferred ADR + the ADR that closed it + the version it
+    // shipped in + the env flag that gates default behaviour. Without this
+    // shape, "shipped flag-gated" loses the specificity that makes it
+    // distinguishable from "deferred".
+    const flagGated = (
+      attestationData.scope as { shippedFlagGated?: unknown[] }
+    ).shippedFlagGated;
+    if (!Array.isArray(flagGated)) {
+      // shippedFlagGated is optional; acceptable for the array to be missing.
+      return;
+    }
+    for (const entry of flagGated as Array<Record<string, unknown>>) {
+      expect(typeof entry.feature).toBe("string");
+      expect(typeof entry.adr).toBe("string");
+      expect(typeof entry.closingAdr).toBe("string");
+      expect(entry.closingAdr).not.toBe(entry.adr);
+      expect(typeof entry.shippedIn).toBe("string");
+      expect(typeof entry.flag).toBe("string");
+      expect(typeof entry.flagDefault).toBe("string");
+    }
   });
 });
