@@ -1,7 +1,7 @@
 # ADR-0010: RLS + query-layer double defense
 
-- Status: Accepted
-- Date: 2026-04-22
+- Status: **Partially superseded — RLS deferred** (v0.5.12 multi-tenant transition per [ADR-0061](0061-knowlex-auth-and-tenancy.md) chose application-side enforcement via Auth.js + `Membership` table + demo allow-list pattern over RLS for simpler operator surface; RLS remains a viable future option but is not the shipped path. Query-layer parameterized-query defense from this ADR is in force. Status updated v0.5.19 / [ADR-0069](0069-run6-findings-closure-and-page-surface-coverage.md) § Finding D3 — prior bare "Accepted" contradicted prose in threat-model + attestation `scope.deferred[ADR-0010]` + interview-qa Q9 + system-overview.md.)
+- Date: 2026-04-22 (originally) / 2026-04-29 (Status updated post-Run-#6)
 - Tags: security, multi-tenant
 
 ## Context

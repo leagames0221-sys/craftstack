@@ -1,7 +1,7 @@
 ---
 id: hyde
 version: 1
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 
 Draft a hypothetical passage that would perfectly answer the user's question if it existed in our knowledge base.

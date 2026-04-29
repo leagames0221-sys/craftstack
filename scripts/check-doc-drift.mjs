@@ -367,6 +367,96 @@ if (failures === 0) {
 }
 
 // ---------------------------------------------------------------------
+// Visible-deploy-surface model name coherence (ADR-0069 § Finding D1/D8).
+//
+// Closes the Run #6 hiring-sim drift class: live `apps/{collab,knowledge}/
+// src/app/**/page.tsx` files (= the deployed homepages a hiring reviewer
+// opens first) said "Gemini 2.0 Flash" / "text-embedding-004" while
+// `apps/knowledge/src/lib/gemini.ts` exports `GENERATION_MODEL =
+// "gemini-2.5-flash"` and `EMBEDDING_MODEL = "gemini-embedding-001"`.
+// The doc-drift gate covered README/portfolio-lp/interview-qa for these
+// claims but did NOT extend to the visible deploy surfaces — the front
+// door of the portfolio carried drift the candidate's own framework
+// asserts shouldn't exist (= brand-foundation drift per ADR-0068 § D
+// framework-as-its-own-substrate axis).
+//
+// Fix: enumerate the deploy-visible surfaces explicitly + pin them
+// against the canonical model strings exported from gemini.ts. Code
+// comments / migration SQL / ADRs / CHANGELOG that reference old model
+// names as historical narrative are out of scope by design (the
+// migration story IS the legitimate narrative).
+// ---------------------------------------------------------------------
+
+console.log("");
+console.log("=== Visible-deploy-surface model name coherence (ADR-0069) ===");
+
+// Canonical truth from apps/knowledge/src/lib/gemini.ts.
+const CURRENT_GENERATION_MODEL_PRETTY = "Gemini 2.5 Flash";
+const CURRENT_EMBEDDING_MODEL_ID = "gemini-embedding-001";
+
+// Surfaces a senior reviewer browsing the live deploy will encounter.
+// These MUST match the canonical models above. Code library files,
+// migration SQL, ADR text, CHANGELOG, and historical comments are NOT
+// in scope: the migration story (text-embedding-004 → gemini-embedding-001,
+// gemini-2.0-flash → gemini-2.5-flash) is legitimate narrative there.
+const deployVisibleSurfaces = [
+  "apps/collab/src/app/page.tsx",
+  "apps/collab/src/app/layout.tsx",
+  "apps/collab/src/app/opengraph-image.tsx",
+  "apps/collab/src/app/status/page.tsx",
+  "apps/collab/src/app/playground/page.tsx",
+  "apps/collab/src/app/playground/PlaygroundClient.tsx",
+  "apps/collab/src/lib/kb-demo.ts",
+  "apps/collab/public/humans.txt",
+  "apps/collab/src/openapi.ts",
+  "apps/collab/src/openapi-types.ts",
+  "apps/knowledge/src/app/page.tsx",
+  "apps/knowledge/src/app/kb/page.tsx",
+  "apps/knowledge/src/openapi.ts",
+  "apps/knowledge/src/app/api/kb/ask/route.ts",
+  "apps/knowledge/README.md",
+  "apps/knowledge/src/server/ai/prompts/registry.json",
+  "docs/architecture/system-overview.md",
+];
+
+const staleModelPatterns = [
+  { pattern: /Gemini 2\.0 Flash/g, kind: "generation pretty" },
+  { pattern: /gemini-2\.0-flash/g, kind: "generation id" },
+  { pattern: /text-embedding-004/g, kind: "embedding id" },
+];
+
+let modelCoherenceFailures = 0;
+for (const surface of deployVisibleSurfaces) {
+  let text;
+  try {
+    text = read(surface);
+  } catch {
+    warn(
+      "model coherence",
+      `${surface}: not found (the deploy-visible surface list may need updating)`,
+    );
+    continue;
+  }
+  for (const { pattern, kind } of staleModelPatterns) {
+    pattern.lastIndex = 0;
+    const match = pattern.exec(text);
+    if (match) {
+      const lineNum = text.slice(0, match.index).split("\n").length;
+      fail(
+        "model coherence",
+        `${surface}:${lineNum}: stale ${kind} reference "${match[0]}" — current canonical = "${CURRENT_GENERATION_MODEL_PRETTY}" / "${CURRENT_EMBEDDING_MODEL_ID}" (per apps/knowledge/src/lib/gemini.ts). If the reference is genuinely historical context, the file does not belong on the deploy-visible-surfaces list — move it out of \`scripts/check-doc-drift.mjs:deployVisibleSurfaces\` and document why in ADR-0069 § Allowed exceptions.`,
+      );
+      modelCoherenceFailures++;
+    }
+  }
+}
+if (modelCoherenceFailures === 0) {
+  pass(
+    `${deployVisibleSurfaces.length} deploy-visible surface(s) all use current canonical models (${CURRENT_GENERATION_MODEL_PRETTY} + ${CURRENT_EMBEDDING_MODEL_ID})`,
+  );
+}
+
+// ---------------------------------------------------------------------
 // Summary.
 // ---------------------------------------------------------------------
 

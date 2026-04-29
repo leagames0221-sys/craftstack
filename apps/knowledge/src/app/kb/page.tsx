@@ -35,9 +35,9 @@ export default function CorpusPage() {
           (with 80-char overlap across paragraph boundaries), embeds each chunk
           via{" "}
           <code className="rounded bg-neutral-800 px-1 text-[11px]">
-            text-embedding-004
-          </code>
-          , and stores the 768-dim vector in pgvector for{" "}
+            gemini-embedding-001
+          </code>{" "}
+          (truncated to 768-dim) and stores the vector in pgvector for{" "}
           <code className="rounded bg-neutral-800 px-1 text-[11px]">
             &lt;=&gt;
           </code>{" "}

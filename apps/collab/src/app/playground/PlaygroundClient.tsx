@@ -14,7 +14,7 @@ Channels for realtime fanout with a best-effort side-effect policy.
 Knowlex runs in the same monorepo on its own Vercel deploy: ingest
 chunks paragraph-aware at ~512 chars, embeds with gemini-embedding-001
 at 768 dims, stores in pgvector with an HNSW cosine index, and streams
-Gemini 2.0 Flash with numbered citations.`;
+Gemini 2.5 Flash with numbered citations.`;
 
 const SAMPLE_QUESTION = "How many Vitest cases does Boardly have?";
 
@@ -168,11 +168,11 @@ export function PlaygroundClient() {
               }
               title={
                 mode === "live"
-                  ? "Streaming from Gemini 2.0 Flash"
+                  ? "Streaming from Gemini 2.5 Flash"
                   : "GEMINI_API_KEY not set on this deploy — deterministic demo fallback. Plumbing, streaming, rate limiting, abort are all real."
               }
             >
-              {mode === "live" ? "● Live · Gemini 2.0 Flash" : "● Demo mode"}
+              {mode === "live" ? "● Live · Gemini 2.5 Flash" : "● Demo mode"}
             </span>
           ) : null}
         </div>

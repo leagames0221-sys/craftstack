@@ -1,11 +1,11 @@
 {
   "prompts": [
-    { "id": "system-rag", "version": 1, "model": "gemini-2.0-flash" },
-    { "id": "query-rewrite", "version": 1, "model": "gemini-2.0-flash" },
-    { "id": "hyde", "version": 1, "model": "gemini-2.0-flash" },
-    { "id": "faithfulness", "version": 1, "model": "gemini-2.0-flash" },
-    { "id": "title-generation", "version": 1, "model": "gemini-2.0-flash" },
-    { "id": "safety-filter", "version": 1, "model": "gemini-2.0-flash" }
+    { "id": "system-rag", "version": 1, "model": "gemini-2.5-flash" },
+    { "id": "query-rewrite", "version": 1, "model": "gemini-2.5-flash" },
+    { "id": "hyde", "version": 1, "model": "gemini-2.5-flash" },
+    { "id": "faithfulness", "version": 1, "model": "gemini-2.5-flash" },
+    { "id": "title-generation", "version": 1, "model": "gemini-2.5-flash" },
+    { "id": "safety-filter", "version": 1, "model": "gemini-2.5-flash" }
   ],
   "lastValidated": "2026-04-22",
   "note": "Hashes are computed at build time by scripts/compute-prompt-hash.ts (ADR-0020) and committed alongside prompt changes."

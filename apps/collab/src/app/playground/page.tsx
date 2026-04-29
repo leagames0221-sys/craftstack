@@ -27,7 +27,7 @@ export default function PlaygroundPage() {
                 Knowlex Playground
               </h1>
               <p className="text-xs text-neutral-400">
-                Grounded RAG scratchpad · Gemini 2.0 Flash · streaming
+                Grounded RAG scratchpad · Gemini 2.5 Flash · streaming
               </p>
             </div>
           </div>
@@ -51,7 +51,7 @@ export default function PlaygroundPage() {
             AI-knowledge-retrieval half of the craftstack monorepo. The model is
             told to use <em>only</em> the context you paste — if the answer
             isn&apos;t there, it says so. Plumbed via Vercel AI SDK ·
-            Gemini-2.0-flash · streaming response via{" "}
+            Gemini-2.5-flash · streaming response via{" "}
             <code className="rounded bg-neutral-800/70 px-1 text-[11px]">
               fetch
             </code>{" "}
@@ -72,7 +72,7 @@ export default function PlaygroundPage() {
           />
           <Card
             title="Free-tier friendly"
-            body="Gemini 2.0 Flash is free at Google AI Studio (no credit card). Missing the env var? The route returns a clear 503 instead of breaking the UI."
+            body="Gemini 2.5 Flash is free at Google AI Studio (no credit card). Missing the env var? The route returns a clear 503 instead of breaking the UI."
           />
           <Card
             title="Rate-limited by design"

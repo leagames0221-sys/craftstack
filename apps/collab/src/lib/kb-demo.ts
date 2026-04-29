@@ -6,7 +6,7 @@
  * are not pretending to be the real model.
  */
 
-const DEMO_BANNER = `[Demo mode — the GEMINI_API_KEY env var is not set, so this response is a deterministic canned answer. The plumbing, streaming, rate limiting, abort-cancel and body validation are all real. Set a free Google AI Studio key to switch this page to live Gemini 2.0 Flash.]`;
+const DEMO_BANNER = `[Demo mode — the GEMINI_API_KEY env var is not set, so this response is a deterministic canned answer. The plumbing, streaming, rate limiting, abort-cancel and body validation are all real. Set a free Google AI Studio key to switch this page to live Gemini 2.5 Flash.]`;
 
 /**
  * Pull a short extracted answer out of the pasted context using plain
@@ -22,8 +22,8 @@ export function buildDemoAnswer(context: string, question: string): string {
   const snippet = extractRelevantSnippet(ctx, q);
 
   const body = snippet
-    ? `Based on the passage you pasted:\n\n"${snippet}"\n\nIn plain terms, this addresses "${q}". When the live model is enabled this page will instead return a fully generated Gemini 2.0 Flash answer streamed token-by-token — rather than this extraction.`
-    : `The passage you pasted does not appear to directly answer "${q}". A live Gemini 2.0 Flash model would say the same thing more confidently; this demo fallback uses plain keyword matching, not semantic understanding.`;
+    ? `Based on the passage you pasted:\n\n"${snippet}"\n\nIn plain terms, this addresses "${q}". When the live model is enabled this page will instead return a fully generated Gemini 2.5 Flash answer streamed token-by-token — rather than this extraction.`
+    : `The passage you pasted does not appear to directly answer "${q}". A live Gemini 2.5 Flash model would say the same thing more confidently; this demo fallback uses plain keyword matching, not semantic understanding.`;
 
   return `${DEMO_BANNER}\n\n${body}`;
 }

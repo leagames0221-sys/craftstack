@@ -186,7 +186,7 @@ export const openApiSpec = {
         tags: ["RAG"],
         summary: "Ask a question grounded in the stored corpus",
         description:
-          "Embeds the question, retrieves the top-K chunks via pgvector HNSW cosine distance, and streams a Gemini 2.0 Flash answer with numbered citations. Response headers `x-knowlex-hits` (chunk count) and `x-knowlex-docs` (pipe-separated document titles) surface retrieval metadata to the client without a second round-trip. Same rate / budget guards as /api/kb/ingest.",
+          "Embeds the question, retrieves the top-K chunks via pgvector HNSW cosine distance (optionally fused with Postgres FTS BM25 via RRF behind HYBRID_RETRIEVAL_ENABLED per ADR-0063), and streams a Gemini 2.5 Flash answer with numbered citations. Response headers `x-knowlex-hits` (chunk count) and `x-knowlex-docs` (pipe-separated document titles) surface retrieval metadata to the client without a second round-trip. Same rate / budget guards as /api/kb/ingest.",
         requestBody: {
           required: true,
           content: {
