@@ -1,6 +1,6 @@
 # System overview
 
-> **Status (as of v0.5.17)**: this is the deployed architecture. The original ADR-0009 plan included Fly.io + Socket.IO + BullMQ; the implementation pivoted to Pusher Channels for ADR-0046 (zero-cost-by-construction) compliance — recorded in ADR-0052. The diagram + table below reflect what actually runs. v0.5.3 added green-run eval auto-commit + measured-eval README badge (ADR-0049 § 7th arc Tier C-#2); v0.5.4 added the runtime schema canary at `/api/health/schema` closing the runtime side of ADR-0051 (ADR-0053). Knowlex live demo is currently EMERGENCY_STOPPED post 2026-04-29 Gemini Free tier account-level revocation incident — see ADR-0067; the implementation is BYOK-reproducible per README.
+> **Status (as of v0.5.18)**: this is the deployed architecture. The original ADR-0009 plan included Fly.io + Socket.IO + BullMQ; the implementation pivoted to Pusher Channels for ADR-0046 (zero-cost-by-construction) compliance — recorded in ADR-0052. The diagram + table below reflect what actually runs. v0.5.3 added green-run eval auto-commit + measured-eval README badge (ADR-0049 § 7th arc Tier C-#2); v0.5.4 added the runtime schema canary at `/api/health/schema` closing the runtime side of ADR-0051 (ADR-0053). Knowlex live demo is currently EMERGENCY_STOPPED post 2026-04-29 Gemini Free tier account-level revocation incident — see ADR-0067; the implementation is BYOK-reproducible per README.
 
 ```mermaid
 flowchart LR
@@ -83,8 +83,8 @@ Databases are deliberately separated per app per [ADR-0018](../adr/0018-db-insta
 
 ## What is **not** in this diagram (intentional, per ADR-0039 MVP scope)
 
-- **Hybrid retrieval** (BM25 + vector via RRF) — design-phase ambition per ADR-0011, deferred
-- **Cohere Rerank** — ADR-0011, deferred
+- **Hybrid retrieval** (BM25 + vector via RRF) — **shipped in v0.5.14** per ADR-0063 (closes ADR-0011 deferred), **default-off behind `HYBRID_RETRIEVAL_ENABLED`** pending calibration per ADR-0064 / ADR-0065. Production traffic on the live deploy uses pure cosine kNN; the hybrid path is exercised by tests + the BYOK runbook. (Reason it remains in this "what is NOT" list: the diagram describes default-config request flow, not the full code surface. ADR-0068 Finding A surfaced + closed the prior drift where this entry described the v0.5.13 state.)
+- **Cohere Rerank** — ADR-0011, deferred (billable API key requirement conflicts with ADR-0046 zero-cost-by-construction)
 - **HyDE** — ADR-0014, deferred
 - **NLI Faithfulness check** — ADR-0013, deferred
 - **PostgreSQL RLS** — ADR-0010, acknowledged-deferred (v0.5.12 multi-tenant transition per ADR-0061 chose application-side enforcement via Auth.js + `Membership` + demo-allow-list pattern over RLS for simpler operator surface; RLS remains a viable future option)

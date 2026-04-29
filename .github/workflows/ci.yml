@@ -136,6 +136,15 @@ jobs:
         # the "ADR says X, code does Y" drift class.
         run: node scripts/check-adr-claims.mjs
 
+      - name: Run CSP coherence gate (ADR-0068 § Finding C)
+        # Asserts that every load-bearing CSP directive present in
+        # `apps/collab/next.config.ts` (`'unsafe-inline'`, `'unsafe-eval'`,
+        # `'strict-dynamic'`, `'wasm-unsafe-eval'`) is also mentioned in
+        # the README "Security headers" bullet. Closes the Run #5
+        # hiring-sim drift class where `'unsafe-eval'` was added to the
+        # live CSP but the README description never disclosed it.
+        run: node scripts/check-csp-coherence.mjs
+
   knowledge-integration:
     name: knowlex integration (pgvector)
     runs-on: ubuntu-latest

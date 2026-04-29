@@ -109,15 +109,20 @@ try {
 
 // --- Deferred features (hardcoded, audit-survivable) ---------------
 const deferred = [
-  {
-    feature: "Hybrid search (BM25 + vector via RRF)",
-    adr: "ADR-0011",
-    reason: "ADR-0039 MVP scope",
-  },
+  // Hybrid search (BM25 + vector via RRF) was here through v0.5.13 and
+  // was SHIPPED in v0.5.14 per ADR-0063 (closes ADR-0011 deferred —
+  // tsvector + GIN index + Reciprocal Rank Fusion behind
+  // HYBRID_RETRIEVAL_ENABLED env flag, default-off pending calibration
+  // per ADR-0064). Removed here so the /api/attestation
+  // `scope.deferred` array no longer self-contradicts ADR-0011 Status =
+  // Fully Accepted. The flag-gated default-off detail is now surfaced
+  // in `scope.shippedFlagGated[]` below for full audit visibility.
+  // (Closure of Run #5 / ADR-0068 finding M1.)
   {
     feature: "Cohere Rerank",
     adr: "ADR-0011",
-    reason: "ADR-0039 MVP scope",
+    reason:
+      "Billable API key requirement conflicts with ADR-0046 zero-cost-by-construction; remains deferred independent of the v0.5.14 hybrid retrieval ship",
   },
   {
     feature: "HyDE (hypothetical document embeddings)",
@@ -133,7 +138,8 @@ const deferred = [
   {
     feature: "PostgreSQL RLS",
     adr: "ADR-0010",
-    reason: "Knowlex is single-tenant per ADR-0039",
+    reason:
+      "v0.5.12 multi-tenant transition (ADR-0061) chose application-side enforcement via Auth.js + Membership table + demo allow-list pattern over RLS for simpler operator surface; RLS remains a viable future option. (Reason updated v0.5.18 / ADR-0068 — prior text 'Knowlex is single-tenant per ADR-0039' was stale post-v0.5.12.)",
   },
   // I-01 / Auth-gated Knowlex was on this list through v0.5.11 and was
   // resolved in v0.5.12 — see ADR-0061 (Auth.js + Membership shipped,
@@ -142,6 +148,23 @@ const deferred = [
   // reflects current reality.
   // T-01 (Pusher private/presence channels) was on this list through v0.5.10
   // and was resolved in v0.5.11 — see ADR-0060.
+];
+
+// --- Shipped flag-gated features (audit-survivable) -----------------
+// Features that are fully shipped at the code + migration level but
+// remain default-off (or partial-coverage) behind an env flag. Listed
+// separately from `deferred` so a reviewer can see at a glance: this
+// is in the build, but it is not exercised by default-config traffic.
+const shippedFlagGated = [
+  {
+    feature: "Hybrid retrieval (Postgres FTS BM25 + pgvector cosine via RRF)",
+    adr: "ADR-0011",
+    closingAdr: "ADR-0063",
+    shippedIn: "v0.5.14",
+    flag: "HYBRID_RETRIEVAL_ENABLED",
+    flagDefault: "off",
+    note: "Default-off pending calibration lift figure per ADR-0064 / ADR-0065 architectural-gap closure path; Run #5 surfaced internal-attestation drift on this entry, closed by ADR-0068.",
+  },
 ];
 
 // --- Honest scope notes (snapshot of threat-model self-disclosure) -
@@ -170,7 +193,7 @@ const data = {
     boardlyRouteCount,
     cspGrade: "A",
     cspNote:
-      "rolled back from A+ per ADR-0040 (Vercel platform-injected scripts could not carry per-request nonce; hydration broke under nonce + strict-dynamic CSP)",
+      "rolled back from A+ per ADR-0040 (Vercel platform-injected scripts could not carry per-request nonce; hydration broke under nonce + strict-dynamic CSP). v0.5.18 / ADR-0068 § Finding C: live script-src directive includes 'unsafe-inline' AND 'unsafe-eval' (eval() / new Function() permitted); 'unsafe-eval' required by Vercel Live preview toolbar runtime + some bundler chunks under the static-CSP regime — a future ratchet may attempt nonce-based scoping that retains 'unsafe-eval' only for the Vercel Live origin if the trade-off becomes worth re-litigating.",
   },
   measurements: {
     lastEvalRun,
@@ -179,6 +202,7 @@ const data = {
   },
   scope: {
     deferred,
+    shippedFlagGated,
     honestScopeNotes,
   },
 };
