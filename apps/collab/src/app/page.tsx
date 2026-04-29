@@ -81,11 +81,13 @@ export default async function Home() {
           collaborative kanban with DnD, optimistic locking, and a static CSP
           (rolled back from nonce + strict-dynamic per ADR-0040 to fix Vercel
           platform-script hydration; grade A on securityheaders.com).{" "}
-          <span className="text-neutral-200">Knowlex</span>, a single-tenant RAG
-          demo over pgvector HNSW with streamed Gemini 2.0 Flash and numbered
-          citations (workspace schema partitioning shipped per ADR-0047 partial
-          in v0.5.0; auth-gated access control deferred to v0.5.4). Both in one
-          Turborepo, deployed on Vercel Hobby, zero dollars per month.
+          <span className="text-neutral-200">Knowlex</span>, a multi-tenant RAG
+          (Auth.js + Membership demo allow-list per ADR-0061, v0.5.12) over
+          pgvector HNSW with streamed Gemini 2.5 Flash and numbered citations
+          (hybrid retrieval Postgres FTS + RRF behind HYBRID_RETRIEVAL_ENABLED
+          per ADR-0063, v0.5.14; live demo currently EMERGENCY_STOPPED per
+          ADR-0067 — BYOK runbook in root README). Both in one Turborepo,
+          deployed on Vercel Hobby, zero dollars per month.
         </p>
 
         <div className="mt-10 flex flex-wrap gap-3">
@@ -125,7 +127,7 @@ export default async function Home() {
           <Stat label="Vitest cases" value="276" />
           <Stat label="Playwright" value="24" />
           <Stat label="Next routes" value="39" />
-          <Stat label="ADRs" value="66" />
+          <Stat label="ADRs" value="67" />
           <Stat label="Security Headers" value="A" />
           <Stat label="Monthly infra" value="$0" />
           <Stat label="Prisma models" value="19 + 4" />
@@ -162,8 +164,8 @@ export default async function Home() {
             title="Knowlex"
             tagline="Grounded AI knowledge retrieval"
             bullets={[
-              "Paste text → chunked + embedded (text-embedding-004, 768-dim) → stored in pgvector",
-              "Ask a question → cosine-kNN retrieval → Gemini 2.0 Flash answer with numbered citations",
+              "Paste text → chunked + embedded (gemini-embedding-001, truncated to 768-dim) → stored in pgvector",
+              "Ask a question → cosine-kNN retrieval → Gemini 2.5 Flash answer with numbered citations",
               "Env-guarded: missing GEMINI_API_KEY returns a clean 503, never a crash — corpus stays intact",
               "Standalone apps/knowledge Next app, own Prisma migration, own Vitest, own Vercel project",
             ]}
@@ -267,7 +269,7 @@ export default async function Home() {
               "Auth.js v5 (JWT)",
               "Pusher Channels",
               "Vercel AI SDK",
-              "Gemini 2.0 Flash",
+              "Gemini 2.5 Flash",
               "cmdk (⌘K)",
               "@dnd-kit",
               "Tailwind 4",

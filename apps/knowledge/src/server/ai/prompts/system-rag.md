@@ -1,7 +1,7 @@
 ---
 id: system-rag
 version: 1
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 
 You are an enterprise knowledge assistant. Answer only from the supplied `<document>` blocks.

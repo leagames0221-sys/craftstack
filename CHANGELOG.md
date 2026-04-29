@@ -4,6 +4,54 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.19] — 2026-04-29
+
+### Changed — Run #6 hiring-sim findings closure + deploy-visible-surface coverage extension (ADR-0069)
+
+Hiring-sim Run #6 (methodology v2 against v0.5.18 / `3cbdb83`) returned `hire`, NOT `strong hire`. Run #6 confirmed the ADR-0068 closure shipped (Stage 3 row 12: "scope.shippedFlagGated[0] is Hybrid retrieval — the candidate's Run #5 self-closure shipped" ✓), but surfaced a NEW drift class: visible deploy front-door surfaces (`apps/{collab,knowledge}/src/app/**/*.tsx`, `/status` card, OpenAPI spec descriptions, `humans.txt`, system-overview.md Mermaid) carried "Gemini 2.0 Flash" / "text-embedding-004" while `apps/knowledge/src/lib/gemini.ts` exports `gemini-2.5-flash` + `gemini-embedding-001`. Brand-foundation drift on the most visible portfolio surface (a reviewer pulling up `https://craftstack-knowledge.vercel.app` in screen-share sees the stale model name within 5 seconds).
+
+#### Closure structural mechanism
+
+##### D1 + D8 — Deploy-visible-surface coverage extension (load-bearing)
+
+- 17 deploy-visible surface files synced to canonical models (`Gemini 2.5 Flash` + `gemini-embedding-001`)
+- Also closed v0.5.17-cleanup-leak in `apps/collab/src/app/page.tsx:84-88` (stale "single-tenant RAG demo / auth-gated access control deferred to v0.5.4" → multi-tenant per ADR-0061)
+- Sub-app README also updated for stale "single-corpus, tenantless / Pure cosine kNN / ADR-0010 target" claims (post-v0.5.12-v0.5.14 actuality: multi-tenant via ADR-0061 + hybrid retrieval shipped via ADR-0063 + EMERGENCY_STOPPED via ADR-0067)
+- New `scripts/check-doc-drift.mjs` axis: "Visible-deploy-surface model name coherence (ADR-0069)" — enumerates 17 surfaces explicitly + asserts none contain stale model patterns. Canonical truth sourced from `apps/knowledge/src/lib/gemini.ts`.
+- Allowed exceptions documented in ADR-0069 § Decision A.2 (gemini.ts migration-narrative comment, chunking.ts historical tuning context, eval.ts historical run reference, migration.sql snapshot, ADR-0067 incident report, CHANGELOG historical entries) — NOT on the deploy-visible-surfaces list by design.
+
+##### D2 — ADR-0068 self-correction (drift inside drift-closure ADR)
+
+ADR-0068 line 13 stated "the actual count is 174 + 100 = 274". Post-v0.5.18 reality: 174 + 102 = 276 (the 2 reflexivity tests added in ADR-0068 itself shifted knowledge subtotal during the same ratchet). ADR-0068 line edited with self-correction note pointing to ADR-0069 § D2.
+
+##### D3 + D4 — ADR Status field drift
+
+- `docs/adr/0010-rls-and-query-layer-defense.md:3` Status: `Accepted` → `**Partially superseded — RLS deferred**` per ADR-0061 multi-tenant transition (query-layer parameterized-query defense in force)
+- `docs/adr/0003-auth-js-database-session.md:3` Status: `Accepted` → `**Superseded by JWT strategy in practice**` with cross-reference to README ADR-index Supersession notice
+- Both index rows in `docs/adr/README.md` updated to match.
+
+##### D6 — ADR sequence gap notice
+
+`docs/adr/README.md` gains a "Sequence gap notice" callout declaring 0055 + 0066 as intentionally unused / reserved (0055 = withdrawn during v0.5.10 framework freeze; 0066 = reserved per ADR-0067 § Decision item 3 for alt-LLM provider migration recovery).
+
+##### D5 + D7 — Deferred
+
+- D5 (cronHealthHint × EMERGENCY_STOP cross-reference) requires runtime logic refinement; recorded as next-available-NNNN follow-up
+- D7 (commit count drift 187→190) auto-resolves via post-merge propagation; not structurally pinned (intentionally a snapshot, not a continuously-updated claim)
+
+#### Methodology v3 sub-axis added
+
+ADR-0069 § Decision item E adds **Stage 2.7 — Deploy-visible-surface coverage parity** to the v3 methodology candidate (already extended by ADR-0068 § Decision item B). Run #7 against v0.5.19 expected to clear `strong hire`.
+
+### Hiring-sim brand impact
+
+- Front-door deploy surfaces all use canonical models (gate-asserted) ✓
+- ADR Status fields self-consistent for the two known-bad cases ✓
+- ADR-0068 self-typo corrected ✓
+- ADR sequence gap explained ✓
+
+Brand-reflexivity multiplier trigger structurally removed.
+
 ## [0.5.18] — 2026-04-29
 
 ### Changed — Run #5 hiring-sim findings closure + attestation reflexivity gate (ADR-0068)

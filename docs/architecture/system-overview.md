@@ -1,6 +1,6 @@
 # System overview
 
-> **Status (as of v0.5.18)**: this is the deployed architecture. The original ADR-0009 plan included Fly.io + Socket.IO + BullMQ; the implementation pivoted to Pusher Channels for ADR-0046 (zero-cost-by-construction) compliance — recorded in ADR-0052. The diagram + table below reflect what actually runs. v0.5.3 added green-run eval auto-commit + measured-eval README badge (ADR-0049 § 7th arc Tier C-#2); v0.5.4 added the runtime schema canary at `/api/health/schema` closing the runtime side of ADR-0051 (ADR-0053). Knowlex live demo is currently EMERGENCY_STOPPED post 2026-04-29 Gemini Free tier account-level revocation incident — see ADR-0067; the implementation is BYOK-reproducible per README.
+> **Status (as of v0.5.19)**: this is the deployed architecture. The original ADR-0009 plan included Fly.io + Socket.IO + BullMQ; the implementation pivoted to Pusher Channels for ADR-0046 (zero-cost-by-construction) compliance — recorded in ADR-0052. The diagram + table below reflect what actually runs. v0.5.3 added green-run eval auto-commit + measured-eval README badge (ADR-0049 § 7th arc Tier C-#2); v0.5.4 added the runtime schema canary at `/api/health/schema` closing the runtime side of ADR-0051 (ADR-0053). Knowlex live demo is currently EMERGENCY_STOPPED post 2026-04-29 Gemini Free tier account-level revocation incident — see ADR-0067; the implementation is BYOK-reproducible per README.
 
 ```mermaid
 flowchart LR
@@ -23,7 +23,7 @@ flowchart LR
         UPSTASH[("Upstash Redis<br/>Tokyo<br/>(rate-limit only)")]
         PUSHER["Pusher Channels<br/>(Sandbox tier)"]
         RESEND["Resend email<br/>(env-guarded)"]
-        GEMINI["Google AI Studio<br/>gemini-embedding-001<br/>gemini-2.0-flash"]
+        GEMINI["Google AI Studio<br/>gemini-embedding-001<br/>gemini-2.5-flash"]
     end
 
     subgraph ghci["GitHub Actions (free)"]

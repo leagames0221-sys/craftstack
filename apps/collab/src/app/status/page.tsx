@@ -61,12 +61,12 @@ export default async function StatusPage() {
       },
     },
     {
-      name: "Gemini 2.0 Flash (Knowlex)",
+      name: "Gemini 2.5 Flash (Knowlex)",
       present: has("GEMINI_API_KEY"),
       role: "optional",
       describe: {
         present:
-          "/playground streams live Gemini 2.0 Flash answers. Per-IP + global budget caps in place.",
+          "/playground streams live Gemini 2.5 Flash answers. Per-IP + global budget caps in place.",
         absent:
           "/playground runs in deterministic demo mode (same streaming UX, canned answer). Set GEMINI_API_KEY — AI Studio key, NOT a billing-enabled Cloud key — to switch to live.",
       },

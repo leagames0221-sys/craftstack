@@ -5,7 +5,7 @@ import { ChatPanel } from "./ChatPanel";
 export const metadata = {
   title: "Knowlex — grounded RAG on your own pasted corpus",
   description:
-    "Paste text, ask questions. Chunked, embedded with text-embedding-004, stored in pgvector, answered by Gemini 2.0 Flash with numbered citations.",
+    "Paste text, ask questions. Chunked, embedded with gemini-embedding-001 (truncated to 768-dim), stored in pgvector, answered by Gemini 2.5 Flash with numbered citations.",
 };
 
 /**
@@ -22,7 +22,7 @@ export default function Home() {
             <div>
               <h1 className="text-lg font-semibold tracking-tight">Knowlex</h1>
               <p className="text-xs text-neutral-400">
-                grounded RAG · text-embedding-004 · Gemini 2.0 Flash
+                grounded RAG · gemini-embedding-001 · Gemini 2.5 Flash
               </p>
             </div>
           </div>
@@ -58,10 +58,10 @@ export default function Home() {
             >
               Corpus
             </Link>
-            , embeds each chunk with text-embedding-004, stores the 768-dim
-            vector in pgvector, and answers your question by retrieving the
-            top-K chunks via cosine kNN and streaming a grounded Gemini 2.0
-            Flash reply with numbered citations.
+            , embeds each chunk with gemini-embedding-001 (truncated to
+            768-dim), stores the vector in pgvector, and answers your question
+            by retrieving the top-K chunks via cosine kNN and streaming a
+            grounded Gemini 2.5 Flash reply with numbered citations.
           </p>
         </div>
 

@@ -1145,7 +1145,7 @@ export interface paths {
     get?: never;
     put?: never;
     /**
-     * Stream a Gemini 2.0 Flash answer grounded in the supplied context
+     * Stream a Gemini 2.5 Flash answer grounded in the supplied context
      * @description Public / no auth. Missing GEMINI_API_KEY falls back to a deterministic demo mode streaming a canned answer with an x-playground-mode: demo header. Per-IP sliding-window rate limit (10/min); global daily/monthly budget as belt-and-suspenders (see ADR-0037 + COST_SAFETY.md).
      */
     post: {

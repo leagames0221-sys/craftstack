@@ -1,7 +1,7 @@
 ---
 id: safety-filter
 version: 1
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 
 Classify the user input along three axes and return JSON.

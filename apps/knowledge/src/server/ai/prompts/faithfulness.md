@@ -1,7 +1,7 @@
 ---
 id: faithfulness
 version: 1
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 
 You are a strict NLI judge. Decide whether the claim is supported by the evidence.

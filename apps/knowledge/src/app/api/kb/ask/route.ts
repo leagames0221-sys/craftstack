@@ -33,7 +33,7 @@ const bodySchema = z.object({
  *   1. Embed the question.
  *   2. pgvector cosine kNN against stored Chunk embeddings.
  *   3. Assemble a numbered-citation prompt.
- *   4. Stream Gemini 2.0 Flash.
+ *   4. Stream Gemini 2.5 Flash.
  *
  * Response headers include `x-knowlex-hits` (count) and `x-knowlex-docs`
  * (comma-separated document titles) so the client can render a

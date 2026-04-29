@@ -16,7 +16,7 @@
 
 Two production-grade SaaS applications designed and built from schema to deploy, as a solo developer, to demonstrate full-stack × from-scratch engineering capability.
 
-> **Built with AI pair-programming (Claude Code)**. 46 of the 187 commits carry `Co-Authored-By: Claude Opus 4.7 (1M context)` co-authorship marking — explicit evidence of AI-leveraged development at industry-baseline-exceeding engineering quality (66 ADRs, 276 Vitest + 24 Playwright, OpenSSF Scorecard, branch protection ruleset enforced live, real production incident handled per [ADR-0067](docs/adr/0067-gemini-free-tier-account-revocation-incident.md)). The portfolio is itself the live demo of "ship Mid → Senior tier full-stack with AI pair-programming, while preserving honest engineering discipline".
+> **Built with AI pair-programming (Claude Code)**. 46 of the 187 commits carry `Co-Authored-By: Claude Opus 4.7 (1M context)` co-authorship marking — explicit evidence of AI-leveraged development at industry-baseline-exceeding engineering quality (67 ADRs, 276 Vitest + 24 Playwright, OpenSSF Scorecard, branch protection ruleset enforced live, real production incident handled per [ADR-0067](docs/adr/0067-gemini-free-tier-account-revocation-incident.md)). The portfolio is itself the live demo of "ship Mid → Senior tier full-stack with AI pair-programming, while preserving honest engineering discipline".
 
 > **5 closed graduation cycles in 5 ships** — T-01 ([ADR-0060](docs/adr/0060-pusher-private-channels-migration.md), v0.5.11) → I-01 ([ADR-0061](docs/adr/0061-knowlex-auth-and-tenancy.md), v0.5.12) → ADR-0049 § 8th arc ([ADR-0062](docs/adr/0062-llm-as-judge-eval-flag.md), v0.5.13) → ADR-0011 deferred ([ADR-0063](docs/adr/0063-hybrid-retrieval-bm25-rrf.md), v0.5.14) → [ADR-0064](docs/adr/0064-hybrid-retrieval-calibration-architectural-gap.md) architectural-gap ([ADR-0065](docs/adr/0065-knowlex-ci-credentials-provider.md), v0.5.15). Each disclose carries a TTL + named accelerator triggers + closure ADR; the ratchet log itself is the brand. Pattern documented in [`KL-build_ci-202604-graduation-cycle`](https://github.com/leagames0221-sys/craftstack/tree/main/docs).
 
@@ -152,7 +152,7 @@ craftstack/
 │   └── docker/              # docker-compose + init scripts
 ├── docs/
 │   ├── design/              # 13-part design bible (see docs/design/README.md)
-│   ├── adr/                 # Architecture Decision Records (66 entries)
+│   ├── adr/                 # Architecture Decision Records (67 entries)
 │   ├── api/                 # OpenAPI specs
 │   ├── architecture/        # System diagrams
 │   ├── compliance/          # Data retention policy
@@ -258,7 +258,7 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 | ----------------------- | -------------------------------------------------------------------------------------- |
 | Architecture overview   | [docs/architecture/system-overview.md](docs/architecture/system-overview.md)           |
 | **Audit attestation**   | live single-curl: <https://craftstack-knowledge.vercel.app/api/attestation> (ADR-0056) |
-| Decision records (66)   | [docs/adr/](docs/adr/README.md)                                                        |
+| Decision records (67)   | [docs/adr/](docs/adr/README.md)                                                        |
 | API specs (OpenAPI)     | [collab](docs/api/collab-openapi.yaml) · [knowledge](docs/api/knowledge-openapi.yaml)  |
 | Rate limits             | [docs/api/rate-limits.md](docs/api/rate-limits.md)                                     |
 | STRIDE threat model     | [docs/security/threat-model.md](docs/security/threat-model.md)                         |

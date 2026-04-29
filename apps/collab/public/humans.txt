@@ -20,6 +20,6 @@
 /* THE STACK */
     Next.js 16, React 19, TypeScript 5, Tailwind 4
     PostgreSQL (Neon), Prisma 7, Auth.js v5 (JWT)
-    Pusher Channels, Vercel AI SDK, Gemini 2.0 Flash
+    Pusher Channels, Vercel AI SDK, Gemini 2.5 Flash
     Vitest, Playwright, axe-core, CodeQL
     Vercel Hobby, GitHub Actions

@@ -460,6 +460,49 @@
       "file": "README.md",
       "match": "contains",
       "pattern": "'unsafe-eval'"
+    },
+
+    {
+      "adr": "ADR-0069",
+      "claim": "Visible-deploy-surface model name coherence axis exists in check-doc-drift.mjs",
+      "file": "scripts/check-doc-drift.mjs",
+      "match": "contains",
+      "pattern": "Visible-deploy-surface model name coherence"
+    },
+    {
+      "adr": "ADR-0069",
+      "claim": "Boardly homepage uses canonical Gemini 2.5 Flash (D1 closure)",
+      "file": "apps/collab/src/app/page.tsx",
+      "match": "contains",
+      "pattern": "Gemini 2.5 Flash"
+    },
+    {
+      "adr": "ADR-0069",
+      "claim": "Knowlex homepage uses canonical gemini-embedding-001 (D1 closure)",
+      "file": "apps/knowledge/src/app/page.tsx",
+      "match": "contains",
+      "pattern": "gemini-embedding-001"
+    },
+    {
+      "adr": "ADR-0069",
+      "claim": "ADR-0010 Status field declares partial supersession per ADR-0061 (D3 closure)",
+      "file": "docs/adr/0010-rls-and-query-layer-defense.md",
+      "match": "contains",
+      "pattern": "Partially superseded"
+    },
+    {
+      "adr": "ADR-0069",
+      "claim": "ADR-0003 Status field declares JWT supersession (D4 closure)",
+      "file": "docs/adr/0003-auth-js-database-session.md",
+      "match": "contains",
+      "pattern": "Superseded by JWT strategy"
+    },
+    {
+      "adr": "ADR-0069",
+      "claim": "ADR-README documents the ADR sequence gap (0055/0066 reserved/withdrawn) (D6 closure)",
+      "file": "docs/adr/README.md",
+      "match": "contains",
+      "pattern": "Sequence gap notice"
     }
   ]
 }

@@ -1,7 +1,7 @@
 ---
 id: title-generation
 version: 1
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 
 Write a 4-8 word title for this conversation.

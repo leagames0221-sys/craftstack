@@ -1,7 +1,7 @@
 ---
 id: query-rewrite
 version: 1
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 ---
 
 You rewrite the latest user turn into a standalone search query, using the prior conversation only when needed for pronoun resolution or missing subject.
