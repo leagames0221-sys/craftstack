@@ -297,6 +297,17 @@ pnpm dev:knowledge            # Knowlex  on http://localhost:3001
 - ⏳ **Auth.js on Knowlex + `WorkspaceMember` access-control** (v0.5.4 arc, the access-control half of [ADR-0047](docs/adr/0047-knowlex-workspace-tenancy-plan.md) § Status)
 - ⏳ **HNSW tuning at 10 k-chunk corpus** — measured p95 × `ef_search` × `m` grid in `docs/eval/HNSW_TUNING.md`, hourly background ingest under the 1500 RPD AI Studio cap (v0.6.0)
 
+## Related portfolio work — constraint-optimized AI engineering siblings
+
+Two AI-engineering portfolio repos share craftstack's *zero credit card + drift-CI enforced* thesis, in different domains (browser automation + LLM long-context measurement) on the same consumer-laptop tier:
+
+| Repo | Domain | Honest evidence |
+|---|---|---|
+| [browser-agent-demo](https://github.com/leagames0221-sys/browser-agent-demo) | Local-only browser RPA (Ollama + Qwen2.5-7B + browser-use) | **5-layer defense-in-depth journey, 5 honest failures with JSON evidence**: rogue navigation → fabrication → training-data attractor → architectural intervention → frontier free-tier token cap. `$0/run` × 5 runs, drift-CI green throughout, [ADR-006 Qwen-Alibaba e-commerce attractor hypothesis](https://github.com/leagames0221-sys/browser-agent-demo/blob/main/memory_bank/decisionLog.md) literally indirect-validated by the frontier comparison cell. |
+| [longctx-bench-honest](https://github.com/leagames0221-sys/longctx-bench-honest) | Long-context LLM measurement (Qwen2.5-7B-1M local + GitHub Models cloud) | **The literal map of consumer-laptop × zero-CC × long-context**: local 6GB VRAM ceiling = 4k tokens (rescued only by Windows shared-memory PCIe spillover, [ADR-007](https://github.com/leagames0221-sys/longctx-bench-honest/blob/main/memory_bank/decisionLog.md)), WSL2 + vllm cannot even fit weights + activations on the same hardware ([ADR-009](https://github.com/leagames0221-sys/longctx-bench-honest/blob/main/memory_bank/decisionLog.md), counterintuitive negative result), cloud free-tier accessibility matrix shows GPT-5 unavailable + Claude absent from GitHub Models + DeepSeek/gpt-5 capped at 4000 tokens ([ADR-008](https://github.com/leagames0221-sys/longctx-bench-honest/blob/main/memory_bank/decisionLog.md)). 11 JSON evidence cells, drift-CI enforces every numeric claim. |
+
+**Cross-repo unifying thesis**: *constraint-optimized engineering* — under (zero credit card, consumer laptop, public source / OSS only, drift-CI enforced), what is the literal best buildable in 2026? craftstack answers for full-stack web; the two siblings answer for AI engineering. Each repo discloses both the working zone AND the literal constraint boundary as JSON / log evidence — not as claims.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
