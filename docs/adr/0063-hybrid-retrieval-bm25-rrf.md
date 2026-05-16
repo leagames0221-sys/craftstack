@@ -73,7 +73,7 @@ The `HYBRID_RETRIEVAL_ENABLED` env flag defaults off. Why:
 
 - **Run-to-run comparability**: the nightly eval cron compares this run's pass-rate / p95-latency against historical runs. A silent flip from pure-cosine to hybrid would invalidate the comparison. Operator opt-in lets the v0.5.13 baseline stay stable until a calibration run measures the hybrid lift on the golden corpus.
 - **--judge mode pairs cleanly**: enabling both `HYBRID_RETRIEVAL_ENABLED=1` and `EVAL_JUDGE=1` in the same run measures retrieval quality and answer faithfulness simultaneously. The default-off discipline means the operator turns hybrid on with intent, not by accident.
-- **Failure-mode containment**: if the FTS index has a bug (e.g. `english` config doesn't tokenize ZN domain terms correctly), enabling it for the live demo would break the public RAG demo (closing T-01 was about preserving that demo). Env-flag opt-in lets the calibration run happen on a non-demo workspace first.
+- **Failure-mode containment**: if the FTS index has a bug (e.g. `english` config doesn't tokenize domain-specific terms correctly), enabling it for the live demo would break the public RAG demo (closing T-01 was about preserving that demo). Env-flag opt-in lets the calibration run happen on a non-demo workspace first.
 
 ## Consequences
 

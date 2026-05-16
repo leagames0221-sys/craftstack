@@ -2,24 +2,15 @@
 name: craftstack — 転職用ポートフォリオ 2 本立て (Boardly + Knowlex)
 description: GitHub 代表作として Next.js 15 monorepo で作る、リアルタイム協働カンバン (Boardly) と マルチテナント AI ナレッジ SaaS (Knowlex) の設計 bible。採用面接で唸らせる最高品質ルート、全ドキュメント完成済み。
 type: project
-isolation: STRICT # UE5/ZN と完全独立、相互参照禁止
+isolation: STRICT # Independent portfolio project, no cross-project references
 updated: 2026-04-22
-originSessionId: Session248
 ---
 
 > ⚠️ **Pre-implementation design bible — historical.** The files under `docs/design/` capture the design-phase target for the portfolio at the time each was written (drafted 2026-04-22). Numbers (test counts, ADR counts, model counts) inside these documents reflect design-time plans rather than current shipped state. **Several architecture choices have also changed**: Pusher Channels was chosen instead of Fly.io + Socket.IO ([ADR-0052](../adr/0052-pusher-pivot-from-flyio-socketio.md)), Knowlex MVP is single-tenant with hybrid retrieval / HyDE / Faithfulness / RLS / BullMQ all deferred per [ADR-0039](../adr/0039-knowlex-mvp-scope.md), JWT auth replaced the planned database sessions, Vercel-only deploy (Fly.io was never deployed). The authoritative state of the repo as of v0.5.2 (2026-04-28) lives in the main [README](../../README.md), the [CHANGELOG](../../CHANGELOG.md), [`docs/architecture/system-overview.md`](../architecture/system-overview.md), the numbered files under [`docs/adr/`](../adr/), and the live URLs. Each individual design file under `docs/design/` also carries a banner pointing back here. Use the design docs for rationale and architecture intent; use the README + CHANGELOG + ADRs for "what the portfolio looks like today."
 
-# 🛡️ 独立 PJ 宣言(最優先)
+# 🛡️ 独立プロジェクト宣言
 
-**本プロジェクトは UE5 ゲーム開発(ZenithNexus = ZN)とは完全に別物**。
-
-- ZN の CLAUDE.md / BIBLE / Plan/Execute profile / hook ルール / 禁止フレーズは **craftstack に一切適用されない**
-- ZN の MEMORY.md / wiki / DoR / Docs を **参照してはならない**
-- ZN の Scripts / Commandlet / commit 規約は **無視する**
-- ZN の「Plan AI=設計士 / Execute AI=大工」役割分離は **craftstack では適用外**
-- craftstack の AI は通常の Claude Code として自由に設計・実装議論を行う
-
-本 PJ の技術領域は **Next.js / TypeScript / Prisma / PostgreSQL / Socket.IO / pgvector / Gemini API / Vercel / Fly.io** であり、UE5 / C++ / Unreal Engine とは関係ない。
+**craftstack は他のいかなるプロジェクトの設定・ルール・規約も継承しない独立した portfolio プロジェクト**。本 PJ の技術領域は **Next.js / TypeScript / Prisma / PostgreSQL / Socket.IO / pgvector / Gemini API / Vercel / Fly.io** に限定し、craftstack の AI は通常の Claude Code として自由に設計・実装議論を行う。
 
 ---
 
@@ -43,11 +34,10 @@ originSessionId: Session248
 2. ユーザーの質問内容に応じて `01_` 〜 `12_` の該当ファイルを Read
 3. 全体把握が必要なら番号順に 01〜12 を連続 Read
 
-## 再突入時の禁止事項
+## 再突入時の前提
 
-- ZN のファイル(`C:/Users/admin/Documents/Unreal Projects/ZenithNexus/`)を Read しない
-- ZN の MEMORY.md から craftstack 以外の情報を引用しない
-- ZN の役割分離・BIBLE・禁止フレーズを craftstack 議論に持ち込まない
+- 本 PJ 以外のプロジェクト規約・役割分離・命名規則は craftstack に持ち込まない
+- craftstack 単独で完結する設計・実装議論を行う
 
 ---
 
@@ -110,24 +100,6 @@ originSessionId: Session248
 
 ---
 
-# 🔒 独立性の技術的保証
-
-本 PJ は **ZN とは別の技術領域** のため、両者を同セッション内で議論しない方が安全:
-
-|          | ZenithNexus (ZN)                                        | craftstack                    |
-| -------- | ------------------------------------------------------- | ----------------------------- |
-| 言語     | C++ / Python / Blueprint                                | TypeScript / SQL              |
-| FW       | Unreal Engine 5.7                                       | Next.js 15                    |
-| DB       | UAsset / DataTable                                      | PostgreSQL / pgvector         |
-| デプロイ | — (EA 予定)                                             | Vercel / Fly.io               |
-| 目的     | NC/Ymir 級 MMORPG                                       | 転職用ポートフォリオ          |
-| AI 役割  | Plan / Execute 分離(厳格)                               | 通常の Claude Code            |
-| ルート   | `C:/Users/admin/Documents/Unreal Projects/ZenithNexus/` | GitHub 新規リポジトリ(未作成) |
-
-**セッション中に片方を扱っている時、他方の議論・参照は発生させない**。切替時は明示的な宣言を待つ。
-
----
-
 # 📅 更新履歴
 
-- 2026-04-22(Session 248): 本 PJ 初回制定、13 ファイル起草完了、ZN memory に pointer 追加、独立宣言明文化
+- 2026-04-22: 本 PJ 初回制定、13 ファイル起草完了、独立宣言明文化
