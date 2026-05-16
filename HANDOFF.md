@@ -5,10 +5,27 @@ Tracks ephemeral in-progress state between AI-assisted sessions. For shipped sta
 ## Current
 
 - **last session**: 2026-05-17
-- **status**: stable on main
-- **active work item**: none in progress
-- **next planned**: data analytics demo package scaffold
+- **status**: stable on main; opacity-sanitize + handoff infra shipped (PR #79 + #80)
+- **active work item**: data analytics demo package (planning phase — prior art scan done, scaffold not yet started)
+- **next planned**: Spec-Driven Stage 1 Discovery for `packages/data-analytics-demo/`
 - **blockers**: none
+
+### Planned package — data-analytics-demo
+
+Customer-behavior / SaaS-style analytics demo for portfolio. Constraints: local-only (no credit card), local LLM (Ollama), synthetic data only.
+
+Verified prior-art seeds (license + maintenance literal-checked 2026-05-17):
+
+| seed | license | role |
+|---|---|---|
+| dbt-labs/jaffle_shop_duckdb (default branch: `duckdb`) | Apache 2.0 | dbt project skeleton (staging/marts 2-tier pattern) |
+| evidence-dev/evidence | MIT | BI-as-code dashboard (SQL fenced in markdown) |
+| dbt-labs/metricflow | Apache 2.0 | semantic layer YAML (single KPI definition) |
+| duckdb/duckdb (tpcds extension) | MIT | synthetic SaaS data via `CALL dsdgen(sf=1)` |
+| ollama/ollama (Llama 3.1 8B Instruct) | MIT | local LLM for SHAP→narrative |
+| Python in Plain English (Faker+DuckDB+sklearn article, 2025-09) | technique reference | churn pipeline pattern (no code clone) |
+
+Rejected: `dbt-labs/jaffle-shop-template` (no LICENSE + 2.5y unmaintained).
 
 ## Update protocol
 
