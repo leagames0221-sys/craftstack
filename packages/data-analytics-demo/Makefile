@@ -25,8 +25,8 @@ data:
 	$(PYTHON) -m data_analytics_demo.data.generate
 
 dbt:
-	@echo "[dbt] TODO T-04/T-05: dbt models not yet implemented"
-	@exit 1
+	cd dbt_project && DBT_PROFILES_DIR=. dbt run
+	cd dbt_project && DBT_PROFILES_DIR=. dbt test
 
 ml:
 	@echo "[ml] TODO T-06/T-07: ML pipelines not yet implemented"

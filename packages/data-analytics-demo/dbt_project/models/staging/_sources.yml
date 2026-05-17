@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Synthetic SaaS tables produced by `make data` (src/data_analytics_demo/data/generate.py).
+    schema: main
+    tables:
+      - name: customers
+        description: Tenant accounts.
+      - name: subscriptions
+        description: Subscription history per customer (may include multiple rows per customer).
+      - name: events
+        description: Product-usage events. Drives churn-signal and upsell-signal feature engineering.
+      - name: invoices
+        description: Monthly billing records for paid subscriptions.

@@ -1,0 +1,11 @@
+data_analytics_demo:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      # Resolved relative to the directory dbt is invoked from. The Makefile
+      # invokes dbt from `dbt_project/`, so `../warehouse/analytics.duckdb`
+      # points at the file produced by `make data` (src/data_analytics_demo/
+      # data/generate.py).
+      path: "{{ env_var('DBT_DUCKDB_PATH', '../warehouse/analytics.duckdb') }}"
+      threads: 4
