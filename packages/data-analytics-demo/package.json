@@ -10,10 +10,9 @@
     "narrative": "make narrative",
     "dashboard": "make dashboard",
     "semantic-validate": "make semantic-validate",
-    "demo": "make demo",
-    "test": "make test",
-    "lint": "make lint"
+    "demo": "make demo"
   },
+  "_comment_scripts": "Python lint / test / typecheck intentionally omitted from this package.json — they run via Makefile (see python-test.yml CI workflow, T-12). Turbo silently skips packages with no matching script.",
   "keywords": [
     "data-analytics",
     "duckdb",
