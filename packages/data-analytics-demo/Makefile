@@ -33,8 +33,7 @@ ml:
 	$(PYTHON) -m data_analytics_demo.ml.upsell
 
 narrative:
-	@echo "[narrative] TODO T-08: Ollama narrative not yet implemented"
-	@exit 1
+	$(PYTHON) -m data_analytics_demo.narrative.generate
 
 dashboard:
 	@echo "[dashboard] TODO T-09: Evidence dashboard not yet implemented"
