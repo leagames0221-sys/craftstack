@@ -1,0 +1,135 @@
+# MetricFlow-compatible semantic models + metrics for the data-analytics demo.
+#
+# This file declares the single source of truth for KPIs that the dashboard
+# and any downstream BI tool can reuse. Each metric resolves to a primary
+# measure plus a set of dimensions that the metric can be sliced by; the
+# schema mirrors MetricFlow 0.21x.
+#
+# Validation: `make semantic-validate` (Python validator in
+# src/data_analytics_demo/semantic/validator.py — checks YAML shape +
+# AC-6.2 ≥1 dim + ≥1 measure per metric).
+
+semantic_models:
+  - name: customers
+    description: Tenant accounts. Drives signup-month cohort + region slicing.
+    model: ref('stg_customers')
+    entities:
+      - name: customer
+        type: primary
+        expr: customer_id
+    dimensions:
+      - name: region
+        type: categorical
+      - name: plan_tier_at_signup
+        type: categorical
+      - name: signup_date
+        type: time
+        type_params:
+          time_granularity: day
+    measures:
+      - name: customer_count
+        description: Number of customers.
+        agg: count
+        expr: customer_id
+
+  - name: subscriptions
+    description: Subscription lifecycle facts (active / canceled / paused).
+    model: ref('stg_subscriptions')
+    entities:
+      - name: subscription
+        type: primary
+        expr: subscription_id
+      - name: customer
+        type: foreign
+        expr: customer_id
+    dimensions:
+      - name: plan_tier
+        type: categorical
+      - name: status
+        type: categorical
+      - name: start_date
+        type: time
+        type_params:
+          time_granularity: day
+    measures:
+      - name: subscription_count
+        description: Number of subscriptions.
+        agg: count
+        expr: subscription_id
+      - name: monthly_amount
+        description: Monthly subscription value (USD).
+        agg: sum
+        expr: monthly_amount_usd
+      - name: active_subscription_count
+        description: Count of subscriptions whose status is active.
+        agg: sum
+        expr: case when status = 'active' then 1 else 0 end
+
+  - name: invoices
+    description: Monthly billing records for paid subscriptions.
+    model: ref('stg_invoices')
+    entities:
+      - name: invoice
+        type: primary
+        expr: invoice_id
+      - name: customer
+        type: foreign
+        expr: customer_id
+      - name: subscription
+        type: foreign
+        expr: subscription_id
+    dimensions:
+      - name: status
+        type: categorical
+      - name: period_start
+        type: time
+        type_params:
+          time_granularity: day
+    measures:
+      - name: invoice_count
+        description: Number of invoices.
+        agg: count
+        expr: invoice_id
+      - name: paid_amount_usd
+        description: Sum of paid invoice amounts.
+        agg: sum
+        expr: case when status = 'paid' then amount_usd else 0 end
+
+metrics:
+  - name: customers
+    description: Distinct customer count.
+    type: simple
+    type_params:
+      measure: customer_count
+    dimensions:
+      - region
+      - plan_tier_at_signup
+      - signup_date
+
+  - name: active_subscriptions
+    description: Count of subscriptions whose status is "active" right now.
+    type: simple
+    type_params:
+      measure: active_subscription_count
+    dimensions:
+      - plan_tier
+      - start_date
+
+  - name: monthly_recurring_revenue
+    description: Sum of monthly subscription amounts (US dollars).
+    type: simple
+    type_params:
+      measure: monthly_amount
+    dimensions:
+      - plan_tier
+      - status
+      - start_date
+
+  - name: paid_invoice_volume
+    description: Sum of paid invoice amounts (US dollars).
+    type: simple
+    type_params:
+      measure: paid_amount_usd
+    dimensions:
+      - status
+      - period_start

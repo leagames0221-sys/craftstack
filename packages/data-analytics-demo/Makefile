@@ -39,8 +39,7 @@ dashboard:
 	$(PYTHON) -m data_analytics_demo.dashboard.render
 
 semantic-validate:
-	@echo "[semantic-validate] TODO T-10: MetricFlow validation not yet implemented"
-	@exit 1
+	$(PYTHON) -m data_analytics_demo.semantic.validator
 
 demo: data dbt ml narrative dashboard
 	@echo "[demo] full pipeline OK"

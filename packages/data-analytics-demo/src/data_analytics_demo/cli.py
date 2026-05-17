@@ -63,5 +63,17 @@ def narrative() -> None:
     typer.echo(f"wrote {out}")
 
 
+@app.command()
+def semantic() -> None:
+    """Validate the MetricFlow KPI definitions (semantic/kpi.yml)."""
+    from data_analytics_demo.semantic import validator
+
+    report = validator.main()
+    typer.echo(
+        f"OK: {report.semantic_model_count} semantic models, "
+        f"{report.metric_count} metrics"
+    )
+
+
 if __name__ == "__main__":
     app()
