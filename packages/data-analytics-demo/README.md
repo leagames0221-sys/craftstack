@@ -54,6 +54,22 @@ semantic    MetricFlow YAML — 3 semantic models, 4 KPI metrics; structural inv
 
 See [docs/architecture.md](docs/architecture.md) for the pipeline diagram and per-layer details.
 
+## Environment variables
+
+Every variable has a code-level default — `.env` is optional. Defaults shown match the in-code values.
+
+| Variable               | Default                       | Purpose                                                                                              |
+| ---------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `DEMO_RANDOM_SEED`     | `42`                          | Master seed for Faker + numpy + sklearn; controls byte-deterministic regeneration (AC-1.5 / AC-δ.2). |
+| `DEMO_N_CUSTOMERS`     | `1000`                        | Row count for the `customers` table.                                                                 |
+| `DEMO_N_SUBSCRIPTIONS` | `2000`                        | Row count for the `subscriptions` table.                                                             |
+| `DEMO_N_EVENTS`        | `50000`                       | Row count for the `events` table.                                                                    |
+| `DEMO_N_INVOICES`      | `5000`                        | Row count for the `invoices` table.                                                                  |
+| `OLLAMA_HOST`          | `http://localhost:11434`      | Local Ollama daemon endpoint used by the narrative layer.                                            |
+| `OLLAMA_MODEL`         | `llama3.1:8b-instruct-q4_K_M` | Ollama model identifier; must already be pulled (`ollama pull <model>`).                             |
+
+**Prohibited variables (AC-4.3 fail-stop):** the narrative layer raises `RuntimeError` at invocation if any of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `GOOGLE_API_KEY`, `AZURE_OPENAI_API_KEY`, `COHERE_API_KEY` is set. All inference is local.
+
 ## Constraints (load-bearing — see [ADR-0070](../../docs/adr/0070-data-analytics-demo-polyglot-adoption.md))
 
 - **Zero credit card.** No Snowflake / BigQuery free trial; no Anthropic / OpenAI / Gemini API.
