@@ -1,0 +1,81 @@
+version: 2
+
+models:
+  - name: rfm_segments
+    description: RFM (Recency / Frequency / Monetary) segmentation, one row per active customer.
+    columns:
+      - name: customer_id
+        description: Primary key; foreign key to stg_customers.
+        tests:
+          - not_null
+          - unique
+      - name: r_score
+        description: Recency score in {1..5}; 5 = most recent.
+        tests:
+          - not_null
+      - name: f_score
+        description: Frequency score in {1..5}.
+        tests:
+          - not_null
+      - name: m_score
+        description: Monetary score in {1..5}.
+        tests:
+          - not_null
+      - name: rfm_segment
+        description: Coarse 5-bucket label derived from the scores.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  ["champions", "loyal", "big_spenders", "at_risk", "regular"]
+
+  - name: churn_features
+    description: One-row-per-customer feature table for churn prediction.
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+      - name: is_churned
+        description: Binary label (1 if latest subscription canceled).
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+
+  - name: upsell_opportunities
+    description: One-row-per-eligible-customer feature table for upsell propensity.
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+      - name: upgraded
+        description: Binary label (1 if customer reached a tier higher than initial plan).
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 1]
+      - name: plan_tier_at_signup
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["free", "pro"]
+
+  - name: cohort_retention
+    description: Monthly cohort × months-since-signup retention grid.
+    columns:
+      - name: cohort_month
+        tests:
+          - not_null
+      - name: months_since_signup
+        tests:
+          - not_null
+      - name: retention_pct
+        description: 0–100 retention percentage for this (cohort, offset) cell.
+        tests:
+          - not_null
