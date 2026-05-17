@@ -1,0 +1,13 @@
+{% extends "base.html.j2" %}
+{% set current_page = "churn" %}
+{% block title %}Churn risk · data-analytics-demo{% endblock %}
+{% block content %}
+  <h2>Churn risk</h2>
+  <p>Built from the <code>churn_features</code> mart. The engineered signal is the trailing-30-day vs lifetime-daily-average event ratio — customers with a ratio &lt; 1 are slowing down.</p>
+
+  <h3>Churn rate by plan tier</h3>
+  <div class="card">{{ churn_bar|safe }}</div>
+
+  <h3>Trailing-30d activity vs churn label</h3>
+  <div class="card">{{ buckets_table|safe }}</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html.j2" %}
+{% set current_page = "kpi" %}
+{% block title %}KPI overview · data-analytics-demo{% endblock %}
+{% block content %}
+  <h2>KPI overview</h2>
+  <p>Operational headlines drawn directly from the dbt marts.</p>
+
+  <h3>Monthly signups</h3>
+  <div class="card">{{ signups|safe }}</div>
+
+  <h3>Paid invoice volume</h3>
+  <div class="card">{{ paid_area|safe }}</div>
+
+  <h3>Cohort retention</h3>
+  <div class="card">{{ cohort_heatmap|safe }}</div>
+{% endblock %}

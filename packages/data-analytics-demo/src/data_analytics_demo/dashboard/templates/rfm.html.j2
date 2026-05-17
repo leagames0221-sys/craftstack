@@ -1,0 +1,16 @@
+{% extends "base.html.j2" %}
+{% set current_page = "rfm" %}
+{% block title %}RFM segmentation · data-analytics-demo{% endblock %}
+{% block content %}
+  <h2>RFM segmentation</h2>
+  <p>Customers grouped by Recency / Frequency / Monetary quintiles. Source mart: <code>rfm_segments</code>.</p>
+
+  <h3>Segment distribution</h3>
+  <div class="card">{{ rfm_bar|safe }}</div>
+
+  <h3>Recency × Frequency × Monetary</h3>
+  <div class="card">{{ rfm_scatter|safe }}</div>
+
+  <h3>Per-segment economics</h3>
+  <div class="card">{{ rfm_table|safe }}</div>
+{% endblock %}
