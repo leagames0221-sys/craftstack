@@ -6,8 +6,6 @@ referencing the relevant Stage 4 task. Real implementations land in T-03 onward.
 
 from __future__ import annotations
 
-import sys
-
 import typer
 
 app = typer.Typer(
@@ -49,9 +47,11 @@ def ml() -> None:
 
 @app.command()
 def narrative() -> None:
-    """Generate LLM narrative via local Ollama (T-08, not yet implemented)."""
-    typer.echo("[narrative] TODO T-08: Ollama narrative not yet implemented", err=True)
-    sys.exit(1)
+    """Generate an executive narrative from SHAP via local Ollama."""
+    from data_analytics_demo.narrative import generate as narrative_gen
+
+    out = narrative_gen.main()
+    typer.echo(f"wrote {out}")
 
 
 if __name__ == "__main__":
