@@ -28,6 +28,9 @@ dependencies = [
     # CLI + data validation
     "typer>=0.14",
     "pydantic>=2.9",
+    # Dashboard (self-built static HTML; replaces Evidence — see ADR-0070 amendment).
+    "jinja2>=3.1",
+    "plotly>=5.24",
 ]
 
 [project.optional-dependencies]
@@ -74,7 +77,7 @@ mypy_path = "src"
 # but lags behind `pandas` releases; treating these as untyped is the
 # pragmatic choice for a Python 3.11 + pandas 3.x stack.
 [[tool.mypy.overrides]]
-module = ["pandas", "pandas.*", "duckdb", "faker", "shap", "xgboost", "sklearn.*"]
+module = ["pandas", "pandas.*", "duckdb", "faker", "shap", "xgboost", "sklearn.*", "plotly", "plotly.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

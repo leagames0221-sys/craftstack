@@ -1,8 +1,8 @@
 # ADR-0070: Adopt polyglot (Python + TypeScript) for `packages/data-analytics-demo` — local-only SaaS customer-analytics demo
 
-- Status: Accepted
-- Date: 2026-05-17
-- Tags: architecture, polyglot, data-analytics, dbt, evidence, ollama, security, supply-chain
+- Status: Accepted (amended 2026-05-18 — dashboard pivoted from Evidence to a self-built Python+Jinja2+Plotly generator; see "2026-05-18 amendment" section below)
+- Date: 2026-05-17 (original), 2026-05-18 (amendment)
+- Tags: architecture, polyglot, data-analytics, dbt, ollama, security, supply-chain
 - Companions: [ADR-0001](0001-monorepo-turborepo-pnpm.md) (the monorepo layout this ADR extends with a polyglot package)
 
 ## Context
@@ -104,3 +104,34 @@ Rejected: **dbt-labs/jaffle-shop-template** — no LICENSE file in default branc
 - **TypeScript-only**: rejected — see Tradeoff 1. Cannot meet the quality bar with current TS data-analytics tooling.
 - **Separate repo (polyrepo)**: rejected — contradicts the monorepo decision in ADR-0001 and forfeits the "complex portfolio operated as a single deliverable" interview signal.
 - **Defer the demo**: rejected — the contract brief is live; deferring loses the matching window.
+
+## 2026-05-18 amendment — dashboard pivot
+
+The original Tradeoff 4 chose Evidence as the dashboard generator. Evidence is a high-quality OSS tool (MIT, evidence-dev/evidence, 6k+ stars) and the rationale stands on paper, but the integration cost in this monorepo turned out to be unbounded:
+
+- Evidence ships a SvelteKit-based build (`evidence build`) that requires its own flat `node_modules` for `@sveltejs/kit`, `vite`, `@evidence-dev/tailwind`, and several other transitive peers to be resolvable from generated template code.
+- Pnpm 10's isolated layout and strict build-script approval gate broke this in three different ways on consumer Windows; each fix surfaced the next missing peer (chain of four+ peer-dep resolution failures locally before pivoting).
+- The dashboard sits at the seam between the Python pipeline (data + dbt + ML + narrative) and the static HTML output. Adopting Evidence meant adopting a second package manager (pnpm or npm) inside an otherwise-Python sub-tree, with its own audit + Dependabot + CI surface.
+
+**Decision**: replace Evidence with a self-built Python+Jinja2+Plotly generator that lives entirely inside `src/data_analytics_demo/dashboard/`. Adds two PyPI deps (jinja2 BSD, plotly MIT — both well-known and already on the audit allowlist) and ships ~150 lines of code that read the same dbt marts and write static HTML to `dashboard/build/`.
+
+### Why this is the better fit
+
+- **Smaller blast radius**: 2 PyPI deps instead of 629 npm deps with the associated peer-dep tangle. Pip-audit covers the surface.
+- **Single toolchain**: the dashboard now runs through the same Python venv, ruff, mypy, pytest gates as the rest of the package; no second package manager, no separate workflow.
+- **Stronger portfolio signal**: "self-built static dashboard generator from synthetic SaaS marts" reads as analytics-engineering breadth; "I configured Evidence" reads as tool adoption.
+- **Full layout control**: Plotly figures + Jinja2 templates give the demo the same chart types Evidence was going to produce (bar / scatter / line / area / heatmap / data table) without the SvelteKit indirection.
+
+### Tradeoff 4 (revised)
+
+| Option                                    | Status               | Why                                                                    |
+| ----------------------------------------- | -------------------- | ---------------------------------------------------------------------- |
+| **Python + Jinja2 + Plotly (self-built)** | adopted              | Single toolchain, 2 PyPI deps, full control, audit-clean               |
+| Evidence                                  | rejected             | Peer-dep chain unbounded in this monorepo; second toolchain added cost |
+| Streamlit                                 | rejected (unchanged) | Requires a Python server at view time; no static export                |
+| Quarto                                    | rejected (unchanged) | BI focus weaker than the alternatives; CLI install required            |
+| Apache Superset                           | rejected (unchanged) | Full server with significant install overhead                          |
+
+### What the rest of this ADR still gets right
+
+Tradeoffs 1 (polyglot), 2 (DuckDB + Faker synthetic data), 3 (dbt), 5 (Ollama), and 6 (MetricFlow) are unchanged. The security mitigations (DuckDB ≥ 1.4.2 pin, pip-audit, Dependabot) and the polyglot CI structure carry over.

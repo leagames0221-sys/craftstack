@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}data-analytics-demo{% endblock %}</title>
+  <style>
+    :root {
+      --fg: #16202c;
+      --muted: #6b7785;
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --accent: #3056d3;
+      --border: #e3e7ee;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.55;
+    }
+    header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    header h1 { margin: 0; font-size: 1.15rem; }
+    nav a {
+      margin-right: 1rem;
+      text-decoration: none;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    nav a.active { color: var(--accent); }
+    main { padding: 1.5rem 2rem 4rem; max-width: 1200px; margin: 0 auto; }
+    h2 { margin-top: 2rem; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0 2rem; }
+    .metric {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .metric .label { color: var(--muted); font-size: 0.85rem; }
+    .metric .value { font-size: 1.8rem; font-weight: 600; margin-top: 0.25rem; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    table.data-table { width: 100%; border-collapse: collapse; }
+    table.data-table th, table.data-table td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+    }
+    table.data-table th { color: var(--muted); font-weight: 500; }
+    footer { color: var(--muted); font-size: 0.8rem; padding: 2rem; text-align: center; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>data-analytics-demo</h1>
+  <nav>
+    {% for p in pages %}
+      <a href="{{ p }}.html"{% if p == current_page %} class="active"{% endif %}>{{ p|capitalize }}</a>
+    {% endfor %}
+  </nav>
+</header>
+<main>
+  <div class="metrics">
+    <div class="metric"><div class="label">Customers</div><div class="value">{{ headline.customers }}</div></div>
+    <div class="metric"><div class="label">Active subscriptions</div><div class="value">{{ headline.active_rate }}%</div></div>
+    <div class="metric"><div class="label">Churn rate</div><div class="value">{{ headline.churn_rate }}%</div></div>
+  </div>
+  {% block content %}{% endblock %}
+</main>
+<footer>Generated {{ generated_at }} from synthetic SaaS data.</footer>
+</body>
+</html>

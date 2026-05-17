@@ -36,8 +36,7 @@ narrative:
 	$(PYTHON) -m data_analytics_demo.narrative.generate
 
 dashboard:
-	@echo "[dashboard] TODO T-09: Evidence dashboard not yet implemented"
-	@exit 1
+	$(PYTHON) -m data_analytics_demo.dashboard.render
 
 semantic-validate:
 	@echo "[semantic-validate] TODO T-10: MetricFlow validation not yet implemented"

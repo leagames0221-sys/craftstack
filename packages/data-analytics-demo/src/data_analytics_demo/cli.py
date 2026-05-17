@@ -46,6 +46,15 @@ def ml() -> None:
 
 
 @app.command()
+def dashboard() -> None:
+    """Render the static HTML dashboard into dashboard/build/."""
+    from data_analytics_demo.dashboard import render as dashboard_render
+
+    out = dashboard_render.main()
+    typer.echo(f"wrote dashboard pages to {out}")
+
+
+@app.command()
 def narrative() -> None:
     """Generate an executive narrative from SHAP via local Ollama."""
     from data_analytics_demo.narrative import generate as narrative_gen
