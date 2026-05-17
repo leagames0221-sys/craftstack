@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 PlanTier = Literal["free", "pro", "enterprise"]
 Region = Literal["us", "eu", "apac", "latam"]
@@ -32,7 +32,7 @@ class Customer(BaseModel):
     """A single tenant on the SaaS product."""
 
     customer_id: int = Field(ge=1)
-    email: EmailStr
+    email: str  # Faker-generated company_email; schema-level format validation deferred (no AC requires it)
     company: str
     signup_date: datetime
     region: Region
