@@ -68,6 +68,7 @@ strict = true
 python_version = "3.11"
 namespace_packages = true
 explicit_package_bases = true
+mypy_path = "src"
 
 # Third-party libraries without published type stubs. `pandas-stubs` exists
 # but lags behind `pandas` releases; treating these as untyped is the

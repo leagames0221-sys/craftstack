@@ -52,7 +52,7 @@ test:
 
 lint:
 	$(PYTHON) -m ruff check src tests
-	$(PYTHON) -m mypy src
+	$(PYTHON) -m mypy -p data_analytics_demo
 
 clean:
 	rm -rf warehouse/*.duckdb ml/artifacts/* dashboard/build narrative/output.md

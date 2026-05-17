@@ -37,7 +37,7 @@ jobs:
         run: ruff check src tests
 
       - name: mypy (strict type-check)
-        run: mypy src
+        run: mypy -p data_analytics_demo
 
       - name: pytest (coverage ≥ 80%)
         run: pytest
