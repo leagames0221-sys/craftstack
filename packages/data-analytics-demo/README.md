@@ -41,6 +41,24 @@ open dashboard/build/index.html                       # (or your platform equiva
 | `tests/`                   | pytest suite — one file per layer plus an end-to-end test                                                                                                                                                                            |
 | `docs/architecture.md`     | Pipeline diagram + per-layer details                                                                                                                                                                                                 |
 
+## Verified ML metrics (CI-enforced floors)
+
+The ML layer ships with two acceptance criteria literally asserted by the test
+suite and re-checked on every push by [python-test.yml](../../.github/workflows/python-test.yml).
+Both floors are enforced at `make demo` time as well — the pipeline halts with a
+non-zero exit if either model regresses below floor (AC-α.2 + AC-3.2 + AC-3.7).
+
+| Metric                   | Floor  | Model selection                                                                                                        | Test gate                                                         |
+| ------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Churn — hold-out ROC-AUC | ≥ 0.70 | Higher of LogisticRegression baseline vs XGBoost; chosen model + score persisted to `ml/artifacts/churn_metadata.json` | [tests/test_ml_churn.py:82-91](tests/test_ml_churn.py) (AC-3.2)   |
+| Upsell — lift @ top-10%  | ≥ 1.5× | LogisticRegression with stratified train/test; lift report persisted to `ml/artifacts/upsell_lift_report.json`         | [tests/test_ml_upsell.py:74-86](tests/test_ml_upsell.py) (AC-3.7) |
+
+The reproduction command is `DEMO_RANDOM_SEED=42 make data && make dbt && make ml`;
+seed 42 yields byte-deterministic outputs (AC-1.5). The generated
+`ml/artifacts/*.json` files contain the literal achieved scores from that run —
+they are gitignored because the source of truth is the regeneration command, not
+a frozen snapshot.
+
 ## Architecture (one-line summary per layer)
 
 ```
