@@ -49,6 +49,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+data_analytics_demo = ["py.typed"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py311"
@@ -65,6 +68,13 @@ strict = true
 python_version = "3.11"
 namespace_packages = true
 explicit_package_bases = true
+
+# Third-party libraries without published type stubs. `pandas-stubs` exists
+# but lags behind `pandas` releases; treating these as untyped is the
+# pragmatic choice for a Python 3.11 + pandas 3.x stack.
+[[tool.mypy.overrides]]
+module = ["pandas", "pandas.*", "duckdb", "faker", "shap", "xgboost", "sklearn.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
