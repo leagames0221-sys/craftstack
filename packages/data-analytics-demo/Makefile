@@ -20,10 +20,9 @@ help:
 install:
 	$(PIP) install -e ".[dev]"
 
-# Stage targets — placeholders until T-03 .. T-10 are implemented
+# Stage targets
 data:
-	@echo "[data] TODO T-03: synthetic data generation not yet implemented"
-	@exit 1
+	$(PYTHON) -m data_analytics_demo.data.generate
 
 dbt:
 	@echo "[dbt] TODO T-04/T-05: dbt models not yet implemented"
@@ -53,7 +52,7 @@ test:
 
 lint:
 	$(PYTHON) -m ruff check src tests
-	$(PYTHON) -m mypy src
+	$(PYTHON) -m mypy -p data_analytics_demo
 
 clean:
 	rm -rf warehouse/*.duckdb ml/artifacts/* dashboard/build narrative/output.md

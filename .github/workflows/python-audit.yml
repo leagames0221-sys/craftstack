@@ -1,0 +1,40 @@
+name: python audit (data-analytics-demo)
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "packages/data-analytics-demo/pyproject.toml"
+      - ".github/workflows/python-audit.yml"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "packages/data-analytics-demo/pyproject.toml"
+      - ".github/workflows/python-audit.yml"
+  schedule:
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: packages/data-analytics-demo
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: install pip-audit + package deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+          pip install -e .
+
+      - name: pip-audit (fail on HIGH or CRITICAL)
+        run: pip-audit --strict --vulnerability-service osv
