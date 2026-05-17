@@ -26,17 +26,13 @@ from __future__ import annotations
 import os
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import duckdb
 import numpy as np
 import pandas as pd
 from faker import Faker
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
 
 # --- Defaults (overridable via env vars; documented in .env.example) ---
 DEFAULT_N_CUSTOMERS = 1000
@@ -46,7 +42,7 @@ DEFAULT_N_INVOICES = 5000
 DEFAULT_SEED = 42
 
 # Reference window: synthetic "now" = 2026-05-01 UTC. Events span 2 years back.
-REFERENCE_NOW = datetime(2026, 5, 1, tzinfo=timezone.utc)
+REFERENCE_NOW = datetime(2026, 5, 1, tzinfo=UTC)
 HISTORY_WINDOW_DAYS = 730
 
 PLAN_TIERS = ["free", "pro", "enterprise"]
@@ -75,8 +71,13 @@ def _warehouse_path() -> Path:
 
 
 def _emit(msg: str) -> None:
-    """Progress emitter — stderr only, satisfies AC-1.3."""
-    print(f"[data] {msg}", file=sys.stderr, flush=True)
+    """Progress emitter — stderr only, satisfies AC-1.3.
+
+    `_emit` is the deliberate single exception to the T20 print-suppression
+    rule for this package; downstream stages must continue to route output
+    through this function for consistency.
+    """
+    print(f"[data] {msg}", file=sys.stderr, flush=True)  # noqa: T201
 
 
 def _read_env_int(name: str, default: int) -> int:
@@ -193,7 +194,10 @@ def _generate_events(
 
     chosen_customers = rng.choice(customer_ids, size=n, p=weights)
     timestamp_offsets = rng.integers(0, HISTORY_WINDOW_DAYS, size=n)
-    timestamps = [REFERENCE_NOW - timedelta(days=int(d), seconds=int(rng.integers(0, 86400))) for d in timestamp_offsets]
+    timestamps = [
+        REFERENCE_NOW - timedelta(days=int(d), seconds=int(rng.integers(0, 86400)))
+        for d in timestamp_offsets
+    ]
 
     # Per-customer event-type distribution depends on their *current* plan tier
     # (latest subscription). Cheaper than per-row lookup: precompute a map.
