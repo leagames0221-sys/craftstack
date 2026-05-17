@@ -181,19 +181,43 @@ def _generate_events(
     subscriptions: pd.DataFrame,
     n: int,
 ) -> pd.DataFrame:
-    """Generate `n` events with engineered churn + upsell signals."""
-    # Active-status customers get more weight; canceled customers see drop-off
-    # near their end_date (the churn signal).
+    """Generate `n` events with engineered churn + upsell signals.
+
+    Two engineered patterns the downstream ML pipelines (T-06 / T-07) are
+    designed to recover:
+
+    1. **Churn signal**: customers without any active subscription get
+       (a) 3× lower event volume overall, and
+       (b) timestamps biased into the *older* half of the history window,
+       so their trailing-30d activity is much lower than their lifetime
+       daily average. The mart's `recent_to_lifetime_ratio` feature
+       captures this directly.
+    2. **Upsell signal**: handled separately via EVENT_WEIGHTS_BY_TIER —
+       higher-tier customers emit more `feature_use_premium` / `_advanced`
+       events.
+    """
     customer_ids = customers["customer_id"].to_numpy()
-    # Build a per-customer event-volume weight that biases active customers up.
     is_active = subscriptions.groupby("customer_id")["status"].apply(
         lambda s: (s == "active").any()
     )
-    weights = np.array([2.0 if is_active.get(cid, False) else 1.0 for cid in customer_ids])
+    is_active_arr = np.array([bool(is_active.get(cid, False)) for cid in customer_ids])
+
+    # (1a) Stronger volume bias: 4× weight for active vs 1× for churned.
+    weights = np.where(is_active_arr, 4.0, 1.0)
     weights = weights / weights.sum()
 
     chosen_customers = rng.choice(customer_ids, size=n, p=weights)
-    timestamp_offsets = rng.integers(0, HISTORY_WINDOW_DAYS, size=n)
+
+    # (1b) Timestamp bias: for each chosen event, look up whether the
+    # owning customer is active, and sample the offset accordingly.
+    active_lookup = dict(zip(customer_ids, is_active_arr, strict=True))
+    chosen_is_active = np.array([active_lookup[c] for c in chosen_customers])
+    # Active customers: uniform across the full history window.
+    # Churned customers: uniform over the *older half* (60 .. HISTORY_WINDOW_DAYS).
+    active_offsets = rng.integers(0, HISTORY_WINDOW_DAYS, size=n)
+    churned_offsets = rng.integers(60, HISTORY_WINDOW_DAYS, size=n)
+    timestamp_offsets = np.where(chosen_is_active, active_offsets, churned_offsets)
+
     timestamps = [
         REFERENCE_NOW - timedelta(days=int(d), seconds=int(rng.integers(0, 86400)))
         for d in timestamp_offsets

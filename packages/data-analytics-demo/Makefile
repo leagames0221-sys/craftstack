@@ -29,8 +29,8 @@ dbt:
 	cd dbt_project && DBT_PROFILES_DIR=. dbt test
 
 ml:
-	@echo "[ml] TODO T-06/T-07: ML pipelines not yet implemented"
-	@exit 1
+	$(PYTHON) -m data_analytics_demo.ml.churn
+	$(PYTHON) -m data_analytics_demo.ml.upsell
 
 narrative:
 	@echo "[narrative] TODO T-08: Ollama narrative not yet implemented"

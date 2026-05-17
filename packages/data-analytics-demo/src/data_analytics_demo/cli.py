@@ -35,9 +35,16 @@ def data() -> None:
 
 @app.command()
 def ml() -> None:
-    """Train churn + upsell models (T-06 / T-07, not yet implemented)."""
-    typer.echo("[ml] TODO T-06/T-07: ML pipelines not yet implemented", err=True)
-    sys.exit(1)
+    """Train churn + upsell models (writes to ml/artifacts/)."""
+    from data_analytics_demo.ml import churn as churn_mod
+    from data_analytics_demo.ml import upsell as upsell_mod
+
+    churn_meta = churn_mod.train_and_save()
+    upsell_meta = upsell_mod.train_and_save()
+    typer.echo(
+        f"churn ROC-AUC={churn_meta['metrics']['roc_auc_test']:.4f}  "
+        f"upsell lift@10%={upsell_meta['metrics']['lift_at_top_10pct']:.2f}x"
+    )
 
 
 @app.command()
