@@ -26,9 +26,11 @@ def version() -> None:
 
 @app.command()
 def data() -> None:
-    """Generate synthetic SaaS data (T-03, not yet implemented)."""
-    typer.echo("[data] TODO T-03: synthetic data generation not yet implemented", err=True)
-    sys.exit(1)
+    """Generate synthetic SaaS data into warehouse/analytics.duckdb."""
+    from data_analytics_demo.data import generate as gen
+
+    out = gen.main()
+    typer.echo(f"wrote {out}")
 
 
 @app.command()
