@@ -503,6 +503,40 @@
       "file": "docs/adr/README.md",
       "match": "contains",
       "pattern": "Sequence gap notice"
+    },
+
+    {
+      "adr": "ADR-0070",
+      "claim": "Polyglot package — Python sub-package definition exists",
+      "file": "packages/data-analytics-demo/pyproject.toml",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0070",
+      "claim": "Polyglot package — pnpm workspace member declaration exists",
+      "file": "packages/data-analytics-demo/package.json",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0070",
+      "claim": "DuckDB pinned >= 1.4.2 to mitigate CVE-2025-64429",
+      "file": "packages/data-analytics-demo/pyproject.toml",
+      "match": "regex",
+      "pattern": "\"duckdb>=(\\d+\\.\\d+\\.\\d+)\"",
+      "expected": "1.4.2"
+    },
+    {
+      "adr": "ADR-0070",
+      "claim": "Makefile entry point shipped (single user-facing pipeline runner)",
+      "file": "packages/data-analytics-demo/Makefile",
+      "match": "exists"
+    },
+    {
+      "adr": "ADR-0070",
+      "claim": "README declares zero-credit-card constraint",
+      "file": "packages/data-analytics-demo/README.md",
+      "match": "contains",
+      "pattern": "Zero credit card"
     }
   ]
 }

@@ -1,0 +1,33 @@
+# Generated artifacts
+warehouse/*.duckdb
+warehouse/*.duckdb.wal
+warehouse/*.duckdb.tmp
+ml/artifacts/*
+!ml/artifacts/.gitkeep
+narrative/output.md
+dashboard/build/
+dashboard/.evidence/
+dashboard/node_modules/
+
+# Python build / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Local env
+.env
+.venv/
+venv/
+
+# dbt
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/

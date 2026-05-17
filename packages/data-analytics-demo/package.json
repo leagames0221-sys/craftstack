@@ -1,0 +1,26 @@
+{
+  "name": "@craftstack/data-analytics-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-only SaaS customer-analytics demo (Python+TS polyglot package). See pyproject.toml for the Python entry point and dashboard/ for the Evidence BI sub-project.",
+  "scripts": {
+    "data": "make data",
+    "dbt": "make dbt",
+    "ml": "make ml",
+    "narrative": "make narrative",
+    "dashboard": "make dashboard",
+    "semantic-validate": "make semantic-validate",
+    "demo": "make demo"
+  },
+  "_comment_scripts": "Python lint / test / typecheck intentionally omitted from this package.json — they run via Makefile (see python-test.yml CI workflow, T-12). Turbo silently skips packages with no matching script.",
+  "keywords": [
+    "data-analytics",
+    "duckdb",
+    "dbt",
+    "evidence",
+    "ollama",
+    "local-first",
+    "synthetic-data"
+  ],
+  "license": "MIT"
+}
