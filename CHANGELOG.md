@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added — `@craftstack/data-analytics-demo` 0.1.0 (Spec-Driven Stage 4, T-01〜T-14)
+
+Polyglot package (Python + a single JS sub-package member) shipping a local-only customer-analytics demo end-to-end. Built across PRs #82 #83 #86 #87 #88 #89 #90 #91 (this PR is #92, the docs + changelog close-out). [ADR-0070](docs/adr/0070-data-analytics-demo-polyglot-adoption.md) (with the 2026-05-18 dashboard pivot amendment) records the design and the Evidence-vs-Python-Jinja2-Plotly tradeoff.
+
+- **Six pipeline layers**: data generation (Faker + numpy + DuckDB), dbt transformation (staging / intermediate / marts), ML (LogisticRegression + XGBoost churn — ROC-AUC ≥ 0.70 floor; LogReg upsell propensity — lift @ top-10% ≥ 1.5× floor), local-LLM narrative (Ollama, AC-4.3 cloud-credential guard), self-built static-HTML dashboard (Jinja2 + Plotly), MetricFlow KPI semantic layer with pure-Python validator.
+- **CI infrastructure**: `.github/workflows/python-test.yml` (ruff + mypy --strict + pytest with 80 % coverage floor); `.github/workflows/python-audit.yml` (pip-audit `--strict` against OSV); Dependabot `pip` ecosystem grouped by dbt / ml / duckdb / dev.
+- **Security mitigations**: `duckdb >= 1.4.2` pin (CVE-2025-64429), no external API credentials anywhere, all generated artifacts gitignored, every dependency listed in ADR-0070 with literal license + maintenance verification.
+- **Test surface**: 36 pytest cases (data / dbt / ml-churn / ml-upsell / narrative / dashboard / semantic / e2e); coverage 87.20 %.
+
+The package becomes the seventh `packages/*` entry and the monorepo's first Python sub-tree.
+
 ## [0.5.19] — 2026-04-29
 
 ### Changed — Run #6 hiring-sim findings closure + deploy-visible-surface coverage extension (ADR-0069)

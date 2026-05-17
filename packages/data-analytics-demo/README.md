@@ -1,51 +1,77 @@
 # @craftstack/data-analytics-demo
 
-> **Status**: Phase 0 scaffold (T-01 / T-02 complete). Pipeline stages T-03 onward are placeholders that exit 1 with a TODO message. See [ADR-0070](../../docs/adr/0070-data-analytics-demo-polyglot-adoption.md) for the design.
+Customer-analytics demo for a SaaS-style data set: synthetic data → SQL marts (dbt) → ML (churn + upsell) → narrative (local LLM via Ollama) → BI dashboard (self-built static HTML) → KPI semantic layer (MetricFlow). All seven layers run on a developer laptop, no credit card, no cloud-LLM API calls.
 
-Local-only SaaS customer-analytics demo: synthetic data → SQL marts (dbt) → ML (churn + upsell) → narrative (local LLM via Ollama) → BI dashboard (Evidence) → KPI semantic layer (MetricFlow).
+## Why it exists
 
-## Constraints (load-bearing — see ADR-0070)
+It is the portfolio answer to a data-analyst job description that explicitly names three axes:
 
-- **Zero credit card** — no Snowflake, BigQuery, Anthropic, OpenAI, or any paid service. Synthetic data only.
-- **Local LLM only** — narrative generation runs against a local Ollama server. No external network calls.
-- **Consumer laptop** — designed to complete `make demo` on a developer laptop in under 5 minutes.
-- **Synthetic data only** — no real customer PII. Faker + DuckDB tpcds generate everything.
+1. **Advanced SQL + statistical modelling** — SQL marts and propensity models for churn and upsell.
+2. **Business-strategy narratives** — an executive brief generated from the model's own SHAP feature importances.
+3. **BI enablement** — a single source of truth (MetricFlow KPI definitions) plus a static dashboard built from the same marts.
 
-## Quickstart
+A recruiter cloning this repo can run `make demo` and read all three deliverables in under five minutes.
+
+## Quickstart (5 commands)
 
 ```bash
-# 1. Install the package (editable, with dev extras)
-make install
-
-# 2. Make sure Ollama is running locally and the model is pulled
-ollama serve &
-ollama pull llama3.1:8b-instruct-q4_K_M
-
-# 3. Run the full pipeline
-make demo
+make install                                          # editable install + dev extras
+ollama serve &                                        # start local Ollama
+ollama pull llama3.1:8b-instruct-q4_K_M               # or set OLLAMA_MODEL to a model already pulled
+make demo                                             # data → dbt → ml → narrative → dashboard → semantic
+open dashboard/build/index.html                       # (or your platform equivalent)
 ```
 
-`make demo` chains: `data → dbt → ml → narrative → dashboard`. Any stage failure halts the pipeline with a non-zero exit code.
+`make demo` runs the full chain with a visible banner per stage. Any stage failure halts the chain with a non-zero exit code (AC-α.2).
 
 ## Layout
 
-| Path                       | Role                                                                        |
-| -------------------------- | --------------------------------------------------------------------------- |
-| `pyproject.toml`           | Python package definition + pinned deps (DuckDB ≥ 1.4.2 for CVE-2025-64429) |
-| `package.json`             | pnpm workspace member (script proxies to Makefile)                          |
-| `Makefile`                 | Single entry point — every stage has a target                               |
-| `src/data_analytics_demo/` | Python source (data gen, ML, narrative)                                     |
-| `dbt_project/`             | dbt project (staging / intermediate / marts)                                |
-| `dashboard/`               | Evidence BI sub-project (static HTML build)                                 |
-| `semantic/`                | MetricFlow KPI definitions                                                  |
-| `warehouse/`               | Generated DuckDB file lives here (gitignored)                               |
-| `ml/artifacts/`            | Generated model + SHAP outputs (gitignored)                                 |
-| `tests/`                   | pytest suite covering each layer                                            |
+| Path                       | Role                                                                                                                                                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pyproject.toml`           | Python package definition + pinned deps (`duckdb >= 1.4.2` mitigates [CVE-2025-64429](https://github.com/duckdb/duckdb/security/advisories/GHSA-vmp8-hg63-v2hp))                                                                     |
+| `package.json`             | pnpm workspace member (scripts proxy to `make`)                                                                                                                                                                                      |
+| `Makefile`                 | Single user-facing entry point — every stage has a target; `make demo` chains all six                                                                                                                                                |
+| `src/data_analytics_demo/` | Python source ([data](src/data_analytics_demo/data), [ml](src/data_analytics_demo/ml), [narrative](src/data_analytics_demo/narrative), [dashboard](src/data_analytics_demo/dashboard), [semantic](src/data_analytics_demo/semantic)) |
+| `dbt_project/`             | dbt project (staging / intermediate / marts; uses `dbt-duckdb`)                                                                                                                                                                      |
+| `semantic/kpi.yml`         | MetricFlow-compatible semantic models + KPI metrics (single source of truth)                                                                                                                                                         |
+| `warehouse/`               | Generated DuckDB file (gitignored)                                                                                                                                                                                                   |
+| `ml/artifacts/`            | Generated model + SHAP outputs (gitignored)                                                                                                                                                                                          |
+| `narrative/output.md`      | Generated LLM narrative (gitignored)                                                                                                                                                                                                 |
+| `dashboard/build/`         | Generated static HTML site (gitignored)                                                                                                                                                                                              |
+| `tests/`                   | pytest suite — one file per layer plus an end-to-end test                                                                                                                                                                            |
+| `docs/architecture.md`     | Pipeline diagram + per-layer details                                                                                                                                                                                                 |
+
+## Architecture (one-line summary per layer)
+
+```
+data        Faker + numpy synthesise 1000 customers / 50 000 events / 2000 subscriptions / 5000 invoices into DuckDB
+dbt         staging (4 views) → intermediate (2 views) → marts (rfm_segments, churn_features, upsell_opportunities, cohort_retention)
+ml          LogisticRegression baseline + XGBoost on churn (ROC-AUC ≥ 0.70) + LogisticRegression on upsell (lift @ top-10% ≥ 1.5×) + SHAP summary
+narrative   Local Ollama (llama3.1:8b-instruct by default; OLLAMA_MODEL env-var overridable) generates an executive markdown brief from the SHAP summary
+dashboard   Self-built Python generator (Jinja2 + Plotly via CDN) emits 4 static HTML pages from the marts
+semantic    MetricFlow YAML — 3 semantic models, 4 KPI metrics; structural invariants enforced by the validator
+```
+
+See [docs/architecture.md](docs/architecture.md) for the pipeline diagram and per-layer details.
+
+## Constraints (load-bearing — see [ADR-0070](../../docs/adr/0070-data-analytics-demo-polyglot-adoption.md))
+
+- **Zero credit card.** No Snowflake / BigQuery free trial; no Anthropic / OpenAI / Gemini API.
+- **Local LLM only.** Narrative generation runs against a local Ollama; the module asserts the absence of cloud-LLM credentials at invocation time (AC-4.3).
+- **Consumer laptop.** End-to-end completes well under five minutes at the default seed sizing.
+- **Synthetic data only.** No real PII anywhere; Faker `company_email()` / `company()` generate everything.
+
+## Engineered ML signals (so the models have something to learn)
+
+- **Churn**: customers without an active subscription get 4× lower event weight, and their timestamps are biased into the older half of the history window — `recent_to_lifetime_ratio` in `churn_features` correlates with the cancel label.
+- **Upsell**: `feature_use_premium` / `feature_use_advanced` event distributions skew higher for paid tiers — `premium_event_count` in `upsell_opportunities` correlates with the upgrade label.
+
+Both signals are observable through SQL alone (no leak from the data generator into the ML feature surface).
 
 ## Prior art (pattern extraction only, no clone)
 
-Six OSS projects supply the design pattern; everything is reimplemented from scratch in this package. License + maintenance verified 2026-05-17. See ADR-0070 for the full table including a rejected candidate.
+Six OSS projects supplied the design pattern; everything is reimplemented from scratch in this package. License + maintenance literal-verified 2026-05-17. See [ADR-0070](../../docs/adr/0070-data-analytics-demo-polyglot-adoption.md) for the full table including a rejected candidate and the 2026-05-18 dashboard pivot.
 
 ## License
 
-MIT — same as the craftstack monorepo.
+MIT — same as the rest of the craftstack monorepo.

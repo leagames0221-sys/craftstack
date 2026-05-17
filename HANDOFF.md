@@ -4,28 +4,17 @@ Tracks ephemeral in-progress state between AI-assisted sessions. For shipped sta
 
 ## Current
 
-- **last session**: 2026-05-17
-- **status**: stable on main; opacity-sanitize + handoff infra shipped (PR #79 + #80)
-- **active work item**: data analytics demo package (planning phase — prior art scan done, scaffold not yet started)
-- **next planned**: Spec-Driven Stage 1 Discovery for `packages/data-analytics-demo/`
+- **last session**: 2026-05-18
+- **status**: stable on main; `@craftstack/data-analytics-demo` 0.1.0 shipped (PRs #82 #83 #86 #87 #88 #89 #90 #91 #92)
+- **active work item**: none in progress
+- **next planned**: TBD — pipeline complete and reproducible via `make demo` inside `packages/data-analytics-demo/`
 - **blockers**: none
 
-### Planned package — data-analytics-demo
+### Shipped — data-analytics-demo (2026-05-18)
 
-Customer-behavior / SaaS-style analytics demo for portfolio. Constraints: local-only (no credit card), local LLM (Ollama), synthetic data only.
+Local-only SaaS customer-analytics demo. Six pipeline layers (data / dbt / ml / narrative / dashboard / semantic) plus polyglot CI infrastructure. See [ADR-0070](docs/adr/0070-data-analytics-demo-polyglot-adoption.md) for the design and the dashboard pivot (Evidence → self-built Python + Jinja2 + Plotly).
 
-Verified prior-art seeds (license + maintenance literal-checked 2026-05-17):
-
-| seed | license | role |
-|---|---|---|
-| dbt-labs/jaffle_shop_duckdb (default branch: `duckdb`) | Apache 2.0 | dbt project skeleton (staging/marts 2-tier pattern) |
-| evidence-dev/evidence | MIT | BI-as-code dashboard (SQL fenced in markdown) |
-| dbt-labs/metricflow | Apache 2.0 | semantic layer YAML (single KPI definition) |
-| duckdb/duckdb (tpcds extension) | MIT | synthetic SaaS data via `CALL dsdgen(sf=1)` |
-| ollama/ollama (Llama 3.1 8B Instruct) | MIT | local LLM for SHAP→narrative |
-| Python in Plain English (Faker+DuckDB+sklearn article, 2025-09) | technique reference | churn pipeline pattern (no code clone) |
-
-Rejected: `dbt-labs/jaffle-shop-template` (no LICENSE + 2.5y unmaintained).
+Quickstart: `cd packages/data-analytics-demo && make install && ollama serve & && make demo`.
 
 ## Update protocol
 
@@ -45,9 +34,9 @@ When starting a session:
 
 ## What lives where
 
-| Information | Location | Lifetime |
-|---|---|---|
-| Ephemeral in-progress state | this file | days–weeks |
-| Decisions (why we chose X) | [docs/adr/](docs/adr/) | permanent |
-| Shipped feature log | [CHANGELOG.md](CHANGELOG.md) | permanent |
-| Conventions & rules for AI | [apps/*/AGENTS.md](apps/) | permanent |
+| Information                 | Location                     | Lifetime   |
+| --------------------------- | ---------------------------- | ---------- |
+| Ephemeral in-progress state | this file                    | days–weeks |
+| Decisions (why we chose X)  | [docs/adr/](docs/adr/)       | permanent  |
+| Shipped feature log         | [CHANGELOG.md](CHANGELOG.md) | permanent  |
+| Conventions & rules for AI  | [apps/\*/AGENTS.md](apps/)   | permanent  |
