@@ -102,8 +102,8 @@ jobs:
           done
           echo "All external artefacts reachable."
 
-      # Cron health enforcement (ADR-0059 axis 6 hardening). The
-      # /api/attestation endpoint exposes `measurements.daysSinceLastGreenRun`
+      # Cron health enforcement (ADR-0059 axis 6 hardening, ADR-0067-aware).
+      # The /api/attestation endpoint exposes `measurements.daysSinceLastGreenRun`
       # — until v0.5.10 this was passive disclosure (a reviewer who
       # curled the endpoint would see staleness, but no automated gate
       # caught it). Threshold = 7 days: the eval cron runs nightly, so
@@ -112,13 +112,39 @@ jobs:
       # designed to absorb). Tripping this fails smoke, surfacing the
       # eval-pipeline regression in the same workflow that catches
       # deploy regressions.
-      - name: Cron health threshold (ADR-0059 axis 6)
+      #
+      # ADR-0067 carve-out: when EMERGENCY_STOP is engaged on the
+      # Knowlex Vercel project (the kill switch ADR-0046 ships for
+      # Gemini-key incidents), /api/kb/ingest short-circuits to 503
+      # with `{"code":"EMERGENCY_STOP"}`. The eval cron physically
+      # cannot ingest in that state, so daysSinceLastGreenRun keeps
+      # growing — that's a property of the intentional containment, not
+      # a regression. Probe ingest first; if EMERGENCY_STOP is the
+      # operator-active state, downgrade the gate to a warning so the
+      # smoke badge reflects the deployment's actual state. The
+      # underlying eval workflow stays red as operator signal until the
+      # LLM-provider migration ratchet ships and EMERGENCY_STOP lifts.
+      - name: Cron health threshold (ADR-0059 axis 6, ADR-0067-aware)
         run: |
           set -euo pipefail
           payload=$(curl -sS --max-time 15 https://craftstack-knowledge.vercel.app/api/attestation)
           days=$(echo "$payload" | jq -r '.measurements.daysSinceLastGreenRun // "null"')
+
+          # EMERGENCY_STOP probe: a no-auth POST to /api/kb/ingest. Under
+          # normal state this returns 401 (post-v0.5.12 Auth.js gate);
+          # under EMERGENCY_STOP it returns 503 with code=EMERGENCY_STOP
+          # because the kill switch sits in front of the auth check.
+          ingest_probe=$(curl -sS --max-time 15 -X POST \
+            -H "content-type: application/json" \
+            -d '{"title":"smoke-probe","content":"_"}' \
+            https://craftstack-knowledge.vercel.app/api/kb/ingest 2>/dev/null || echo '{}')
+          emergency_code=$(echo "$ingest_probe" | jq -r '.code // ""')
+
           if [ "$days" = "null" ]; then
             echo "::warning::no daysSinceLastGreenRun in /api/attestation; eval may never have run"
+          elif [ "$emergency_code" = "EMERGENCY_STOP" ]; then
+            echo "  daysSinceLastGreenRun = $days (EMERGENCY_STOP active per ADR-0067)"
+            echo "::warning::eval cron paused under EMERGENCY_STOP — see docs/adr/0067-gemini-free-tier-account-revocation-incident.md. Cron health gate is downgraded to a warning until the LLM-provider migration ratchet ships and EMERGENCY_STOP lifts."
           else
             echo "  daysSinceLastGreenRun = $days"
             # bc is preinstalled on ubuntu-latest. Threshold = 7 days.
