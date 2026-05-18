@@ -72,24 +72,57 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      # ADR-0067 carve-out: when EMERGENCY_STOP is engaged on the
+      # Knowlex Vercel project, /api/kb/ingest short-circuits to 503
+      # with {"code":"EMERGENCY_STOP"} — the eval physically cannot
+      # ingest in that state, so attempting the run would fail for an
+      # intentional-containment reason rather than a regression.
+      # Probe ingest first; if EMERGENCY_STOP is the operator-active
+      # state, skip the rest of the job with a clear warning and exit
+      # this job green. When EMERGENCY_STOP lifts (post LLM-provider
+      # migration ratchet), the probe falls through and the eval
+      # resumes its normal regression-detection role with no further
+      # code change.
+      - name: Probe EMERGENCY_STOP state (ADR-0067 carve-out)
+        id: probe
+        run: |
+          set -euo pipefail
+          base_url="${{ inputs.base_url || 'https://craftstack-knowledge.vercel.app' }}"
+          ingest_probe=$(curl -sS --max-time 15 -X POST \
+            -H "content-type: application/json" \
+            -d '{"title":"emergency-stop probe","content":"_"}' \
+            "${base_url}/api/kb/ingest" 2>/dev/null || echo '{}')
+          emergency_code=$(echo "$ingest_probe" | jq -r '.code // ""')
+          if [ "$emergency_code" = "EMERGENCY_STOP" ]; then
+            echo "emergency_stop=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::EMERGENCY_STOP active — skipping eval run per ADR-0067 (Gemini Free tier account-level revocation, 2026-04-29). Eval will resume automatically when the kill switch lifts after the LLM-provider migration ratchet ships."
+          else
+            echo "emergency_stop=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install pnpm
+        if: steps.probe.outputs.emergency_stop != 'true'
         uses: pnpm/action-setup@v6
         with:
           version: 9.15.0
 
       - name: Setup Node.js
+        if: steps.probe.outputs.emergency_stop != 'true'
         uses: actions/setup-node@v6
         with:
           node-version-file: ".nvmrc"
           cache: "pnpm"
 
       - name: Install dependencies
+        if: steps.probe.outputs.emergency_stop != 'true'
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma client (knowledge)
+        if: steps.probe.outputs.emergency_stop != 'true'
         run: pnpm --filter knowledge prisma generate
 
       - name: Run Knowlex RAG eval
+        if: steps.probe.outputs.emergency_stop != 'true'
         env:
           # E2E_BASE_URL points at the live Knowlex deploy by default;
           # workflow_dispatch can override via inputs.base_url. The
@@ -99,7 +132,7 @@ jobs:
         run: pnpm --filter knowledge eval
 
       - name: Upload eval report
-        if: always()
+        if: always() && steps.probe.outputs.emergency_stop != 'true'
         uses: actions/upload-artifact@v7
         with:
           name: rag-eval-report
@@ -110,14 +143,14 @@ jobs:
       # Refresh badge.json from the latest report so the README
       # shields.io endpoint badge tracks the most recent green run.
       - name: Regenerate badge.json from latest report
-        if: success()
+        if: success() && steps.probe.outputs.emergency_stop != 'true'
         run: node scripts/eval-badge.mjs
 
       # Auto-commit-on-green. Failed runs never reach this step
       # because of `if: success()`, so a regression report never
       # lands on main from the workflow itself.
       - name: Commit report + badge to main on success
-        if: success() && github.event_name != 'pull_request'
+        if: success() && github.event_name != 'pull_request' && steps.probe.outputs.emergency_stop != 'true'
         run: |
           git config user.name "eval-bot"
           git config user.email "263370648+leagames0221-sys@users.noreply.github.com"
